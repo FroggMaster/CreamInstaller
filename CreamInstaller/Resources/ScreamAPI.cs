@@ -54,25 +54,23 @@ internal static class ScreamAPI
 
         if (injectedEntitlements.Count == entitlementCount)
             injectedEntitlements.Clear();
-        if (overrideCatalogItems.Count > 0 || injectedEntitlements.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating ScreamAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer,
-                new(overrideCatalogItems.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                new(injectedEntitlements.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating ScreamAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer,
+            new(overrideCatalogItems.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            new(injectedEntitlements.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, SortedList<string, SelectionDLC> overrideCatalogItems,

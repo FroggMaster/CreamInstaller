@@ -87,22 +87,19 @@ internal static class Koaloader
 
         SortedList<string, string> targets = new(PlatformIdComparer.String);
         SortedList<string, string> modules = new(PlatformIdComparer.String);
-        if (targets.Count > 0 || modules.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating Koaloader configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer, targets, modules, installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating Koaloader configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer, targets, modules, installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, SortedList<string, string> targets,

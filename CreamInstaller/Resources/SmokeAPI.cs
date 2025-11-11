@@ -64,27 +64,23 @@ internal static class SmokeAPI
                 false);
         }
 
-        if (selection.ExtraSelections.Any(extraSelection => extraSelection.DLC.Any()) || overrideDlc.Count > 0 ||
-            injectDlc.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating SmokeAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer, selection.Id,
-                new(extraApps.ToDictionary(extraApp => extraApp.Key, extraApp => extraApp.Value),
-                    PlatformIdComparer.String),
-                new(overrideDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                new(injectDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String), installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating SmokeAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer, selection.Id,
+            new(extraApps.ToDictionary(extraApp => extraApp.Key, extraApp => extraApp.Value),
+                PlatformIdComparer.String),
+            new(overrideDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            new(injectDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String), installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, string appId,
@@ -93,7 +89,7 @@ internal static class SmokeAPI
         InstallForm installForm = null)
     {
         writer.WriteLine("{");
-        /*writer.WriteLine("  \"$schema\": \"https://raw.githubusercontent.com/acidicoala/SmokeAPI/refs/tags/v3.1.5/res/SmokeAPI.schema.json\",");*/
+        /*writer.WriteLine("  \"$schema\": \"https://raw.githubusercontent.com/acidicoala/SmokeAPI/refs/tags/v4.0.0/res/SmokeAPI.schema.json\",");*/
         writer.WriteLine("  \"$version\": 4,");
         writer.WriteLine("  \"logging\": false,");
         writer.WriteLine("  \"log_steam_http\": false,");
@@ -370,7 +366,8 @@ internal static class SmokeAPI
             "8B075C6B272A172A014D5C9E60F13DF2", // SmokeAPI v2.0.3
             "A3873569DECAD08962C46E88352E6DB1", // SmokeAPI v2.0.4
             "4A1A823E5CF4FB861DD6BA94539D29C4", // SmokeAPI v2.0.5
-            "EC153C0CCE476AFFB2458575930F11E6" // SmokeAPI v3.1.5
+            "EC153C0CCE476AFFB2458575930F11E6", // SmokeAPI v3.1.5
+            "E833ACE855245D5939EE36FF25D8B4A4" // SmokeAPI v4.0.0
         ],
         [ResourceIdentifier.Steamworks64] =
         [
@@ -386,7 +383,8 @@ internal static class SmokeAPI
             "E4DC2AF2B8B77A0C9BF9BFBBAEA11CF7", // SmokeAPI v2.0.3
             "C0DDB49C9BFD3E05CBC1C61D117E93F9", // SmokeAPI v2.0.4
             "F7C3064D5E3C892B168F504C21AC4923", // SmokeAPI v2.0.5
-            "5A6712770EC7CE589252706245E62C72" // SmokeAPI v3.1.5
+            "5A6712770EC7CE589252706245E62C72", // SmokeAPI v3.1.5
+            "22DD39B16D3C10FDB044FDCB1BAE63B8" // SmokeAPI v4.0.0
         ]
     };
 }
