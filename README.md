@@ -1,6 +1,6 @@
 ### CreamInstaller: Automatic DLC Unlocker Installer & Configuration Generator
 
-![Program Preview Image](https://raw.githubusercontent.com/pointfeev/CreamInstaller/main/preview.png)
+![Program Preview Image](https://raw.githubusercontent.com/FroggMaster/CreamInstaller/main/preview.png)
 
 ###### **NOTE:** This is simply a preview image; this is not a list of supported games nor configurations!
 
@@ -29,7 +29,7 @@ games and DLCs the user selects; however, through the use of **right-click conte
 
 ---
 #### Installation:
-1. Click [here](https://github.com/pointfeev/CreamInstaller/releases/latest/download/CreamInstaller.zip) to download the latest release from [GitHub](https://github.com/pointfeev/CreamInstaller).
+1. Click [here](https://github.com/FroggMaster/CreamInstaller/releases/latest/download/CreamInstaller.zip) to download the latest release from [GitHub](https://github.com/FroggMaster/CreamInstaller).
 2. Extract the executable from the ZIP file to anywhere on your computer you want. *It's completely self-contained.*
 
 If the program doesn't seem to launch, try downloading and installing [.NET Desktop Runtime 8.0.7](https://download.visualstudio.microsoft.com/download/pr/bb581716-4cca-466e-9857-512e2371734b/5fe261422a7305171866fd7812d0976f/windowsdesktop-runtime-8.0.7-win-x64.exe) and restarting your computer. Note that the program currently only supports Windows 10+ 64-bit machines as seen [here](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md).
@@ -52,23 +52,23 @@ If the program doesn't seem to launch, try downloading and installing [.NET Desk
 #### FAQ / Common Issues:
 
 **Q:** The program is not launching.
-**A:** First and foremost, note that the program currently only supports Windows 10+ 64-bit machines as seen [here](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md). If that does not apply to you, then make sure you've extracted the executable from the ZIP file before you've launched it, resolved your anti-virus, and have tried downloading the .NET Desktop Runtime mentioned under [installation instructions](https://github.com/pointfeev/CreamInstaller#installation) above and restarting your computer. If none of the above work, then I simply cannot do anything about it, I do not control .NET. Either your system is not supported by the current version of .NET, or something is wrong/corrupted with your system.
+**A:** First and foremost, note that the program currently only supports Windows 10+ 64-bit machines as seen [here](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md). If that does not apply to you, then make sure you've extracted the executable from the ZIP file before you've launched it, resolved your anti-virus, and have tried downloading the .NET Desktop Runtime mentioned under [installation instructions](https://github.com/FroggMaster/CreamInstaller#installation) above and restarting your computer. If none of the above work, then I simply cannot do anything about it, I do not control .NET. Either your system is not supported by the current version of .NET, or something is wrong/corrupted with your system.
 
 **Q:** The game I installed the unlocker(s) to is not working/the DLCs are not unlocked.
-**A:** Make sure you've read the note under [Usage](https://github.com/pointfeev/CreamInstaller#usage) above! Assuming the program functioned as it was supposed to by properly installing DLC unlockers to your chosen games, this is not an issue I can do anything about and it's entirely up to you to seek the appropriate resources to fix it yourself (hint: https://cs.rin.ru/forum/viewforum.php?f=10).
+**A:** Make sure you've read the note under [Usage](https://github.com/FroggMaster/CreamInstaller#usage) above! Assuming the program functioned as it was supposed to by properly installing DLC unlockers to your chosen games, this is not an issue I can do anything about and it's entirely up to you to seek the appropriate resources to fix it yourself (hint: https://cs.rin.ru/forum/viewforum.php?f=10).
 
 **Q:** The program and/or files installed by the program are detected as a virus/trojan/malware.
-**A:** The "issue" of the program's outputted Koaloader DLLs being detected as false positives such as Mamson.A!ac, Phonzy.A!ml, Wacatac.H!ml, Malgent!MSR, Tiggre!rfn, and many many others, has already been posted and explained dozens of times now in many different manners... please do not post it again, you will just be ignored; instead, refer to the explanations within issue #40 and its linked issues: https://github.com/pointfeev/CreamInstaller/issues/40.
+**A:** The "issue" of the program's outputted Koaloader DLLs being detected as false positives such as Mamson.A!ac, Phonzy.A!ml, Wacatac.H!ml, Malgent!MSR, Tiggre!rfn, and many many others, has already been posted and explained dozens of times now in many different manners... please do not post it again, you will just be ignored; instead, refer to the explanations within issue #40 and its linked issues: https://github.com/FroggMaster/CreamInstaller/issues/40.
 
 ---
 ##### Bugs/Crashes/Issues:
-For reliable and quick assistance, all bugs, crashes and other issues should be referred to the [GitHub Issues](https://github.com/pointfeev/CreamInstaller/issues) page!
+For reliable and quick assistance, all bugs, crashes and other issues should be referred to the [GitHub Issues](https://github.com/FroggMaster/CreamInstaller/issues) page!
 
-##### **HOWEVER**: Please read the [FAQ entry](https://github.com/pointfeev/CreamInstaller#faq--common-issues) above and/or [template issue](https://github.com/pointfeev/CreamInstaller/issues/new/choose) corresponding to your problem should one exist! Also, note that the [GitHub Issues](https://github.com/pointfeev/CreamInstaller/issues) page is not your personal assistance hotline, rather it is for genuine bugs/crashes/issues with the program itself. If you post an issue which is off-topic or has already been explained within the FAQ, template issues, and/or within this text in general, I will just close it and you will be ignored.
+##### **HOWEVER**: Please read the [FAQ entry](https://github.com/FroggMaster/CreamInstaller#faq--common-issues) above and/or [template issue](https://github.com/FroggMaster/CreamInstaller/issues/new/choose) corresponding to your problem should one exist! Also, note that the [GitHub Issues](https://github.com/FroggMaster/CreamInstaller/issues) page is not your personal assistance hotline, rather it is for genuine bugs/crashes/issues with the program itself. If you post an issue which is off-topic or has already been explained within the FAQ, template issues, and/or within this text in general, I will just close it and you will be ignored.
 
 ---
 ##### More Information:
 * SteamCMD installation and appinfo cache can be found at **C:\ProgramData\CreamInstaller**.
-* The program automatically and very quickly updates from [GitHub](https://github.com/pointfeev/CreamInstaller) by choice of the user through a dialog on startup.
-* The program source and other information can be found on [GitHub](https://github.com/pointfeev/CreamInstaller).
+* The program automatically and very quickly updates from [GitHub](https://github.com/FroggMaster/CreamInstaller) by choice of the user through a dialog on startup.
+* The program source and other information can be found on [GitHub](https://github.com/FroggMaster/CreamInstaller).
 * Credit to [Mattahan](https://www.mattahan.com) for the program icon.
