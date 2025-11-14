@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version number (example: 1.2.0)"
+        description: "Version number (example: 5.0.1.3)"
         required: true
         type: string
       title:
@@ -27,15 +27,16 @@ jobs:
           fetch-depth: 0   # Needed for tag creation and pushing
 
       - name: Create and push tag
+        shell: pwsh
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          TAG="v${{ inputs.version }}"
+          $tag = "v${{ inputs.version }}"
+          Write-Host "Creating tag $tag"
 
-          echo "Creating tag $TAG"
-          git tag $TAG
-          git push origin $TAG
+          git tag $tag
+          git push origin $tag
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
