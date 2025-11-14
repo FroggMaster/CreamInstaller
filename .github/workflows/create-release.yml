@@ -1,0 +1,62 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (example: 1.2.0)"
+        required: true
+        type: string
+      title:
+        description: "Release title (optional)"
+        required: false
+        type: string
+      notes:
+        description: "Release notes (optional)"
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Needed for tag creation and pushing
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          TAG="v${{ inputs.version }}"
+
+          echo "Creating tag $TAG"
+          git tag $TAG
+          git push origin $TAG
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore CreamInstaller.sln
+
+      - name: Build Release
+        run: dotnet build CreamInstaller.sln --configuration Release --no-restore
+
+      - name: Publish single-file
+        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ inputs.version }}
+          name: ${{ inputs.title || format('Release v{0}', inputs.version) }}
+          body: ${{ inputs.notes }}
+          files: ./publish/CreamInstaller.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
