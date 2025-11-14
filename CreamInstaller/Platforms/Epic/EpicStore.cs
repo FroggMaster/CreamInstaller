@@ -8,6 +8,10 @@ using CreamInstaller.Platforms.Epic.GraphQL;
 using CreamInstaller.Utility;
 using Newtonsoft.Json;
 
+#if DEBUG
+using CreamInstaller.Forms;
+#endif
+
 namespace CreamInstaller.Platforms.Epic;
 
 internal static class EpicStore
@@ -19,11 +23,22 @@ internal static class EpicStore
     {
         List<(string id, string name, string product, string icon, string developer)> dlcIds = [];
         string cacheFile = ProgramData.AppInfoPath + @$"\{categoryNamespace}.json";
+        string fileContent = cacheFile.ReadFile();
+        if (string.IsNullOrWhiteSpace(fileContent) || fileContent.Trim() == "null")
+        {
+            cacheFile.DeleteFile();
+        }
         bool cachedExists = cacheFile.FileExists();
         Response response = null;
         if (!cachedExists || ProgramData.CheckCooldown(categoryNamespace, Cooldown))
         {
             response = await QueryGraphQL(categoryNamespace);
+#if DEBUG
+            if (response is null)
+            {
+                DebugForm.Current.Log("ES: QueryGraphQL returned null");
+            }
+#endif
             try
             {
                 cacheFile.WriteFile(JsonConvert.SerializeObject(response, Formatting.Indented));
@@ -114,6 +129,8 @@ internal static class EpicStore
             dlcIds.Add((id, title, product, icon, developer));
     }
 
+    public static bool EpicBool = true;
+
     private static async Task<Response> QueryGraphQL(string categoryNamespace)
     {
         try
@@ -125,9 +142,14 @@ internal static class EpicStore
             content.Headers.ContentType = new("application/json");
             HttpClient client = HttpClientManager.HttpClient;
             if (client is null)
+            {
+#if DEBUG
+                DebugForm.Current.Log("ES: Client returned null");
+#endif
                 return null;
+            }
             HttpResponseMessage httpResponse =
-                await client.PostAsync(new Uri("https://graphql.epicgames.com/graphql"), content);
+                await client.PostAsync(new Uri("https://launcher.store.epicgames.com/graphql"), content);
             _ = httpResponse.EnsureSuccessStatusCode();
             string response = await httpResponse.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<Response>(response);

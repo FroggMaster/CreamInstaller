@@ -174,8 +174,8 @@ internal static class Resources
                 if (platform is Platform.Epic or Platform.Paradox)
                 {
                     subDirectory.GetScreamApiComponents(out string api32, out string api32_o, out string api64,
-                        out string api64_o, out string config,
-                        out string log);
+                        out string api64_o, out string old_config, out string config,
+                        out string old_log, out string log);
                     if (api32.FileExists() || api32_o.FileExists() || api64.FileExists() || api64_o.FileExists()
                         || (config.FileExists() || log.FileExists()) && !koaloaderInstalled)
                         _ = dllDirectories.Add(subDirectory);

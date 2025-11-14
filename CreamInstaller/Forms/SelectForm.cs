@@ -109,7 +109,12 @@ internal sealed partial class SelectForm : CustomForm
             UpdateRemainingDLCs();
         });
     }
-
+    private static async Task<T> WithTimeout<T>(Task<T> task, int millisecondsTimeout)
+    {
+        if (await Task.WhenAny(task, Task.Delay(millisecondsTimeout)) == task)
+            return await task;
+        return default;
+    }
     private async Task GetApplicablePrograms(IProgress<int> progress, bool uninstallAll = false)
     {
         if (!uninstallAll && (programsToScan is null || programsToScan.Count < 1))
@@ -199,7 +204,7 @@ internal sealed partial class SelectForm : CustomForm
                         return;
                     StoreAppData storeAppData = await SteamStore.QueryStoreAPI(appId);
                     _ = Interlocked.Decrement(ref steamGamesToCheck);
-                    CmdAppData cmdAppData = await SteamCMD.GetAppInfo(appId, branch, buildId);
+                    CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 20000);
                     if (storeAppData is null && cmdAppData is null)
                     {
                         RemoveFromRemainingGames(name);
@@ -548,6 +553,8 @@ internal sealed partial class SelectForm : CustomForm
         Program.Canceled = false;
         blockedGamesCheckBox.Enabled = false;
         blockProtectedHelpButton.Enabled = false;
+        useSmokeAPICheckBox.Enabled = false;
+        useSmokeAPIHelpButton.Enabled = false;
         cancelButton.Enabled = true;
         scanButton.Enabled = false;
         noneFoundLabel.Visible = false;
@@ -694,6 +701,8 @@ internal sealed partial class SelectForm : CustomForm
         scanButton.Enabled = true;
         blockedGamesCheckBox.Enabled = true;
         blockProtectedHelpButton.Enabled = true;
+        useSmokeAPICheckBox.Enabled = true;
+        useSmokeAPIHelpButton.Enabled = true;
     }
 
     private void OnTreeViewNodeCheckedChanged(object sender, TreeViewEventArgs e)
@@ -887,8 +896,8 @@ internal sealed partial class SelectForm : CustomForm
                     foreach (string directory in directories)
                     {
                         directory.GetScreamApiComponents(out string api32, out string api32_o, out string api64,
-                            out string api64_o, out string config,
-                            out string log);
+                            out string api64_o, out string old_config, out string config,
+                            out string old_log, out string log);
                         if (api32.FileExists() || api32_o.FileExists() || api64.FileExists() || api64_o.FileExists() ||
                             config.FileExists() || log.FileExists())
                             _ = items.Add(new ContextMenuItem($"Open EOS Directory #{++epic}", "File Explorer",
@@ -1095,7 +1104,7 @@ internal sealed partial class SelectForm : CustomForm
 
     private static bool CanLoadProxy() => ProgramData.ReadProxyChoices().Any();
 
-    private bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy();
+    private static bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy();
 
     private void OnLoadSelections(object sender, EventArgs e)
     {
@@ -1171,7 +1180,7 @@ internal sealed partial class SelectForm : CustomForm
         saveButton.Enabled = CanSaveSelections();
         resetButton.Enabled = CanResetSelections();
         proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
-        proxyAllCheckBox.Checked = Selection.All.Keys.All(selection => selection.UseProxy);
+        proxyAllCheckBox.Checked = Selection.All.Keys.Count != 0 && Selection.All.Keys.All(selection => selection.UseProxy);
         proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
     }
 
@@ -1205,6 +1214,20 @@ internal sealed partial class SelectForm : CustomForm
                 ? "(none)"
                 : blockedDirectoryExceptions),
             customFormText: "Block Protected Games");
+    }
+    private void OnUseSmokeAPICheckBoxChanged(object sender, EventArgs e)
+    {
+        Program.UseSmokeAPI = useSmokeAPICheckBox.Checked;
+        OnLoad(forceProvideChoices: false);
+    }
+
+    private void OnUseSmokeAPIHelpButtonClicked(object sender, EventArgs e)
+    {
+        using DialogForm form = new(this);
+        _ = form.Show(SystemIcons.Information,
+            "InTest restore SmokeAPI in app. May be unstable."
+            + "\n\nIf some games don't launch with it - try disable and reinstall unlock",
+            customFormText: "Use SmokeAPI");
     }
 
     private void OnSortCheckBoxChanged(object sender, EventArgs e)

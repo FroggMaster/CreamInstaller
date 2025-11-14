@@ -31,23 +31,20 @@ internal static class UplayR1
         foreach (SelectionDLC extraDlc in selection.ExtraSelections.SelectMany(extraSelection =>
                      extraSelection.DLC.Where(dlc => !dlc.Enabled)))
             _ = blacklistDlc.Add(extraDlc);
-        if (blacklistDlc.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating Uplay R1 Unlocker configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer, new(blacklistDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating Uplay R1 Unlocker configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer, new(blacklistDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, SortedList<string, SelectionDLC> blacklistDlc,

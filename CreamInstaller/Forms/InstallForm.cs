@@ -68,6 +68,9 @@ internal sealed partial class InstallForm : CustomForm
         bool useCreamApiProxy = selection.UseProxy && !Program.UseSmokeAPI &&
                                 (selection.Platform is Platform.Steam || selection.Platform is Platform.Paradox &&
                                     selection.ExtraSelections.Any(s => s.Platform is Platform.Steam));
+        bool useSmokeApiProxy = selection.UseProxy && Program.UseSmokeAPI &&
+                                (selection.Platform is Platform.Steam || selection.Platform is Platform.Paradox &&
+                                    selection.ExtraSelections.Any(s => s.Platform is Platform.Steam));
 
         UpdateUser(
             $"{(uninstalling ? "Uninstalling" : "Installing")}" + $" {(uninstalling ? "from" : "for")} " +
@@ -84,7 +87,7 @@ internal sealed partial class InstallForm : CustomForm
                 if (Program.Canceled)
                     return;
 
-                directory.GetKoaloaderComponents(out string old_config, out string config);
+                directory.GetKoaloaderComponents(out string old_config, out string config, out _);
                 if (directory.GetKoaloaderProxies().Any(proxy =>
                         proxy.FileExists() && proxy.IsResourceFile(ResourceIdentifier.Koaloader))
                     || directory != selection.RootDirectory &&
@@ -97,19 +100,36 @@ internal sealed partial class InstallForm : CustomForm
                     await Koaloader.Uninstall(directory, selection.RootDirectory, this);
                 }
 
-                directory.GetCreamApiComponents(out _, out _, out _, out _, out config);
-                if (directory.GetCreamApiProxies().Any(proxy =>
-                        proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
-                                               proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                if (!Program.UseSmokeAPI)
                 {
-                    UpdateUser(
-                        "Uninstalling CreamAPI in proxy mode from " + selection.Name +
-                        $" in incorrect directory \"{directory}\" . . . ", LogTextBox.Operation);
-                    await CreamAPI.ProxyUninstall(directory, this);
+                    directory.GetCreamApiComponents(out _, out _, out _, out _, out config);
+                    if (directory.GetCreamApiProxies().Any(proxy =>
+                            proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                                   proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                    {
+                        UpdateUser(
+                            "Uninstalling CreamAPI in proxy mode from " + selection.Name +
+                            $" in incorrect directory \"{directory}\" . . . ", LogTextBox.Operation);
+                        await CreamAPI.ProxyUninstall(directory, this);
+                    }
+                }
+                else
+                {
+                    directory.GetSmokeApiComponents(out _, out _, out _, out _, out old_config, out config, out _,
+                out _, out _);
+                    if (directory.GetSmokeApiProxies().Any(proxy =>
+                            proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                                   proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                    {
+                        UpdateUser(
+                            "Uninstalling SmokeAPI in proxy mode from " + selection.Name +
+                            $" in incorrect directory \"{directory}\" . . . ", LogTextBox.Operation);
+                        await SmokeAPI.ProxyUninstall(directory, this);
+                    }
                 }
             }
 
-        if (uninstalling || !useKoaloader || !useCreamApiProxy)
+        if (uninstalling || !useKoaloader || !useCreamApiProxy || !useSmokeApiProxy)
             foreach ((string directory, _) in selection.ExecutableDirectories)
             {
                 if (Program.Canceled)
@@ -117,7 +137,7 @@ internal sealed partial class InstallForm : CustomForm
 
                 if (uninstalling || !useKoaloader)
                 {
-                    directory.GetKoaloaderComponents(out string old_config, out string config);
+                    directory.GetKoaloaderComponents(out string old_config, out string config, out _);
                     if (directory.GetKoaloaderProxies().Any(proxy =>
                             proxy.FileExists() && proxy.IsResourceFile(ResourceIdentifier.Koaloader))
                         || Koaloader.AutoLoadDLLs.Any(pair => (directory + @"\" + pair.dll).FileExists()) ||
@@ -130,23 +150,44 @@ internal sealed partial class InstallForm : CustomForm
                     }
                 }
 
-                if (uninstalling || !useCreamApiProxy)
+                if (!Program.UseSmokeAPI)
                 {
-                    directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
-                    if (directory.GetCreamApiProxies().Any(proxy =>
-                            proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
-                                                   proxy.IsResourceFile(ResourceIdentifier.Steamworks64))) ||
-                        config.FileExists())
+                    if (uninstalling || !useCreamApiProxy)
                     {
-                        UpdateUser(
-                            "Uninstalling CreamAPI in proxy mode from " + selection.Name +
-                            $" in directory \"{directory}\" . . . ", LogTextBox.Operation);
-                        await CreamAPI.ProxyUninstall(directory, this);
+                        directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
+                        if (directory.GetCreamApiProxies().Any(proxy =>
+                                proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                                       proxy.IsResourceFile(ResourceIdentifier.Steamworks64))) ||
+                            config.FileExists())
+                        {
+                            UpdateUser(
+                                "Uninstalling CreamAPI in proxy mode from " + selection.Name +
+                                $" in directory \"{directory}\" . . . ", LogTextBox.Operation);
+                            await CreamAPI.ProxyUninstall(directory, this);
+                        }
+                    }
+                }
+                else
+                {
+                    if (uninstalling || !useSmokeApiProxy)
+                    {
+                        directory.GetSmokeApiComponents(out _, out _, out _, out _, out string old_config, out string config, out _,
+                out _, out _);
+                        if (directory.GetSmokeApiProxies().Any(proxy =>
+                                proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                                       proxy.IsResourceFile(ResourceIdentifier.Steamworks64))) ||
+                            config.FileExists())
+                        {
+                            UpdateUser(
+                                "Uninstalling SmokeAPI in proxy mode from " + selection.Name +
+                                $" in directory \"{directory}\" . . . ", LogTextBox.Operation);
+                            await SmokeAPI.ProxyUninstall(directory, this);
+                        }
                     }
                 }
             }
 
-        bool uninstallingForProxy = uninstalling || useKoaloader || useCreamApiProxy;
+        bool uninstallingForProxy = uninstalling || useKoaloader || useCreamApiProxy || useSmokeApiProxy;
         int count = selection.DllDirectories.Count, cur = 0;
         foreach (string directory in selection.DllDirectories)
         {
@@ -199,7 +240,7 @@ internal sealed partial class InstallForm : CustomForm
             if (selection.Platform is Platform.Epic or Platform.Paradox)
             {
                 directory.GetScreamApiComponents(out string api32, out string api32_o, out string api64,
-                    out string api64_o, out string config, out string log);
+                    out string api64_o, out string old_config, out string config, out string old_log, out string log);
                 if (uninstallingForProxy
                         ? api32_o.FileExists() || api64_o.FileExists() || config.FileExists() || log.FileExists()
                         : api32.FileExists() || api64.FileExists())
@@ -253,19 +294,27 @@ internal sealed partial class InstallForm : CustomForm
             UpdateProgress(++cur / count * 100);
         }
 
-        if ((useCreamApiProxy || useKoaloader) && !uninstalling)
+        if ((useCreamApiProxy || useSmokeApiProxy || useKoaloader) && !uninstalling)
             foreach ((string directory, BinaryType binaryType) in selection.ExecutableDirectories)
             {
                 if (Program.Canceled)
                     return;
 
-                if (useCreamApiProxy)
+                if (useCreamApiProxy && !Program.UseSmokeAPI)
                 {
                     UpdateUser(
                         "Installing CreamAPI in proxy mode for " + selection.Name +
                         $" in directory \"{directory}\" . . . ",
                         LogTextBox.Operation);
                     await CreamAPI.ProxyInstall(directory, binaryType, selection, this);
+                }
+                else if (useSmokeApiProxy && Program.UseSmokeAPI)
+                {
+                    UpdateUser(
+                        "Installing SmokeAPI in proxy mode for " + selection.Name +
+                        $" in directory \"{directory}\" . . . ",
+                        LogTextBox.Operation);
+                    await SmokeAPI.ProxyInstall(directory, binaryType, selection, this);
                 }
                 else if (useKoaloader)
                 {

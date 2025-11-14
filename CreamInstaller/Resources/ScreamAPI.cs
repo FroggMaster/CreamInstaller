@@ -14,19 +14,21 @@ internal static class ScreamAPI
 {
     internal static void GetScreamApiComponents(this string directory, out string api32, out string api32_o,
         out string api64, out string api64_o,
-        out string config, out string log)
+        out string old_config, out string config, out string old_log, out string log)
     {
         api32 = directory + @"\EOSSDK-Win32-Shipping.dll";
         api32_o = directory + @"\EOSSDK-Win32-Shipping_o.dll";
         api64 = directory + @"\EOSSDK-Win64-Shipping.dll";
         api64_o = directory + @"\EOSSDK-Win64-Shipping_o.dll";
-        config = directory + @"\ScreamAPI.json";
-        log = directory + @"\ScreamAPI.log";
+        old_config = directory + @"\ScreamAPI.json";
+		config = directory + @"\ScreamAPI.config.json";
+        old_log = directory + @"\ScreamAPI.log";
+		log = directory + @"\ScreamAPI.log.log";
     }
 
     internal static void CheckConfig(string directory, Selection selection, InstallForm installForm = null)
     {
-        directory.GetScreamApiComponents(out _, out _, out _, out _, out string config, out _);
+        directory.GetScreamApiComponents(out _, out _, out _, out _, out string old_config, out string config, out _, out _);
         HashSet<SelectionDLC> overrideCatalogItems =
             selection.DLC.Where(dlc => dlc.Type is DLCType.Epic && !dlc.Enabled).ToHashSet();
         int entitlementCount = 0;
@@ -52,62 +54,60 @@ internal static class ScreamAPI
 
         if (injectedEntitlements.Count == entitlementCount)
             injectedEntitlements.Clear();
-        if (overrideCatalogItems.Count > 0 || injectedEntitlements.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating ScreamAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer,
-                new(overrideCatalogItems.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                new(injectedEntitlements.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating ScreamAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer,
+            new(overrideCatalogItems.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            new(injectedEntitlements.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, SortedList<string, SelectionDLC> overrideCatalogItems,
         SortedList<string, SelectionDLC> injectedEntitlements, InstallForm installForm = null)
     {
         writer.WriteLine("{");
-        writer.WriteLine("  \"version\": 2,");
+        /*writer.WriteLine("  \"$schema\": \"https://raw.githubusercontent.com/acidicoala/ScreamAPI/refs/tags/v4.0.0/res/ScreamAPI.schema.json\",");*/
+        writer.WriteLine("  \"$version\": 3,");
         writer.WriteLine("  \"logging\": false,");
-        writer.WriteLine("  \"eos_logging\": false,");
+        writer.WriteLine("  \"log_eos\": false,");
         writer.WriteLine("  \"block_metrics\": false,");
-        writer.WriteLine("  \"catalog_items\": {");
-        writer.WriteLine("    \"unlock_all\": true,");
+        writer.WriteLine("  \"namespace_id\": \"\",");
+        writer.WriteLine("  \"default_dlc_status\": \"unlocked\",");
         if (overrideCatalogItems.Count > 0)
         {
-            writer.WriteLine("    \"override\": [");
+            writer.WriteLine("  \"override_dlc_status\": {");
             KeyValuePair<string, SelectionDLC> lastOverrideCatalogItem = overrideCatalogItems.Last();
             foreach (KeyValuePair<string, SelectionDLC> pair in overrideCatalogItems)
             {
                 SelectionDLC selectionDlc = pair.Value;
-                writer.WriteLine($"      \"{selectionDlc.Id}\"{(pair.Equals(lastOverrideCatalogItem) ? "" : ",")}");
+                writer.WriteLine($"      \"{selectionDlc.Id}\": \"locked\"{(pair.Equals(lastOverrideCatalogItem) ? "" : ",")}");
                 installForm?.UpdateUser(
                     $"Added locked catalog item to ScreamAPI.json with id {selectionDlc.Id} ({selectionDlc.Name})",
                     LogTextBox.Action,
                     false);
             }
 
-            writer.WriteLine("    ]");
+            writer.WriteLine("  },");
         }
         else
-            writer.WriteLine("    \"override\": []");
+            writer.WriteLine("  \"override_dlc_status\": {},");
 
-        writer.WriteLine("  },");
-        writer.WriteLine("  \"entitlements\": {");
-        if (injectedEntitlements.Count > 0)
+        writer.WriteLine("  \"extra_graphql_endpoints\": [],");
+        writer.WriteLine("  \"extra_entitlements\": {}");
+        /*if (injectedEntitlements.Count > 0)
         {
-            writer.WriteLine("    \"unlock_all\": false,");
-            writer.WriteLine("    \"auto_inject\": false,");
+            writer.WriteLine("    \"default_dlc_status\": original,");
             writer.WriteLine("    \"inject\": [");
             KeyValuePair<string, SelectionDLC> lastEntitlement = injectedEntitlements.Last();
             foreach (KeyValuePair<string, SelectionDLC> pair in injectedEntitlements)
@@ -129,7 +129,7 @@ internal static class ScreamAPI
             writer.WriteLine("    \"inject\": []");
         }
 
-        writer.WriteLine("  }");
+        writer.WriteLine("  }");*/
         writer.WriteLine("}");
     }
 
@@ -137,7 +137,7 @@ internal static class ScreamAPI
         => await Task.Run(() =>
         {
             directory.GetScreamApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
-                out string config, out string log);
+                out string old_config, out string config, out string old_log, out string log);
             if (api32_o.FileExists())
             {
                 if (api32.FileExists())
@@ -184,7 +184,7 @@ internal static class ScreamAPI
         => await Task.Run(() =>
         {
             directory.GetScreamApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
-                out _, out _);
+                out _, out _, out _, out _);
             if (api32.FileExists() && !api32_o.FileExists())
             {
                 api32.MoveFile(api32_o!, true);
@@ -221,13 +221,15 @@ internal static class ScreamAPI
         [
             "069A57B1834A960193D2AD6B96926D70", // ScreamAPI v3.0.0
             "E2FB3A4A9583FDC215832E5F935E4440", // ScreamAPI v3.0.1
-            "8B4B30AFAE8D7B06413EE2F2266B20DB" // ScreamAPI v4.0.0-rc01
+            "8B4B30AFAE8D7B06413EE2F2266B20DB", // ScreamAPI v4.0.0-rc01
+            "F2C1A6B3EF73ED14E810851DBF418453" // ScreamAPI v4.0.0
         ],
         [ResourceIdentifier.EpicOnlineServices64] =
         [
             "0D62E57139F1A64F807A9934946A9474", // ScreamAPI v3.0.0
             "3875C7B735EE80C23239CC4749FDCBE6", // ScreamAPI v3.0.1
-            "CBC89E2221713B0D4482F91282030A88" // ScreamAPI v4.0.0-rc01
+            "CBC89E2221713B0D4482F91282030A88", // ScreamAPI v4.0.0-rc01
+            "2F98D62283AA024CBD756921B9533489" // ScreamAPI v4.0.0
         ]
     };
 }

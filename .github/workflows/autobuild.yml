@@ -1,0 +1,37 @@
+name: Autobuild
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+  pull_request:
+    types: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore CreamInstaller.sln
+
+      - name: Build Release
+        run: dotnet build CreamInstaller.sln --configuration Release --no-restore
+
+      - name: Publish single-file
+        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CreamInstaller-release
+          path: ./publish/CreamInstaller.exe

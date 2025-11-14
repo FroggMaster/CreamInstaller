@@ -3,6 +3,7 @@ $Array64 = [System.Text.StringBuilder]::new().AppendLine('[')
 function Write-Hash([System.IO.FileInfo] $File, [string] $Version) {
     $Hash = (Get-FileHash $File -Algorithm MD5).Hash
     $Value = "`t`"$Hash`", // CreamAPI $Version"
+    $Value = "`t`"$Hash`", // SmokeAPI $Version"
     if ($File.Name.Contains('64')) {
         $Array64.AppendLine($Value) | Out-Null
     } else {

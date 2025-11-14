@@ -45,6 +45,8 @@ internal sealed class Selection : IEquatable<Selection>
     {
         if (!Program.UseSmokeAPI && Platform is Platform.Steam or Platform.Paradox)
             return CreamAPI.ProxyDLLs;
+        if (Program.UseSmokeAPI && Platform is Platform.Steam or Platform.Paradox)
+            return SmokeAPI.ProxyDLLs;
         return EmbeddedResources.Where(r => r.StartsWith("Koaloader", StringComparison.Ordinal)).Select(p =>
         {
             p.GetProxyInfoFromIdentifier(out string proxyName, out _);

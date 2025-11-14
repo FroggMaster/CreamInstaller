@@ -35,10 +35,11 @@ internal static class Koaloader
             into resource
             select directory + @"\" + resource;
 
-    internal static void GetKoaloaderComponents(this string directory, out string old_config, out string config)
+    internal static void GetKoaloaderComponents(this string directory, out string old_config, out string config, out string log)
     {
         old_config = directory + @"\Koaloader.json";
         config = directory + @"\Koaloader.config.json";
+        log = directory + @"\Koaloader.log";
     }
 
     private static void WriteProxy(this string path, string proxyName, BinaryType binaryType)
@@ -66,7 +67,7 @@ internal static class Koaloader
 
     private static void CheckConfig(string directory, InstallForm installForm = null)
     {
-        directory.GetKoaloaderComponents(out string old_config, out string config);
+        directory.GetKoaloaderComponents(out string old_config, out string config, out _);
         if (old_config.FileExists())
         {
             if (!config.FileExists())
@@ -86,28 +87,26 @@ internal static class Koaloader
 
         SortedList<string, string> targets = new(PlatformIdComparer.String);
         SortedList<string, string> modules = new(PlatformIdComparer.String);
-        if (targets.Count > 0 || modules.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating Koaloader configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer, targets, modules, installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating Koaloader configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer, targets, modules, installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, SortedList<string, string> targets,
         SortedList<string, string> modules, InstallForm installForm = null)
     {
         writer.WriteLine("{");
+        /*writer.WriteLine("  \"$schema\": \"https://raw.githubusercontent.com/acidicoala/Koaloader/refs/tags/v3.0.4/res/Koaloader.schema.json\",");*/
         writer.WriteLine("  \"logging\": false,");
         writer.WriteLine("  \"enabled\": true,");
         writer.WriteLine("  \"auto_load\": " + (modules.Count > 0 ? "false" : "true") + ",");
@@ -122,10 +121,10 @@ internal static class Koaloader
                 installForm?.UpdateUser($"Added target to Koaloader.json with path {path}", LogTextBox.Action, false);
             }
 
-            writer.WriteLine("  ]");
+            writer.WriteLine("  ],");
         }
         else
-            writer.WriteLine("  \"targets\": []");
+            writer.WriteLine("  \"targets\": [],");
 
         if (modules.Count > 0)
         {
@@ -153,7 +152,7 @@ internal static class Koaloader
         bool deleteConfig = true)
         => await Task.Run(async () =>
         {
-            directory.GetKoaloaderComponents(out string old_config, out string config);
+            directory.GetKoaloaderComponents(out string old_config, out string config, out string log);
             foreach (string proxyPath in directory.GetKoaloaderProxies().Where(proxyPath
                          => proxyPath.FileExists() && proxyPath.IsResourceFile(ResourceIdentifier.Koaloader)))
             {
@@ -771,7 +770,51 @@ internal static class Koaloader
             "85AD3B263735871F4606EF4AB98B9BBC", // Koaloader v3.0.2
             "4207947D0452C1E33428ED098DC23D26", // Koaloader v3.0.2
             "BDD0DCAE7A5FBBBA0D8B857AC34BD43C", // Koaloader v3.0.2
-            "A0933D21552CC5C835416DFD7604548D" // Koaloader v3.0.2
+            "A0933D21552CC5C835416DFD7604548D", // Koaloader v3.0.2
+            "51C6BF6DA8C9B2E80249A3F74F5F2836", // Koaloader v3.0.4
+            "9DCB246925667F0C34B306D356AEE8DA", // Koaloader v3.0.4
+            "1BC45223E417D4AE2A95F46DB71DDD8B", // Koaloader v3.0.4
+            "0286878E70A95C6AB93F8E2A944501CD", // Koaloader v3.0.4
+            "FAC5739AF157D3245DEF458D6304D902", // Koaloader v3.0.4
+            "2EAA174056BFA68AA22C43CBE6388329", // Koaloader v3.0.4
+            "FA736AC428269ADE76F8795F8104FA39", // Koaloader v3.0.4
+            "69A71B497A01147744CD204810ABBAD2", // Koaloader v3.0.4
+            "ABDD0483D79276362A66E48869CFCF6B", // Koaloader v3.0.4
+            "B544F93FFC46AFD8E5AC3FBA7930DB58", // Koaloader v3.0.4
+            "6A11F1E24CBD0518EDDEB28A7237CE87", // Koaloader v3.0.4
+            "7344E1F82B8E8AC08CC135F3858A1C59", // Koaloader v3.0.4
+            "126DE0C021297F826F91176962B2EDF5", // Koaloader v3.0.4
+            "2AC92E07DD269C5027A13E3F80C4A89A", // Koaloader v3.0.4
+            "7EB835E0B131D9A4F3283D15290A16CF", // Koaloader v3.0.4
+            "0E478B8AACDB2A8ED6038707CFBFC8E4", // Koaloader v3.0.4
+            "88A12C9B394C5EC2A72BDAE57F10A814", // Koaloader v3.0.4
+            "F4440A71D0F5D49C1ECC860DE9E3EEE6", // Koaloader v3.0.4
+            "C74AD1D21DFD141A91B9699DB298FFB3", // Koaloader v3.0.4
+            "3D7AFD5BAED9BB023A8BAB8715857C45", // Koaloader v3.0.4
+            "D982F9E2066877C26193109BD0C90815", // Koaloader v3.0.4
+            "708A3AA98C53CC1E23104544F54C6C22", // Koaloader v3.0.4
+            "614119A6452F1EC5B855BBBF3D66D6DE", // Koaloader v3.0.4
+            "D9971AE010AA8262AED30A4376CF32B2", // Koaloader v3.0.4
+            "045F9154B561705A88DB2F1C6E44D412", // Koaloader v3.0.4
+            "46629A0974EFFF141C7295B4204F5B60", // Koaloader v3.0.4
+            "A8AABF2BC2711BA73F9BAFEC9C9D848D", // Koaloader v3.0.4
+            "FF540D977C0DD9E32D9D452824ECDB96", // Koaloader v3.0.4
+            "E3F2E6E347BA407D189C8E3DAC58178C", // Koaloader v3.0.4
+            "383025E324DA842C9F6499E39B1AAB5B", // Koaloader v3.0.4
+            "20143E97CA1B2B9F729F84FDEE1C0CE4", // Koaloader v3.0.4
+            "9E6F063F0966C6848E7C15214ACD8774", // Koaloader v3.0.4
+            "A5EAC4FD9D174EDB8C8570A6FC018254", // Koaloader v3.0.4
+            "C73B276EBA0B3EBB4ECF0D4BED5E18E6", // Koaloader v3.0.4
+            "6A6E803C1C8CC93902166BA949FBFF5A", // Koaloader v3.0.4
+            "6DD915CF4FE47037F9BCBACE2CD36115", // Koaloader v3.0.4
+            "458AC3E7DD29824A418D23A2B09CC23A", // Koaloader v3.0.4
+            "F90EB4C46FB1B7ECA985C1CA245F9CBA", // Koaloader v3.0.4
+            "73F4D0F5C8B3033A04660CD2B27646FC", // Koaloader v3.0.4
+            "894F5D28EEA75A1F0B8172D0B06FA40E", // Koaloader v3.0.4
+            "4ECE60B4EAC0461BF33AF0A6359D3679", // Koaloader v3.0.4
+            "615A6A863A2F8876A1B55B09F5363A03", // Koaloader v3.0.4
+            "C5BD334FA0DDDD7E5A6FBDBF836C2FE5", // Koaloader v3.0.4
+            "77E8E2F05AA94D5AB03F5DE506D6B639" // Koaloader v3.0.4
         ]
     };
 }

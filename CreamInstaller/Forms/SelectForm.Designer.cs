@@ -1,7 +1,7 @@
-﻿using System.ComponentModel;
+﻿using CreamInstaller.Components;
+using CreamInstaller.Resources;
+using System.ComponentModel;
 using System.Windows.Forms;
-
-using CreamInstaller.Components;
 
 namespace CreamInstaller.Forms
 {
@@ -28,6 +28,9 @@ namespace CreamInstaller.Forms
             blockedGamesFlowPanel = new FlowLayoutPanel();
             blockedGamesCheckBox = new CheckBox();
             blockProtectedHelpButton = new Button();
+            useSmokeAPILayoutPanel = new FlowLayoutPanel();
+            useSmokeAPICheckBox = new CheckBox();
+            useSmokeAPIHelpButton = new Button();
             allCheckBoxLayoutPanel = new FlowLayoutPanel();
             allCheckBox = new CheckBox();
             progressBar = new ProgressBar();
@@ -45,6 +48,7 @@ namespace CreamInstaller.Forms
             programsGroupBox.SuspendLayout();
             proxyFlowPanel.SuspendLayout();
             blockedGamesFlowPanel.SuspendLayout();
+            useSmokeAPILayoutPanel.SuspendLayout();
             allCheckBoxLayoutPanel.SuspendLayout();
             saveFlowPanel.SuspendLayout();
             SuspendLayout();
@@ -84,6 +88,7 @@ namespace CreamInstaller.Forms
             programsGroupBox.Controls.Add(proxyFlowPanel);
             programsGroupBox.Controls.Add(noneFoundLabel);
             programsGroupBox.Controls.Add(blockedGamesFlowPanel);
+            programsGroupBox.Controls.Add(useSmokeAPILayoutPanel);
             programsGroupBox.Controls.Add(allCheckBoxLayoutPanel);
             programsGroupBox.Controls.Add(selectionTreeView);
             programsGroupBox.Location = new System.Drawing.Point(12, 12);
@@ -172,6 +177,48 @@ namespace CreamInstaller.Forms
             blockProtectedHelpButton.UseVisualStyleBackColor = true;
             blockProtectedHelpButton.Click += OnBlockProtectedGamesHelpButtonClicked;
             // 
+            // useSmokeAPILayoutPanel
+            // 
+            useSmokeAPILayoutPanel.Anchor = AnchorStyles.Top;
+            useSmokeAPILayoutPanel.AutoSize = true;
+            useSmokeAPILayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            useSmokeAPILayoutPanel.Controls.Add(useSmokeAPICheckBox);
+            useSmokeAPILayoutPanel.Controls.Add(useSmokeAPIHelpButton);
+            useSmokeAPILayoutPanel.Location = new System.Drawing.Point(338, -1);
+            useSmokeAPILayoutPanel.Margin = new Padding(0);
+            useSmokeAPILayoutPanel.Name = "useSmokeAPILayoutPanel";
+            useSmokeAPILayoutPanel.Size = new System.Drawing.Size(124, 19);
+            useSmokeAPILayoutPanel.TabIndex = 1006;
+            useSmokeAPILayoutPanel.WrapContents = false;
+            // 
+            // useSmokeAPICheckBox
+            // 
+            useSmokeAPICheckBox.AutoSize = true;
+            useSmokeAPICheckBox.Checked = true;
+            useSmokeAPICheckBox.CheckState = CheckState.Checked;
+            useSmokeAPICheckBox.Enabled = false;
+            useSmokeAPICheckBox.Location = new System.Drawing.Point(2, 0);
+            useSmokeAPICheckBox.Margin = new Padding(2, 0, 0, 0);
+            useSmokeAPICheckBox.Name = "useSmokeAPICheckBox";
+            useSmokeAPICheckBox.Size = new System.Drawing.Size(102, 19);
+            useSmokeAPICheckBox.TabIndex = 1;
+            useSmokeAPICheckBox.Text = "Use SmokeAPI";
+            useSmokeAPICheckBox.UseVisualStyleBackColor = true;
+            useSmokeAPICheckBox.CheckedChanged += OnUseSmokeAPICheckBoxChanged;
+            // 
+            // useSmokeAPIHelpButton
+            // 
+            useSmokeAPIHelpButton.Enabled = false;
+            useSmokeAPIHelpButton.Font = new System.Drawing.Font("Segoe UI", 7F);
+            useSmokeAPIHelpButton.Location = new System.Drawing.Point(104, 0);
+            useSmokeAPIHelpButton.Margin = new Padding(0, 0, 1, 0);
+            useSmokeAPIHelpButton.Name = "useSmokeAPIHelpButton";
+            useSmokeAPIHelpButton.Size = new System.Drawing.Size(19, 19);
+            useSmokeAPIHelpButton.TabIndex = 2;
+            useSmokeAPIHelpButton.Text = "?";
+            useSmokeAPIHelpButton.UseVisualStyleBackColor = true;
+            useSmokeAPIHelpButton.Click += OnUseSmokeAPIHelpButtonClicked;
+            // 
             // allCheckBoxLayoutPanel
             // 
             allCheckBoxLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -182,7 +229,7 @@ namespace CreamInstaller.Forms
             allCheckBoxLayoutPanel.Margin = new Padding(0);
             allCheckBoxLayoutPanel.Name = "allCheckBoxLayoutPanel";
             allCheckBoxLayoutPanel.Size = new System.Drawing.Size(42, 19);
-            allCheckBoxLayoutPanel.TabIndex = 1006;
+            allCheckBoxLayoutPanel.TabIndex = 1007;
             allCheckBoxLayoutPanel.WrapContents = false;
             // 
             // allCheckBox
@@ -404,7 +451,10 @@ namespace CreamInstaller.Forms
         private CustomTreeView selectionTreeView;
         private CheckBox blockedGamesCheckBox;
         private Button blockProtectedHelpButton;
+        private CheckBox useSmokeAPICheckBox;
+        private Button useSmokeAPIHelpButton;
         private FlowLayoutPanel blockedGamesFlowPanel;
+        private FlowLayoutPanel useSmokeAPILayoutPanel;
         private FlowLayoutPanel allCheckBoxLayoutPanel;
         private Button uninstallButton;
         private Label progressLabelGames;

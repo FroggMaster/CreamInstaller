@@ -111,7 +111,7 @@ internal static class ParadoxLauncher
             if (steamOriginalSdk64 is null && api64.FileExists() &&
                 !api64.IsResourceFile(ResourceIdentifier.Steamworks64))
                 steamOriginalSdk64 = api64.ReadFileBytes(true);
-            directory.GetScreamApiComponents(out api32, out api32_o, out api64, out api64_o, out _, out _);
+            directory.GetScreamApiComponents(out api32, out api32_o, out api64, out api64_o, out _, out _, out _, out _);
             screamInstalled = screamInstalled || api32_o.FileExists() || api64_o.FileExists()
                               || api32.FileExists() && api32.IsResourceFile(ResourceIdentifier.EpicOnlineServices32)
                               || api64.FileExists() && api64.IsResourceFile(ResourceIdentifier.EpicOnlineServices64);
@@ -165,7 +165,7 @@ internal static class ParadoxLauncher
                     else
                         await CreamAPI.Install(directory, selection, generateConfig: false);
 
-                directory.GetScreamApiComponents(out api32, out _, out api64, out _, out _, out _);
+                directory.GetScreamApiComponents(out api32, out _, out api64, out _, out _, out _, out _, out _);
                 if (epicOriginalSdk32 is not null && api32.IsResourceFile(ResourceIdentifier.EpicOnlineServices32))
                 {
                     epicOriginalSdk32.WriteResource(api32);

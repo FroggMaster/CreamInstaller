@@ -19,7 +19,7 @@ internal static class Program
             ? index
             : Application.ProductVersion.Length)];
 
-    internal const string RepositoryOwner = "FroggMaster";
+    internal const string RepositoryOwner = "HvTcCore";
     internal static readonly string RepositoryName = Name;
     internal static readonly string RepositoryPackage = Name + ".zip";
     internal static readonly string RepositoryExecutable = Name + ".exe";
@@ -36,7 +36,7 @@ internal static class Program
     internal static readonly int CurrentProcessId = CurrentProcess.Id;
 
     // this may forever be false, but who knows, maybe acidicoala makes it once again better than CreamAPI some day
-    internal const bool UseSmokeAPI = false;
+    internal static bool UseSmokeAPI = true;
 
     internal static bool BlockProtectedGames = true;
     internal static readonly string[] ProtectedGames = ["PAYDAY 2"];

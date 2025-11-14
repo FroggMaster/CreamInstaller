@@ -52,7 +52,7 @@ internal class CustomForm : Form
             "Automatically finds all installed Steam, Epic and Ubisoft games with their respective DLC-related DLL locations on the user's computer,\n"
             + "parses SteamCMD, Steam Store and Epic Games Store for user-selected games' DLCs, then provides a very simple graphical interface\n"
             + "utilizing the gathered information for the maintenance of DLC unlockers.\n\n"
-            + $"The program utilizes the latest version of [CreamAPI](https://cs.rin.ru/forum/viewtopic.php?f=29&t=70576) by [deadmau5](https://cs.rin.ru/forum/viewtopic.php?f=29&t=70576). It also utilizes the latest versions of [Koaloader]({acidicoala}/Koaloader), [ScreamAPI]({acidicoala}/ScreamAPI), [Uplay R1\n"
+            + $"The program utilizes the latest version of [CreamAPI](https://cs.rin.ru/forum/viewtopic.php?f=29&t=70576) by [deadmau5](https://cs.rin.ru/forum/viewtopic.php?f=29&t=70576). It also utilizes the latest versions of [SmokeAPI]({acidicoala}/SmokeAPI), [Koaloader]({acidicoala}/Koaloader), [ScreamAPI]({acidicoala}/ScreamAPI), [Uplay R1\n"
             + $"Unlocker]({acidicoala}/UplayR1Unlocker) and [Uplay R2 Unlocker]({acidicoala}/UplayR2Unlocker), all by [acidicoala]({acidicoala}). All unlockers are downloaded and embedded into the program itself; no further\n"
             + "downloads necessary on your part!\n\n"
             + "USAGE:\n" + "    1. Choose which programs and/or games the program should scan for DLC.\n"

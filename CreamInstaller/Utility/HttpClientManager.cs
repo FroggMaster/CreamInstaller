@@ -20,7 +20,15 @@ internal static class HttpClientManager
     internal static void Setup()
     {
         HttpClient = new();
-        HttpClient.DefaultRequestHeaders.UserAgent.Add(new(Program.Name, Program.Version));
+        if (CreamInstaller.Platforms.Epic.EpicStore.EpicBool)
+        {
+            HttpClient.DefaultRequestHeaders.UserAgent.Add(new("EpicGamesLauncher", "18.9.0-45233261+++Portal+Release-Live"));
+            CreamInstaller.Platforms.Epic.EpicStore.EpicBool = false;
+        }
+        else
+        {
+            HttpClient.DefaultRequestHeaders.UserAgent.Add(new(Program.Name, Program.Version));
+        }
         HttpClient.DefaultRequestHeaders.AcceptLanguage.Add(new(CultureInfo.CurrentCulture.ToString()));
     }
 

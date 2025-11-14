@@ -12,6 +12,11 @@ namespace CreamInstaller.Resources;
 
 internal static class SmokeAPI
 {
+    internal static readonly List<string> ProxyDLLs = ["winmm", "winhttp", "version"];
+
+    internal static IEnumerable<string> GetSmokeApiProxies(this string directory)
+        => from proxy in ProxyDLLs select directory + @"\" + proxy + ".dll";
+
     internal static void GetSmokeApiComponents(this string directory, out string api32, out string api32_o,
         out string api64, out string api64_o,
         out string old_config, out string config, out string old_log, out string log, out string cache)
@@ -59,27 +64,23 @@ internal static class SmokeAPI
                 false);
         }
 
-        if (selection.ExtraSelections.Any(extraSelection => extraSelection.DLC.Any()) || overrideDlc.Count > 0 ||
-            injectDlc.Count > 0)
-        {
-            /*if (installForm is not null)
-                installForm.UpdateUser("Generating SmokeAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
-            config.CreateFile(true, installForm)?.Close();
-            StreamWriter writer = new(config, true, Encoding.UTF8);
-            WriteConfig(writer, selection.Id,
-                new(extraApps.ToDictionary(extraApp => extraApp.Key, extraApp => extraApp.Value),
-                    PlatformIdComparer.String),
-                new(overrideDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
-                new(injectDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String), installForm);
-            writer.Flush();
-            writer.Close();
-        }
-        else if (config.FileExists())
+        if (config.FileExists())
         {
             config.DeleteFile();
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
+        /*if (installForm is not null)
+            installForm.UpdateUser("Generating SmokeAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        config.CreateFile(true, installForm)?.Close();
+        StreamWriter writer = new(config, true, Encoding.UTF8);
+        WriteConfig(writer, selection.Id,
+            new(extraApps.ToDictionary(extraApp => extraApp.Key, extraApp => extraApp.Value),
+                PlatformIdComparer.String),
+            new(overrideDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String),
+            new(injectDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String), installForm);
+        writer.Flush();
+        writer.Close();
     }
 
     private static void WriteConfig(StreamWriter writer, string appId,
@@ -88,9 +89,10 @@ internal static class SmokeAPI
         InstallForm installForm = null)
     {
         writer.WriteLine("{");
-        writer.WriteLine("  \"$version\": 2,");
+        /*writer.WriteLine("  \"$schema\": \"https://raw.githubusercontent.com/acidicoala/SmokeAPI/refs/tags/v4.0.0/res/SmokeAPI.schema.json\",");*/
+        writer.WriteLine("  \"$version\": 4,");
         writer.WriteLine("  \"logging\": false,");
-        writer.WriteLine("  \"unlock_family_sharing\": true,");
+        writer.WriteLine("  \"log_steam_http\": false,");
         writer.WriteLine("  \"default_app_status\": \"unlocked\",");
         writer.WriteLine("  \"override_app_status\": {},");
         if (overrideDlc.Count > 0)
@@ -168,9 +170,8 @@ internal static class SmokeAPI
             writer.WriteLine("  },");
         }
         else
-            writer.WriteLine("  \"extra_dlcs\": {},");
+            writer.WriteLine("  \"extra_dlcs\": {}");
 
-        writer.WriteLine("  \"store_config\": null");
         writer.WriteLine("}");
     }
 
@@ -295,6 +296,60 @@ internal static class SmokeAPI
                 CheckConfig(directory, selection, installForm);
         });
 
+    internal static async Task ProxyUninstall(string directory, InstallForm installForm = null,
+        bool deleteOthers = true)
+        => await Task.Run(() =>
+        {
+            foreach (string proxy in directory.GetSmokeApiProxies().Where(proxy =>
+                         proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                                proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+            {
+                proxy.DeleteFile(true);
+                installForm?.UpdateUser($"Deleted SmokeAPI: {Path.GetFileName(proxy)}", LogTextBox.Action, false);
+            }
+
+            if (!deleteOthers)
+                return;
+            directory.GetSmokeApiComponents(out _, out _, out _, out _, out string old_config, out string config, out _,
+            out _, out _);
+            if (config.FileExists())
+            {
+                config.DeleteFile();
+                installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+            }
+        });
+
+    internal static async Task ProxyInstall(string directory, BinaryType binaryType, Selection selection,
+        InstallForm installForm = null, bool generateConfig = true)
+        => await Task.Run(async () =>
+        {
+            await Koaloader.Uninstall(directory, selection.RootDirectory, installForm);
+
+            string proxy = selection.Proxy ?? Selection.DefaultProxy;
+            string path = directory + @"\" + proxy + ".dll";
+            foreach (string _path in directory.GetSmokeApiProxies().Where(p =>
+                         p != path && p.FileExists() && (p.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                                         p.IsResourceFile(ResourceIdentifier.Steamworks64))))
+            {
+                _path.DeleteFile(true);
+                installForm?.UpdateUser($"Deleted SmokeAPI: {Path.GetFileName(_path)}", LogTextBox.Action, false);
+            }
+
+            if (path.FileExists() && !path.IsResourceFile(ResourceIdentifier.Steamworks32) &&
+                !path.IsResourceFile(ResourceIdentifier.Steamworks64))
+                throw new CustomMessageException("A non-SmokeAPI DLL named " + proxy +
+                                                 ".dll already exists in this directory!");
+            (binaryType == BinaryType.BIT32 ? "SmokeAPI.steam_api.dll" : "SmokeAPI.steam_api64.dll")
+                .WriteManifestResource(path);
+            installForm?.UpdateUser(
+                $"Wrote {(binaryType == BinaryType.BIT32 ? "32-bit" : "64-bit")} SmokeAPI: {Path.GetFileName(path)}",
+                LogTextBox.Action,
+                false);
+
+            if (generateConfig)
+                CheckConfig(directory, selection, installForm);
+        });
+
     internal static readonly Dictionary<ResourceIdentifier, HashSet<string>> ResourceMD5s = new()
     {
         [ResourceIdentifier.Steamworks32] =
@@ -310,7 +365,9 @@ internal static class SmokeAPI
             "C8E796DDD74F2C28996EE3F41938565C", // SmokeAPI v2.0.2
             "8B075C6B272A172A014D5C9E60F13DF2", // SmokeAPI v2.0.3
             "A3873569DECAD08962C46E88352E6DB1", // SmokeAPI v2.0.4
-            "4A1A823E5CF4FB861DD6BA94539D29C4" // SmokeAPI v2.0.5
+            "4A1A823E5CF4FB861DD6BA94539D29C4", // SmokeAPI v2.0.5
+            "EC153C0CCE476AFFB2458575930F11E6", // SmokeAPI v3.1.5
+            "E833ACE855245D5939EE36FF25D8B4A4" // SmokeAPI v4.0.0
         ],
         [ResourceIdentifier.Steamworks64] =
         [
@@ -325,7 +382,9 @@ internal static class SmokeAPI
             "CF9DF2E2EBA002DB98FE37FB1FB08FA8", // SmokeAPI v2.0.2
             "E4DC2AF2B8B77A0C9BF9BFBBAEA11CF7", // SmokeAPI v2.0.3
             "C0DDB49C9BFD3E05CBC1C61D117E93F9", // SmokeAPI v2.0.4
-            "F7C3064D5E3C892B168F504C21AC4923" // SmokeAPI v2.0.5
+            "F7C3064D5E3C892B168F504C21AC4923", // SmokeAPI v2.0.5
+            "5A6712770EC7CE589252706245E62C72", // SmokeAPI v3.1.5
+            "22DD39B16D3C10FDB044FDCB1BAE63B8" // SmokeAPI v4.0.0
         ]
     };
 }
