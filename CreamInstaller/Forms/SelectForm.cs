@@ -109,7 +109,12 @@ internal sealed partial class SelectForm : CustomForm
             UpdateRemainingDLCs();
         });
     }
-
+    private static async Task<T> WithTimeout<T>(Task<T> task, int millisecondsTimeout)
+    {
+        if (await Task.WhenAny(task, Task.Delay(millisecondsTimeout)) == task)
+            return await task;
+        return default;
+    }
     private async Task GetApplicablePrograms(IProgress<int> progress, bool uninstallAll = false)
     {
         if (!uninstallAll && (programsToScan is null || programsToScan.Count < 1))
@@ -199,7 +204,7 @@ internal sealed partial class SelectForm : CustomForm
                         return;
                     StoreAppData storeAppData = await SteamStore.QueryStoreAPI(appId);
                     _ = Interlocked.Decrement(ref steamGamesToCheck);
-                    CmdAppData cmdAppData = await SteamCMD.GetAppInfo(appId, branch, buildId);
+                    CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 20000);
                     if (storeAppData is null && cmdAppData is null)
                     {
                         RemoveFromRemainingGames(name);
@@ -1099,7 +1104,7 @@ internal sealed partial class SelectForm : CustomForm
 
     private static bool CanLoadProxy() => ProgramData.ReadProxyChoices().Any();
 
-    private bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy();
+    private static bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy();
 
     private void OnLoadSelections(object sender, EventArgs e)
     {
@@ -1175,7 +1180,7 @@ internal sealed partial class SelectForm : CustomForm
         saveButton.Enabled = CanSaveSelections();
         resetButton.Enabled = CanResetSelections();
         proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
-        proxyAllCheckBox.Checked = Selection.All.Keys.All(selection => selection.UseProxy);
+        proxyAllCheckBox.Checked = Selection.All.Keys.Count != 0 && Selection.All.Keys.All(selection => selection.UseProxy);
         proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
     }
 
