@@ -45,6 +45,7 @@ namespace CreamInstaller.Forms
             resetButton = new Button();
             saveFlowPanel = new FlowLayoutPanel();
             selectionTreeView = new CustomTreeView();
+            topOptionsTable = new TableLayoutPanel();
             programsGroupBox.SuspendLayout();
             proxyFlowPanel.SuspendLayout();
             blockedGamesFlowPanel.SuspendLayout();
@@ -85,26 +86,20 @@ namespace CreamInstaller.Forms
             // programsGroupBox
             // 
             programsGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            programsGroupBox.Controls.Add(proxyFlowPanel);
             programsGroupBox.Controls.Add(noneFoundLabel);
-            programsGroupBox.Controls.Add(blockedGamesFlowPanel);
-            programsGroupBox.Controls.Add(useSmokeAPILayoutPanel);
-            programsGroupBox.Controls.Add(allCheckBoxLayoutPanel);
             programsGroupBox.Controls.Add(selectionTreeView);
-            programsGroupBox.Location = new System.Drawing.Point(12, 12);
+            programsGroupBox.Location = new System.Drawing.Point(12, 47);
             programsGroupBox.Name = "programsGroupBox";
-            programsGroupBox.Size = new System.Drawing.Size(610, 287);
+            programsGroupBox.Size = new System.Drawing.Size(610, 252);
             programsGroupBox.TabIndex = 8;
             programsGroupBox.TabStop = false;
             programsGroupBox.Text = "Programs / Games";
             // 
             // proxyFlowPanel
             // 
-            proxyFlowPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             proxyFlowPanel.AutoSize = true;
             proxyFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             proxyFlowPanel.Controls.Add(proxyAllCheckBox);
-            proxyFlowPanel.Location = new System.Drawing.Point(478, -1);
             proxyFlowPanel.Margin = new Padding(0);
             proxyFlowPanel.Name = "proxyFlowPanel";
             proxyFlowPanel.Size = new System.Drawing.Size(75, 19);
@@ -113,7 +108,6 @@ namespace CreamInstaller.Forms
             // 
             // proxyAllCheckBox
             // 
-            proxyAllCheckBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             proxyAllCheckBox.AutoSize = true;
             proxyAllCheckBox.Enabled = false;
             proxyAllCheckBox.Location = new System.Drawing.Point(2, 0);
@@ -129,7 +123,7 @@ namespace CreamInstaller.Forms
             noneFoundLabel.Dock = DockStyle.Fill;
             noneFoundLabel.Location = new System.Drawing.Point(3, 19);
             noneFoundLabel.Name = "noneFoundLabel";
-            noneFoundLabel.Size = new System.Drawing.Size(604, 265);
+            noneFoundLabel.Size = new System.Drawing.Size(604, 230);
             noneFoundLabel.TabIndex = 1002;
             noneFoundLabel.Text = "No applicable programs nor games were found on your computer!";
             noneFoundLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -137,12 +131,10 @@ namespace CreamInstaller.Forms
             // 
             // blockedGamesFlowPanel
             // 
-            blockedGamesFlowPanel.Anchor = AnchorStyles.Top;
             blockedGamesFlowPanel.AutoSize = true;
             blockedGamesFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             blockedGamesFlowPanel.Controls.Add(blockedGamesCheckBox);
             blockedGamesFlowPanel.Controls.Add(blockProtectedHelpButton);
-            blockedGamesFlowPanel.Location = new System.Drawing.Point(150, -1);
             blockedGamesFlowPanel.Margin = new Padding(0);
             blockedGamesFlowPanel.Name = "blockedGamesFlowPanel";
             blockedGamesFlowPanel.Size = new System.Drawing.Size(170, 19);
@@ -179,13 +171,11 @@ namespace CreamInstaller.Forms
             // 
             // useSmokeAPILayoutPanel
             // 
-            useSmokeAPILayoutPanel.Anchor = AnchorStyles.Top;
             useSmokeAPILayoutPanel.AutoSize = true;
             useSmokeAPILayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             useSmokeAPILayoutPanel.Controls.Add(useSmokeAPICheckBox);
             useSmokeAPILayoutPanel.Controls.Add(useSmokeAPIHelpButton);
-            useSmokeAPILayoutPanel.Location = new System.Drawing.Point(338, -1);
-            useSmokeAPILayoutPanel.Margin = new Padding(0);
+            useSmokeAPILayoutPanel.Margin = new Padding(12, 0, 0, 0);
             useSmokeAPILayoutPanel.Name = "useSmokeAPILayoutPanel";
             useSmokeAPILayoutPanel.Size = new System.Drawing.Size(124, 19);
             useSmokeAPILayoutPanel.TabIndex = 1006;
@@ -221,12 +211,10 @@ namespace CreamInstaller.Forms
             // 
             // allCheckBoxLayoutPanel
             // 
-            allCheckBoxLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             allCheckBoxLayoutPanel.AutoSize = true;
             allCheckBoxLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             allCheckBoxLayoutPanel.Controls.Add(allCheckBox);
-            allCheckBoxLayoutPanel.Location = new System.Drawing.Point(562, -1);
-            allCheckBoxLayoutPanel.Margin = new Padding(0);
+            allCheckBoxLayoutPanel.Margin = new Padding(12, 0, 0, 0);
             allCheckBoxLayoutPanel.Name = "allCheckBoxLayoutPanel";
             allCheckBoxLayoutPanel.Size = new System.Drawing.Size(42, 19);
             allCheckBoxLayoutPanel.TabIndex = 1007;
@@ -234,7 +222,6 @@ namespace CreamInstaller.Forms
             // 
             // allCheckBox
             // 
-            allCheckBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             allCheckBox.AutoSize = true;
             allCheckBox.Checked = true;
             allCheckBox.CheckState = CheckState.Checked;
@@ -258,7 +245,7 @@ namespace CreamInstaller.Forms
             selectionTreeView.FullRowSelect = true;
             selectionTreeView.Location = new System.Drawing.Point(3, 19);
             selectionTreeView.Name = "selectionTreeView";
-            selectionTreeView.Size = new System.Drawing.Size(604, 265);
+            selectionTreeView.Size = new System.Drawing.Size(604, 230);
             selectionTreeView.TabIndex = 1001;
             // 
             // progressBar
@@ -399,12 +386,36 @@ namespace CreamInstaller.Forms
             saveFlowPanel.TabIndex = 10008;
             saveFlowPanel.WrapContents = false;
             // 
+            // topOptionsTable
+            // 
+            topOptionsTable.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            topOptionsTable.AutoSize = true;
+            topOptionsTable.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            topOptionsTable.ColumnCount = 5;
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // spacer
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            topOptionsTable.Location = new System.Drawing.Point(12, 12);
+            topOptionsTable.Margin = new Padding(0);
+            topOptionsTable.Name = "topOptionsTable";
+            topOptionsTable.RowCount = 1;
+            topOptionsTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            topOptionsTable.Size = new System.Drawing.Size(610, 25);
+            topOptionsTable.TabIndex = 10009;
+            topOptionsTable.Controls.Add(blockedGamesFlowPanel, 0, 0);
+            topOptionsTable.Controls.Add(useSmokeAPILayoutPanel, 1, 0);
+            topOptionsTable.Controls.Add(proxyFlowPanel, 3, 0);
+            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 4, 0);
+            // 
             // SelectForm
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             ClientSize = new System.Drawing.Size(634, 411);
+            Controls.Add(topOptionsTable);
             Controls.Add(saveFlowPanel);
             Controls.Add(sortCheckBox);
             Controls.Add(progressLabelDLCs);
@@ -425,11 +436,12 @@ namespace CreamInstaller.Forms
             Text = "SelectForm";
             Load += OnLoad;
             programsGroupBox.ResumeLayout(false);
-            programsGroupBox.PerformLayout();
             proxyFlowPanel.ResumeLayout(false);
             proxyFlowPanel.PerformLayout();
             blockedGamesFlowPanel.ResumeLayout(false);
             blockedGamesFlowPanel.PerformLayout();
+            useSmokeAPILayoutPanel.ResumeLayout(false);
+            useSmokeAPILayoutPanel.PerformLayout();
             allCheckBoxLayoutPanel.ResumeLayout(false);
             allCheckBoxLayoutPanel.PerformLayout();
             saveFlowPanel.ResumeLayout(false);
@@ -466,6 +478,7 @@ namespace CreamInstaller.Forms
         private Button loadButton;
         private Button resetButton;
         private FlowLayoutPanel saveFlowPanel;
+        private TableLayoutPanel topOptionsTable;
     }
 }
 

@@ -24,6 +24,7 @@
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
         <Platforms>x64</Platforms>
+		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AssemblyName>$(Company)</AssemblyName>
