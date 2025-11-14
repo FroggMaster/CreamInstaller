@@ -973,7 +973,7 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnLoad(object sender, EventArgs _)
     {
-        retry:
+    retry:
         try
         {
             HideProgressBar();
@@ -1225,12 +1225,18 @@ internal sealed partial class SelectForm : CustomForm
     {
         using DialogForm form = new(this);
         _ = form.Show(SystemIcons.Information,
-            "InTest restore SmokeAPI in app. May be unstable."
-            + "\n\nIf some games don't launch with it - try disable and reinstall unlock",
+            "[Experimental] WARNING: This may still be unstable.\n" +
+            "This setting restores the use of SmokeAPI.\n" +
+            "If some games don't launch with SmokeAPI enabled, try disabling this setting then Generate and Install again.",
             customFormText: "Use SmokeAPI");
     }
 
     private void OnSortCheckBoxChanged(object sender, EventArgs e)
         => selectionTreeView.TreeViewNodeSorter =
             sortCheckBox.Checked ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
+
+    private void programsGroupBox_Enter(object sender, EventArgs e)
+    {
+
+    }
 }
