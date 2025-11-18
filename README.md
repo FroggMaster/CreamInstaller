@@ -29,8 +29,8 @@ games and DLCs the user selects; however, through the use of **right-click conte
 
 ---
 #### Installation:
-1. Click [here](https://github.com/FroggMaster/CreamInstaller/releases/latest/download/CreamInstaller.zip) to download the latest release from [GitHub](https://github.com/FroggMaster/CreamInstaller).
-2. Extract the executable from the ZIP file to anywhere on your computer you want. *It's completely self-contained.*
+1. Click [here](https://github.com/FroggMaster/CreamInstaller/releases/latest/download/CreamInstaller.exe) to download the latest release from [GitHub](https://github.com/FroggMaster/CreamInstaller).
+2. Extract the executable to anywhere on your computer you want. *It's completely self-contained.*
 
 If the program doesn't seem to launch, try downloading and installing [.NET Desktop Runtime 8.0.7](https://download.visualstudio.microsoft.com/download/pr/bb581716-4cca-466e-9857-512e2371734b/5fe261422a7305171866fd7812d0976f/windowsdesktop-runtime-8.0.7-win-x64.exe) and restarting your computer. Note that the program currently only supports Windows 10+ 64-bit machines as seen [here](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md).
 
@@ -58,7 +58,7 @@ If the program doesn't seem to launch, try downloading and installing [.NET Desk
 **A:** Make sure you've read the note under [Usage](https://github.com/FroggMaster/CreamInstaller#usage) above! Assuming the program functioned as it was supposed to by properly installing DLC unlockers to your chosen games, this is not an issue I can do anything about and it's entirely up to you to seek the appropriate resources to fix it yourself (hint: https://cs.rin.ru/forum/viewforum.php?f=10).
 
 **Q:** The program and/or files installed by the program are detected as a virus/trojan/malware.
-**A:** The "issue" of the program's outputted Koaloader DLLs being detected as false positives such as Mamson.A!ac, Phonzy.A!ml, Wacatac.H!ml, Malgent!MSR, Tiggre!rfn, and many many others, has already been posted and explained dozens of times now in many different manners... please do not post it again, you will just be ignored; instead, refer to the explanations within issue #40 and its linked issues: https://github.com/FroggMaster/CreamInstaller/issues/40.
+**A:** The "issue" of the program's outputted Koaloader DLLs being detected as false positives such as Mamson.A!ac, Phonzy.A!ml, Wacatac.H!ml, Malgent!MSR, Tiggre!rfn, and many many others, has already been posted and explained dozens of times now in many different manners... please do not post it again, you will just be ignored; instead, refer to the explanations within issue #40 and its linked issues: [WebArchived Link: https://github.com/pointfeev/CreamInstaller/issues/40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40).
 
 ---
 ##### Bugs/Crashes/Issues:
