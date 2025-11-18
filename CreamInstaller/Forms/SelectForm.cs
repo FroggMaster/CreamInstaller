@@ -204,7 +204,7 @@ internal sealed partial class SelectForm : CustomForm
                         return;
                     StoreAppData storeAppData = await SteamStore.QueryStoreAPI(appId);
                     _ = Interlocked.Decrement(ref steamGamesToCheck);
-                    CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 20000);
+                    CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 16000);
                     if (storeAppData is null && cmdAppData is null)
                     {
                         RemoveFromRemainingGames(name);
@@ -251,7 +251,7 @@ internal sealed partial class SelectForm : CustomForm
                                 }
                                 else
                                 {
-                                    CmdAppData dlcCmdAppData = await SteamCMD.GetAppInfo(dlcAppId);
+                                    CmdAppData dlcCmdAppData = await WithTimeout(SteamCMD.GetAppInfo(dlcAppId), 16000);
                                     if (dlcCmdAppData is not null)
                                     {
                                         dlcName = dlcCmdAppData.Common?.Name;
