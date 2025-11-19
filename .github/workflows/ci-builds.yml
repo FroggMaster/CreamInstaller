@@ -35,14 +35,13 @@ jobs:
           Write-Output "shortSha=$shortSha" >> $env:GITHUB_ENV
         shell: pwsh
 
-      - name: Zip Release with short commit SHA
+      - name: Rename EXE with short commit SHA
         run: |
-          $zipPath = "./publish/CreamInstaller-$env:shortSha.zip"
-          Compress-Archive -Path ./publish/* -DestinationPath $zipPath
+          Rename-Item -Path ./publish/CreamInstaller.exe -NewName "CreamInstaller-$env:shortSha.exe"
         shell: pwsh
 
-      - name: Upload artifact with commit SHA
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CreamInstaller-CI-Release-${{ env.shortSha }}
-          path: ./publish/CreamInstaller-${{ env.shortSha }}.zip
+          name: CreamInstaller-${{ env.shortSha }}
+          path: ./publish/CreamInstaller-${{ env.shortSha }}.exe
