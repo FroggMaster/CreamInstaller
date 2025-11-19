@@ -1,12 +1,10 @@
-name: Autobuild
+name: CI Builds
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
   workflow_dispatch:
-  pull_request:
-    types: [ main ]
 
 jobs:
   build:
