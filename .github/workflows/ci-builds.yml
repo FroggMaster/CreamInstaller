@@ -28,13 +28,18 @@ jobs:
       - name: Publish single-file
         run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
 
+      - name: Set short commit SHA
+        id: vars
+        run: |
+          $shortSha = $env:GITHUB_SHA.Substring(0,7)
+          Write-Output "shortSha=$shortSha" >> $env:GITHUB_ENV
+
       - name: Zip Release with short commit SHA
         run: |
-          $shortSha = "${{ github.sha }}"[0..6]
-          Compress-Archive -Path ./publish/* -DestinationPath ./publish/CreamInstaller-$shortSha.zip
+          Compress-Archive -Path ./publish/* -DestinationPath ./publish/CreamInstaller-$env:shortSha.zip
 
       - name: Upload artifact with commit SHA
         uses: actions/upload-artifact@v4
         with:
-          name: CreamInstaller-CI-Release-${{ github.sha[0..6] }}
-          path: ./publish/CreamInstaller-${{ github.sha[0..6] }}.zip
+          name: CreamInstaller-CI-Release-$env:shortSha
+          path: ./publish/CreamInstaller-$env:shortSha.zip
