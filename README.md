@@ -30,7 +30,7 @@ games and DLCs the user selects; however, through the use of **right-click conte
 ---
 #### Installation:
 1. Click [here](https://github.com/FroggMaster/CreamInstaller/releases/latest/download/CreamInstaller.exe) to download the latest release from [GitHub](https://github.com/FroggMaster/CreamInstaller).
-2. Extract the executable to anywhere on your computer you want. *It's completely self-contained.*
+2. Move the executable to anywhere on your computer you want. *It's completely self-contained.*
 
 If the program doesn't seem to launch, try downloading and installing [.NET Desktop Runtime 8.0.7](https://download.visualstudio.microsoft.com/download/pr/bb581716-4cca-466e-9857-512e2371734b/5fe261422a7305171866fd7812d0976f/windowsdesktop-runtime-8.0.7-win-x64.exe) and restarting your computer. Note that the program currently only supports Windows 10+ 64-bit machines as seen [here](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md).
 
