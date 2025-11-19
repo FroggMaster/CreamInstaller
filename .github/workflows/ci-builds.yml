@@ -43,5 +43,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CreamInstaller-${{ env.shortSha }}
-          path: ./publish/CreamInstaller-${{ env.shortSha }}.exe
+          name: CreamInstaller-CI-Release-${{ env.shortSha }}
+          path: ./publish/CreamInstaller-CI-${{ env.shortSha }}.exe
