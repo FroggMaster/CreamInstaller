@@ -37,6 +37,7 @@ internal static class CreamAPI
             _ = dlc.Add(extraDlc);
 
         config.DeleteFile();
+        installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
         config.CreateFile(true, installForm)?.Close();
         StreamWriter writer = new(config, true, Encoding.Default);
         WriteConfig(writer, selection.Name, !int.TryParse(selection.Id, out _) ? "0" : selection.Id,
@@ -44,9 +45,6 @@ internal static class CreamAPI
         writer.Flush();
         writer.Close();
         return;
-
-        installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
-            false);
     }
 
     private static void WriteConfig(StreamWriter writer, string name, string appId,

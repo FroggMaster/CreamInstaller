@@ -35,7 +35,7 @@ internal static class Program
     internal static readonly string CurrentProcessFilePath = CurrentProcess.MainModule?.FileName;
     internal static readonly int CurrentProcessId = CurrentProcess.Id;
 
-    // this may forever be false, but who knows, maybe acidicoala makes it once again better than CreamAPI some day
+    // Setting is now toggleable. Huzzah! 
     internal static bool UseSmokeAPI = true;
 
     internal static bool BlockProtectedGames = true;
