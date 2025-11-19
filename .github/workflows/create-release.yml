@@ -52,12 +52,18 @@ jobs:
       - name: Publish single-file
         run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
 
+      - name: Zip Release
+        run: |
+          Compress-Archive -Path ./publish/* -DestinationPath ./publish/CreamInstaller.zip
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ inputs.version }}
           name: ${{ inputs.title || format('Release v{0}', inputs.version) }}
           body: ${{ inputs.notes }}
-          files: ./publish/CreamInstaller.exe
+          files: |
+            ./publish/CreamInstaller.exe
+            ./publish/CreamInstaller.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
