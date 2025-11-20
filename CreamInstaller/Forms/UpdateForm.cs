@@ -40,6 +40,7 @@ internal sealed partial class UpdateForm : CustomForm
 #if DEBUG
         DebugForm.Current.Attach(form);
 #endif
+        ThemeManager.Apply(form); // apply current theme when transitioning
     }
 
     private async void OnLoad()

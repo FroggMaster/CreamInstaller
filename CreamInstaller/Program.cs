@@ -43,6 +43,9 @@ internal static class Program
     internal static readonly string[] ProtectedGameDirectories = [@"\EasyAntiCheat", @"\BattlEye"];
     internal static readonly string[] ProtectedGameDirectoryExceptions = [];
 
+    // Dark mode toggle (default false). Can be toggled via UI button.
+    internal static bool DarkModeEnabled;
+
     internal static bool IsGameBlocked(string name, string directory = null)
         => BlockProtectedGames && (ProtectedGames.Contains(name) || directory is not null &&
             !ProtectedGameDirectoryExceptions.Contains(name)
@@ -70,6 +73,8 @@ internal static class Program
 #if DEBUG
                 DebugForm.Current.Attach(form);
 #endif
+                // Apply initial theme
+                Utility.ThemeManager.Apply(form);
                 Application.Run(form);
             }
             catch (Exception e)

@@ -42,6 +42,18 @@ internal class CustomForm : Form
         }
     }
 
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        ThemeManager.Apply(this); // apply current theme (initial or toggled)
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        ThemeManager.Apply(this); // ensure late-added controls also themed
+    }
+
     private void OnHelpButtonClicked(object sender, EventArgs args)
     {
         using DialogForm helpDialog = new(this);

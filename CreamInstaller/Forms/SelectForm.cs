@@ -1239,4 +1239,16 @@ internal sealed partial class SelectForm : CustomForm
     {
 
     }
+
+    private void OnDarkModeToggle(object sender, EventArgs e)
+    {
+        ThemeManager.ToggleDarkMode(this);
+        darkModeButton.Text = Program.DarkModeEnabled ? "Light Mode" : "Dark Mode";
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        ThemeManager.Apply(this); // ensure controls after dynamic operations get themed
+    }
 }

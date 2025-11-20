@@ -21,4 +21,9 @@ internal static partial class NativeImports
     [LibraryImport("user32.dll", SetLastError = true), DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial void SetWindowPos(nint hWnd, nint hWndInsertAfter, int x, int y, int cx, int cy,
         uint uFlags);
+
+    // Windows theming (scrollbars / dark mode for some controls)
+    [LibraryImport("uxtheme.dll", SetLastError = true)]
+    internal static partial int SetWindowTheme(nint hWnd, [MarshalAs(UnmanagedType.LPWStr)] string pszSubAppName,
+        [MarshalAs(UnmanagedType.LPWStr)] string pszSubIdList);
 }

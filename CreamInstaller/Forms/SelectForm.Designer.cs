@@ -46,6 +46,7 @@ namespace CreamInstaller.Forms
             saveFlowPanel = new FlowLayoutPanel();
             selectionTreeView = new CustomTreeView();
             topOptionsTable = new TableLayoutPanel();
+            darkModeButton = new Button();
             programsGroupBox.SuspendLayout();
             proxyFlowPanel.SuspendLayout();
             blockedGamesFlowPanel.SuspendLayout();
@@ -248,6 +249,19 @@ namespace CreamInstaller.Forms
             selectionTreeView.Size = new System.Drawing.Size(604, 230);
             selectionTreeView.TabIndex = 1001;
             // 
+            // darkModeButton
+            // 
+            darkModeButton.AutoSize = true;
+            darkModeButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            darkModeButton.Location = new System.Drawing.Point(0, 0);
+            darkModeButton.Margin = new Padding(12, 0, 0, 0);
+            darkModeButton.Name = "darkModeButton";
+            darkModeButton.Size = new System.Drawing.Size(73, 25);
+            darkModeButton.TabIndex = 10010;
+            darkModeButton.Text = "Dark Mode";
+            darkModeButton.UseVisualStyleBackColor = true;
+            darkModeButton.Click += OnDarkModeToggle;
+            // 
             // progressBar
             // 
             progressBar.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -391,7 +405,8 @@ namespace CreamInstaller.Forms
             topOptionsTable.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             topOptionsTable.AutoSize = true;
             topOptionsTable.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            topOptionsTable.ColumnCount = 5;
+            topOptionsTable.ColumnCount = 6;
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // spacer
@@ -406,8 +421,9 @@ namespace CreamInstaller.Forms
             topOptionsTable.TabIndex = 10009;
             topOptionsTable.Controls.Add(blockedGamesFlowPanel, 0, 0);
             topOptionsTable.Controls.Add(useSmokeAPILayoutPanel, 1, 0);
-            topOptionsTable.Controls.Add(proxyFlowPanel, 3, 0);
-            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 4, 0);
+            topOptionsTable.Controls.Add(darkModeButton, 2, 0);
+            topOptionsTable.Controls.Add(proxyFlowPanel, 4, 0);
+            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 5, 0);
             // 
             // SelectForm
             // 
@@ -479,6 +495,7 @@ namespace CreamInstaller.Forms
         private Button resetButton;
         private FlowLayoutPanel saveFlowPanel;
         private TableLayoutPanel topOptionsTable;
+        private Button darkModeButton;
     }
 }
 
