@@ -1,4 +1,5 @@
-### [Forked] CreamInstaller: Automatic DLC Unlocker Installer & Configuration Generator
+### [Revived] CreamInstaller: Automatic DLC Unlocker Installer & Configuration Generator
+[![Latest Release](https://img.shields.io/github/v/release/FroggMaster/CreamInstaller?label=latest%20release)](https://github.com/FroggMaster/CreamInstaller/releases/latest) [![CI Build](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml/badge.svg)](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml)
 
 ![Program Preview Image](https://raw.githubusercontent.com/FroggMaster/CreamInstaller/main/preview.png)
 
@@ -26,6 +27,14 @@ games and DLCs the user selects; however, through the use of **right-click conte
 * Automatic DLL installation and configuration generation for CreamAPI, Koaloader, ScreamAPI, Uplay R1 Unlocker and Uplay R2 Unlocker.
 * Automatic uninstallation of DLLs and configurations for CreamAPI, Koaloader, SmokeAPI, ScreamAPI, Uplay R1 Unlocker and Uplay R2 Unlocker.
 * Automatic reparation of the Paradox Launcher (and manually via the right-click context menu "Repair" option). *For when the launcher updates whilst you have CreamAPI, SmokeAPI or ScreamAPI installed to it.*
+---
+<details>
+  <summary><strong>Continuous Integration (CI) Builds</strong></summary>
+
+  - CreamInstaller is automatically built and tested using GitHub Actions on every push to the **main** branch.  
+    You can view all recent CI build runs by click the status badge at the top or here here: [![CI Build](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml/badge.svg)](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml)
+
+</details>
 
 ---
 #### Installation:
