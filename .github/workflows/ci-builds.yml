@@ -37,7 +37,7 @@ jobs:
 
       - name: Rename EXE with short commit SHA
         run: |
-          Rename-Item -Path ./publish/CreamInstaller.exe -NewName "CreamInstaller-$env:shortSha.exe"
+          Rename-Item -Path ./publish/CreamInstaller.exe -NewName "CreamInstaller-CI-$env:shortSha.exe"
         shell: pwsh
 
       - name: Upload artifact
