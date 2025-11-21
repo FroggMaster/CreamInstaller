@@ -31,6 +31,8 @@ namespace CreamInstaller.Forms
             useSmokeAPILayoutPanel = new FlowLayoutPanel();
             useSmokeAPICheckBox = new CheckBox();
             useSmokeAPIHelpButton = new Button();
+            darkModeFlowPanel = new FlowLayoutPanel();
+            darkModeCheckBox = new CheckBox();
             allCheckBoxLayoutPanel = new FlowLayoutPanel();
             allCheckBox = new CheckBox();
             progressBar = new ProgressBar();
@@ -46,11 +48,11 @@ namespace CreamInstaller.Forms
             saveFlowPanel = new FlowLayoutPanel();
             selectionTreeView = new CustomTreeView();
             topOptionsTable = new TableLayoutPanel();
-            darkModeButton = new Button();
             programsGroupBox.SuspendLayout();
             proxyFlowPanel.SuspendLayout();
             blockedGamesFlowPanel.SuspendLayout();
             useSmokeAPILayoutPanel.SuspendLayout();
+            darkModeFlowPanel.SuspendLayout();
             allCheckBoxLayoutPanel.SuspendLayout();
             saveFlowPanel.SuspendLayout();
             SuspendLayout();
@@ -210,6 +212,30 @@ namespace CreamInstaller.Forms
             useSmokeAPIHelpButton.UseVisualStyleBackColor = true;
             useSmokeAPIHelpButton.Click += OnUseSmokeAPIHelpButtonClicked;
             // 
+            // darkModeFlowPanel
+            // 
+            darkModeFlowPanel.AutoSize = true;
+            darkModeFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            darkModeFlowPanel.Margin = new Padding(12, 0, 0, 0);
+            darkModeFlowPanel.Name = "darkModeFlowPanel";
+            darkModeFlowPanel.Size = new System.Drawing.Size(98, 19);
+            darkModeFlowPanel.TabIndex = 10011;
+            darkModeFlowPanel.WrapContents = false;
+            // 
+            // darkModeCheckBox
+            // 
+            darkModeCheckBox.AutoSize = true;
+            darkModeCheckBox.Enabled = true;
+            darkModeCheckBox.Location = new System.Drawing.Point(2, 0);
+            darkModeCheckBox.Margin = new Padding(2, 0, 0, 0);
+            darkModeCheckBox.Name = "darkModeCheckBox";
+            darkModeCheckBox.Size = new System.Drawing.Size(96, 19);
+            darkModeCheckBox.TabIndex = 1;
+            darkModeCheckBox.Text = "Enable Dark Mode";
+            darkModeCheckBox.UseVisualStyleBackColor = true;
+            darkModeCheckBox.CheckedChanged += OnDarkModeCheckBoxChanged;
+            darkModeFlowPanel.Controls.Add(darkModeCheckBox);
+            // 
             // allCheckBoxLayoutPanel
             // 
             allCheckBoxLayoutPanel.AutoSize = true;
@@ -248,19 +274,6 @@ namespace CreamInstaller.Forms
             selectionTreeView.Name = "selectionTreeView";
             selectionTreeView.Size = new System.Drawing.Size(604, 230);
             selectionTreeView.TabIndex = 1001;
-            // 
-            // darkModeButton
-            // 
-            darkModeButton.AutoSize = true;
-            darkModeButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            darkModeButton.Location = new System.Drawing.Point(0, 0);
-            darkModeButton.Margin = new Padding(12, 0, 0, 0);
-            darkModeButton.Name = "darkModeButton";
-            darkModeButton.Size = new System.Drawing.Size(73, 25);
-            darkModeButton.TabIndex = 10010;
-            darkModeButton.Text = "Dark Mode";
-            darkModeButton.UseVisualStyleBackColor = true;
-            darkModeButton.Click += OnDarkModeToggle;
             // 
             // progressBar
             // 
@@ -419,9 +432,10 @@ namespace CreamInstaller.Forms
             topOptionsTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             topOptionsTable.Size = new System.Drawing.Size(610, 25);
             topOptionsTable.TabIndex = 10009;
+            topOptionsTable.Controls.Clear();
             topOptionsTable.Controls.Add(blockedGamesFlowPanel, 0, 0);
             topOptionsTable.Controls.Add(useSmokeAPILayoutPanel, 1, 0);
-            topOptionsTable.Controls.Add(darkModeButton, 2, 0);
+            topOptionsTable.Controls.Add(darkModeFlowPanel, 2, 0);
             topOptionsTable.Controls.Add(proxyFlowPanel, 4, 0);
             topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 5, 0);
             // 
@@ -458,6 +472,8 @@ namespace CreamInstaller.Forms
             blockedGamesFlowPanel.PerformLayout();
             useSmokeAPILayoutPanel.ResumeLayout(false);
             useSmokeAPILayoutPanel.PerformLayout();
+            darkModeFlowPanel.ResumeLayout(false);
+            darkModeFlowPanel.PerformLayout();
             allCheckBoxLayoutPanel.ResumeLayout(false);
             allCheckBoxLayoutPanel.PerformLayout();
             saveFlowPanel.ResumeLayout(false);
@@ -483,6 +499,7 @@ namespace CreamInstaller.Forms
         private Button useSmokeAPIHelpButton;
         private FlowLayoutPanel blockedGamesFlowPanel;
         private FlowLayoutPanel useSmokeAPILayoutPanel;
+        private FlowLayoutPanel darkModeFlowPanel;
         private FlowLayoutPanel allCheckBoxLayoutPanel;
         private Button uninstallButton;
         private Label progressLabelGames;
@@ -495,7 +512,7 @@ namespace CreamInstaller.Forms
         private Button resetButton;
         private FlowLayoutPanel saveFlowPanel;
         private TableLayoutPanel topOptionsTable;
-        private Button darkModeButton;
+        private CheckBox darkModeCheckBox;
     }
 }
 

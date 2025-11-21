@@ -17,7 +17,7 @@ internal static class ThemeManager
  private static readonly Color DarkFore = ColorTranslator.FromHtml("#D4D4D4");
  private static readonly Color DarkForeDim = ColorTranslator.FromHtml("#9CA3AF");
  private static readonly Color Accent = ColorTranslator.FromHtml("#0E639C");
- private static readonly Color DarkLink = ColorTranslator.FromHtml("#64B5F6"); // Pastel light blue for hyperlinks (improved readability)
+ private static readonly Color DarkLink = ColorTranslator.FromHtml("#64B5F6");
  private static readonly Color LightBack = SystemColors.Control;
  private static readonly Color LightBackAlt = SystemColors.ControlLightLight;
  private static readonly Color LightFore = SystemColors.ControlText;
@@ -49,7 +49,6 @@ internal static class ThemeManager
  private static void ApplyControlTheme(Control control, bool dark)
  {
  if (control is null) return;
- // recurse first to avoid overwriting multi-level backgrounds incorrectly
  foreach (Control child in control.Controls)
  ApplyControlTheme(child, dark);
  if (dark)
@@ -198,7 +197,7 @@ internal static class ThemeManager
 
 internal static class NativeMethods
 {
- private const int DWMWA_USE_IMMERSIVE_DARK_MODE =20; // Windows102004+ /11
+ private const int DWMWA_USE_IMMERSIVE_DARK_MODE =20;
 
  [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
  private static extern int DwmSetWindowAttribute(System.IntPtr hwnd, int attr, ref int attrValue, int attrSize);
