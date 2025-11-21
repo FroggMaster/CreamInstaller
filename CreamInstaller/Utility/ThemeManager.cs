@@ -5,9 +5,6 @@ using System.Windows.Forms;
 
 namespace CreamInstaller.Utility;
 
-// To Do: 
-// - Change the darkmode button to a checkbox
-// - Default to dark mode
 internal static class ThemeManager
 {
  // VS-like dark colors
