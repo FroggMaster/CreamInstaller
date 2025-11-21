@@ -31,8 +31,7 @@ games and DLCs the user selects; however, through the use of **right-click conte
 <details>
   <summary><strong>Continuous Integration (CI) Builds</strong></summary>
 
-  - CreamInstaller is automatically built and tested using GitHub Actions on every push to the **main** branch.  
-    You can view all recent CI build runs by click the status badge at the top or here here: [![CI Build](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml/badge.svg)](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml)
+  - CreamInstaller is automatically built and tested using GitHub Actions on every push to the **main** branch. You can view all recent CI build runs by clicking the status badge at the top or here: [![CI Build](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml/badge.svg)](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml)
 
 </details>
 
