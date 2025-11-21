@@ -5,6 +5,9 @@ using System.Windows.Forms;
 
 namespace CreamInstaller.Utility;
 
+// To Do: 
+// - Change the darkmode button to a checkbox
+// - Default to dark mode
 internal static class ThemeManager
 {
  // VS-like dark colors
@@ -14,6 +17,7 @@ internal static class ThemeManager
  private static readonly Color DarkFore = ColorTranslator.FromHtml("#D4D4D4");
  private static readonly Color DarkForeDim = ColorTranslator.FromHtml("#9CA3AF");
  private static readonly Color Accent = ColorTranslator.FromHtml("#0E639C");
+ private static readonly Color DarkLink = ColorTranslator.FromHtml("#64B5F6"); // Pastel light blue for hyperlinks (improved readability)
  private static readonly Color LightBack = SystemColors.Control;
  private static readonly Color LightBackAlt = SystemColors.ControlLightLight;
  private static readonly Color LightFore = SystemColors.ControlText;
@@ -66,6 +70,13 @@ internal static class ThemeManager
  cb.BackColor = DarkBack;
  cb.ForeColor = DarkFore;
  break;
+ case LinkLabel ll:
+ ll.BackColor = DarkBack;
+ ll.ForeColor = DarkFore; // normal text
+ ll.LinkColor = DarkLink;
+ ll.ActiveLinkColor = Color.White; // high contrast when pressed
+ ll.VisitedLinkColor = DarkLink; // keep consistent
+ break;
  case Label lbl:
  lbl.BackColor = DarkBack;
  lbl.ForeColor = DarkFore;
@@ -109,6 +120,14 @@ internal static class ThemeManager
  case CheckBox cb:
  cb.BackColor = LightBack;
  cb.ForeColor = LightFore;
+ break;
+ case LinkLabel ll:
+ ll.BackColor = LightBack;
+ ll.ForeColor = LightFore;
+ // allow system defaults for link colors
+ ll.LinkColor = SystemColors.HotTrack;
+ ll.ActiveLinkColor = SystemColors.Highlight;
+ ll.VisitedLinkColor = SystemColors.HotTrack;
  break;
  case Label lbl:
  lbl.BackColor = LightBack;
