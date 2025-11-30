@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using CreamInstaller.Forms;
 
@@ -12,13 +13,26 @@ namespace CreamInstaller.Utility;
 
 internal static class SafeIO
 {
+    /// <summary>
+    /// Maximum number of retry attempts for IO operations before giving up.
+    /// </summary>
+    internal const int MaxRetryAttempts = 10;
+
+    /// <summary>
+    /// Delay between retry attempts in milliseconds.
+    /// </summary>
+    internal const int RetryDelayMs = 500;
+
     internal static bool DirectoryExists(this string directoryPath) => Directory.Exists(directoryPath);
 
     internal static void CreateDirectory(this string directoryPath, bool crucial = false, Form form = null)
     {
         if (directoryPath.DirectoryExists())
             return;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 _ = Directory.CreateDirectory(directoryPath);
@@ -29,7 +43,9 @@ internal static class SafeIO
                 if (!crucial || directoryPath.DirectoryExists() ||
                     directoryPath.IOWarn("Failed to create a crucial directory", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static void MoveDirectory(this string directoryPath, string newDirectoryPath, bool crucial = false,
@@ -37,7 +53,10 @@ internal static class SafeIO
     {
         if (!directoryPath.DirectoryExists())
             return;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 Directory.Move(directoryPath, newDirectoryPath);
@@ -48,14 +67,19 @@ internal static class SafeIO
                 if (!crucial || !directoryPath.DirectoryExists() ||
                     directoryPath.IOWarn("Failed to move a crucial directory", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static void DeleteDirectory(this string directoryPath, bool crucial = false, Form form = null)
     {
         if (!directoryPath.DirectoryExists())
             return;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 Directory.Delete(directoryPath, true);
@@ -67,7 +91,9 @@ internal static class SafeIO
                              || directoryPath.IOWarn("Failed to delete a crucial directory", e, form) is not
                                  DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static IEnumerable<string> EnumerateDirectory(this string directoryPath, string filePattern,
@@ -76,7 +102,10 @@ internal static class SafeIO
     {
         if (!directoryPath.DirectoryExists())
             return [];
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 return subdirectories
@@ -90,7 +119,9 @@ internal static class SafeIO
                              || directoryPath.IOWarn("Failed to enumerate a crucial directory's files", e, form) is not
                                  DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
 
         return [];
     }
@@ -101,7 +132,10 @@ internal static class SafeIO
     {
         if (!directoryPath.DirectoryExists())
             return [];
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 return subdirectories
@@ -115,7 +149,9 @@ internal static class SafeIO
                              || directoryPath.IOWarn("Failed to enumerate a crucial directory's subdirectories", e,
                                  form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
 
         return [];
     }
@@ -124,7 +160,10 @@ internal static class SafeIO
 
     internal static FileStream CreateFile(this string filePath, bool crucial = false, Form form = null)
     {
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 return File.Create(filePath);
@@ -133,7 +172,9 @@ internal static class SafeIO
             {
                 if (!crucial || filePath.IOWarn("Failed to create a crucial file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
 
         return null;
     }
@@ -142,7 +183,10 @@ internal static class SafeIO
     {
         if (!filePath.FileExists())
             return;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 File.Move(filePath, newFilePath);
@@ -153,14 +197,19 @@ internal static class SafeIO
                 if (!crucial || !filePath.FileExists() ||
                     filePath.IOWarn("Failed to move a crucial file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static void DeleteFile(this string filePath, bool crucial = false, Form form = null)
     {
         if (!filePath.FileExists())
             return;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 File.Delete(filePath);
@@ -171,7 +220,9 @@ internal static class SafeIO
                 if (!crucial || !filePath.FileExists() ||
                     filePath.IOWarn("Failed to delete a crucial file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static string ReadFile(this string filePath, bool crucial = false, Form form = null,
@@ -179,7 +230,10 @@ internal static class SafeIO
     {
         if (!filePath.FileExists())
             return null;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 return File.ReadAllText(filePath, encoding ?? Encoding.UTF8);
@@ -189,7 +243,9 @@ internal static class SafeIO
                 if (!crucial || !filePath.FileExists() ||
                     filePath.IOWarn("Failed to read a crucial file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
 
         return null;
     }
@@ -198,7 +254,10 @@ internal static class SafeIO
     {
         if (!filePath.FileExists())
             return null;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 return File.ReadAllBytes(filePath);
@@ -208,7 +267,9 @@ internal static class SafeIO
                 if (!crucial || !filePath.FileExists() ||
                     filePath.IOWarn("Failed to read a crucial file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
 
         return null;
     }
@@ -216,7 +277,10 @@ internal static class SafeIO
     internal static void WriteFile(this string filePath, string text, bool crucial = false, Form form = null,
         Encoding encoding = null)
     {
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 File.WriteAllText(filePath, text, encoding ?? Encoding.UTF8);
@@ -226,7 +290,9 @@ internal static class SafeIO
             {
                 if (!crucial || filePath.IOWarn("Failed to write a crucial file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static void ExtractZip(this string archivePath, string destinationPath, bool crucial = false,
@@ -234,7 +300,10 @@ internal static class SafeIO
     {
         if (!archivePath.FileExists())
             return;
-        while (!Program.Canceled)
+        int attempts = 0;
+        while (!Program.Canceled && attempts < MaxRetryAttempts)
+        {
+            attempts++;
             try
             {
                 ZipFile.ExtractToDirectory(archivePath, destinationPath);
@@ -245,7 +314,9 @@ internal static class SafeIO
                 if (!crucial || !archivePath.FileExists() ||
                     archivePath.IOWarn("Failed to extract a crucial zip file", e, form) is not DialogResult.OK)
                     break;
+                Thread.Sleep(RetryDelayMs);
             }
+        }
     }
 
     internal static DialogResult IOWarn(this string filePath, string message, Exception e, Form form = null)

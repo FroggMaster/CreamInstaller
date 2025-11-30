@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Globalization;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CreamInstaller.Forms;
 
@@ -49,14 +50,46 @@ internal static class ExceptionHandler
         return output.ToString();
     }
 
+    internal static string GetUserFriendlyMessage(this Exception e)
+    {
+        return e switch
+        {
+            UnauthorizedAccessException => "Access denied. Try running as administrator or check file permissions.",
+            System.IO.FileNotFoundException fnf => $"File not found: {fnf.FileName ?? "Unknown file"}",
+            System.IO.DirectoryNotFoundException => "Directory not found. The game may have been moved or uninstalled.",
+            System.IO.IOException io when io.Message.Contains("being used") => "A file is in use by another program. Close any running games and try again.",
+            System.IO.IOException => "A file operation failed. Check that the disk is not full and files are accessible.",
+            System.Net.Http.HttpRequestException => "Network error. Check your internet connection and try again.",
+            TaskCanceledException => "The operation timed out. The server may be slow or unavailable.",
+            OperationCanceledException => "The operation was cancelled.",
+            InvalidOperationException => $"Invalid operation: {e.Message}",
+            _ => null
+        };
+    }
+
     internal static bool HandleException(this Exception e, Form form = null, string caption = null,
         string acceptButtonText = "Retry",
         string cancelButtonText = "Cancel")
     {
         caption ??= Program.Name + " encountered an exception";
-        string outputString = e.FormatException();
-        if (string.IsNullOrWhiteSpace(outputString))
-            outputString = e?.ToString() ?? "Unknown exception";
+
+        string userFriendlyMessage = e.GetUserFriendlyMessage();
+        string technicalDetails = e.FormatException();
+
+        string outputString;
+        if (userFriendlyMessage is not null)
+        {
+            outputString = userFriendlyMessage;
+            if (!string.IsNullOrWhiteSpace(technicalDetails))
+                outputString += "\n\n--- Technical Details ---\n" + technicalDetails;
+        }
+        else
+        {
+            outputString = !string.IsNullOrWhiteSpace(technicalDetails)
+                ? technicalDetails
+                : e?.ToString() ?? "Unknown exception";
+        }
+
         using DialogForm dialogForm = new(form ?? Form.ActiveForm);
         return dialogForm.Show(SystemIcons.Error, outputString, acceptButtonText, cancelButtonText, caption) is
             DialogResult.OK;

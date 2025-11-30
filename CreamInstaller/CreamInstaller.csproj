@@ -39,6 +39,9 @@
         <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
     </PropertyGroup>
     <ItemGroup>
+        <InternalsVisibleTo Include="CreamInstaller.Tests" />
+    </ItemGroup>
+    <ItemGroup>
         <None Remove="Resources\Koaloader\audioses-32\audioses.dll" />
         <None Remove="Resources\Koaloader\audioses-64\audioses.dll" />
         <None Remove="Resources\Koaloader\d3d10-32\d3d10.dll" />

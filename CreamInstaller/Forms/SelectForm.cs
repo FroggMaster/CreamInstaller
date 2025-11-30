@@ -645,6 +645,7 @@ internal sealed partial class SelectForm : CustomForm
 
         if (scan)
         {
+            SetStatusScanning();
             bool setup = true;
             int maxProgress = 0;
             int curProgress = 0;
@@ -688,6 +689,7 @@ internal sealed partial class SelectForm : CustomForm
 
         OnLoadSelections(null, null);
         HideProgressBar();
+        SetStatusReady();
         selectionTreeView.Enabled = !Selection.All.IsEmpty;
         allCheckBox.Enabled = selectionTreeView.Enabled;
         proxyAllCheckBox.Enabled = selectionTreeView.Enabled;
@@ -720,6 +722,7 @@ internal sealed partial class SelectForm : CustomForm
         allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
         installButton.Enabled = Selection.AllEnabled.Any();
         uninstallButton.Enabled = installButton.Enabled;
+        UpdateStatusBar();
         if (sender is "OnLoadSelections" or "OnResetSelections")
             return;
         saveButton.Enabled = CanSaveSelections();
@@ -967,6 +970,7 @@ internal sealed partial class SelectForm : CustomForm
                 _ = items.Add(new ContextMenuItem("Open Official Website",
                     ("Web_" + id, IconGrabber.GetDomainFaviconUrl(selection.Website)),
                     (_, _) => Diagnostics.OpenUrlInInternetBrowser(selection.Website)));
+            ThemeManager.ApplyContextMenu(contextMenuStrip);
             contextMenuStrip.Show(selectionTreeView, location);
             contextMenuStrip.Refresh();
         });
@@ -1018,7 +1022,20 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnInstall(object sender, EventArgs e) => OnAccept();
 
-    private void OnUninstall(object sender, EventArgs e) => OnAccept(true);
+    private void OnUninstall(object sender, EventArgs e)
+    {
+        int selectedCount = Selection.AllEnabled.Count();
+        if (selectedCount == 0)
+            return;
+
+        string message = selectedCount == 1
+            ? "Are you sure you want to uninstall DLC unlockers from the selected game?"
+            : $"Are you sure you want to uninstall DLC unlockers from {selectedCount} selected games?";
+
+        using DialogForm confirmDialog = new(this);
+        if (confirmDialog.Show(SystemIcons.Warning, message, "Yes", "Cancel", customFormText: "Confirm Uninstall") == DialogResult.OK)
+            OnAccept(true);
+    }
 
     private void OnScan(object sender, EventArgs e) => OnLoad(forceProvideChoices: true);
 
@@ -1055,124 +1072,7 @@ internal sealed partial class SelectForm : CustomForm
         saveButton.Enabled = CanSaveSelections();
     }
 
-    private bool AreSelectionsDefault()
-        => EnumerateTreeNodes(selectionTreeView.Nodes).All(node
-            => node.Parent is null || node.Tag is not Platform and not DLCType ||
-               (node.Text == "Unknown" ? !node.Checked : node.Checked));
-
-    private static bool AreProxySelectionsDefault() => Selection.All.Keys.All(selection => !selection.UseProxy);
-
-    private bool CanSaveDlc() =>
-        installButton.Enabled && (ProgramData.ReadDlcChoices().Any() || !AreSelectionsDefault());
-
-    private static bool CanSaveProxy() =>
-        ProgramData.ReadProxyChoices().Any() || !AreProxySelectionsDefault();
-
-    private bool CanSaveSelections() => CanSaveDlc() || CanSaveProxy();
-
-    private void OnSaveSelections(object sender, EventArgs e)
-    {
-        List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
-        foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-        {
-            _ = dlcChoices.RemoveAll(n =>
-                n.platform == dlc.Selection.Platform && n.gameId == dlc.Selection.Id && n.dlcId == dlc.Id);
-            if (dlc.Name == "Unknown" ? dlc.Enabled : !dlc.Enabled)
-                dlcChoices.Add((dlc.Selection.Platform, dlc.Selection.Id, dlc.Id));
-        }
-
-        ProgramData.WriteDlcChoices(dlcChoices);
-
-        List<(Platform platform, string id, string proxy, bool enabled)> proxyChoices =
-            ProgramData.ReadProxyChoices().ToList();
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            _ = proxyChoices.RemoveAll(c => c.platform == selection.Platform && c.id == selection.Id);
-            if (selection.UseProxy)
-                proxyChoices.Add((selection.Platform, selection.Id,
-                    selection.Proxy == Selection.DefaultProxy ? null : selection.Proxy,
-                    selection.UseProxy));
-        }
-
-        ProgramData.WriteProxyChoices(proxyChoices);
-
-        loadButton.Enabled = CanLoadSelections();
-        saveButton.Enabled = CanSaveSelections();
-    }
-
-    private static bool CanLoadDlc() => ProgramData.ReadDlcChoices().Any();
-
-    private static bool CanLoadProxy() => ProgramData.ReadProxyChoices().Any();
-
-    private static bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy();
-
-    private void OnLoadSelections(object sender, EventArgs e)
-    {
-        List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
-        foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-        {
-            dlc.Enabled = dlcChoices.Any(c =>
-                c.platform == dlc.Selection?.Platform && c.gameId == dlc.Selection?.Id && c.dlcId == dlc.Id)
-                ? dlc.Name == "Unknown"
-                : dlc.Name != "Unknown";
-            OnTreeViewNodeCheckedChanged("OnLoadSelections", new(dlc.TreeNode, TreeViewAction.ByMouse));
-        }
-
-        List<(Platform platform, string id, string proxy, bool enabled)> proxyChoices =
-            ProgramData.ReadProxyChoices().ToList();
-        foreach (Selection selection in Selection.All.Keys)
-            if (proxyChoices.Any(c => c.platform == selection.Platform && c.id == selection.Id))
-            {
-                (Platform platform, string id, string proxy, bool enabled)
-                    choice = proxyChoices.First(c => c.platform == selection.Platform && c.id == selection.Id);
-                (Platform platform, string id, string proxy, bool enabled) = choice;
-                string currentProxy = proxy;
-                if (proxy is not null && proxy.Contains('.')) // convert pre-v4.1.0.0 choices
-                    proxy.GetProxyInfoFromIdentifier(out currentProxy, out _);
-                if (proxy != currentProxy && proxyChoices.Remove(choice)) // convert pre-v4.1.0.0 choices
-                    proxyChoices.Add((platform, id, currentProxy, enabled));
-                if (currentProxy is null or Selection.DefaultProxy && !enabled)
-                    _ = proxyChoices.RemoveAll(c => c.platform == platform && c.id == id);
-                else
-                {
-                    selection.UseProxy = enabled;
-                    selection.Proxy = currentProxy == Selection.DefaultProxy ? currentProxy : proxy;
-                }
-            }
-            else
-            {
-                selection.UseProxy = false;
-                selection.Proxy = null;
-            }
-
-        ProgramData.WriteProxyChoices(proxyChoices);
-        loadButton.Enabled = CanLoadSelections();
-
-        OnProxyChanged();
-    }
-
-    private bool CanResetDlc() => !AreSelectionsDefault();
-
-    private static bool CanResetProxy() => !AreProxySelectionsDefault();
-
-    private bool CanResetSelections() => CanResetDlc() || CanResetProxy();
-
-    private void OnResetSelections(object sender, EventArgs e)
-    {
-        foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-        {
-            dlc.Enabled = dlc.Name != "Unknown";
-            OnTreeViewNodeCheckedChanged("OnResetSelections", new(dlc.TreeNode, TreeViewAction.ByMouse));
-        }
-
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            selection.UseProxy = false;
-            selection.Proxy = null;
-        }
-
-        OnProxyChanged();
-    }
+    // Selection methods moved to SelectForm.Selections.cs
 
     internal void OnProxyChanged()
     {
@@ -1247,16 +1147,49 @@ internal sealed partial class SelectForm : CustomForm
         {
             Program.DarkModeEnabled = requestedDark;
             ThemeManager.Apply(this);
+            ApplyButtonStyles();
         }
         else
+        {
             ThemeManager.Apply(this);
+            ApplyButtonStyles();
+        }
     }
 
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
         ThemeManager.Apply(this);
+        ApplyButtonStyles();
         if (darkModeCheckBox is not null)
             darkModeCheckBox.Checked = Program.DarkModeEnabled;
     }
+
+    private void ApplyButtonStyles()
+    {
+        // Apply accent styling to primary action button
+        ThemeManager.ApplyAccentButton(installButton);
+    }
+
+    private void UpdateStatusBar(string operationStatus = null)
+    {
+        if (statusStrip is null) return;
+
+        int gameCount = Selection.All.Count;
+        int selectedCount = Selection.AllEnabled.Count();
+        int dlcCount = SelectionDLC.All.Count;
+        int selectedDlcCount = SelectionDLC.All.Keys.Count(d => d.Enabled);
+
+        statusLabelGames.Text = $"Games: {gameCount}";
+        statusLabelSelected.Text = $"Selected: {selectedCount}/{gameCount}";
+        statusLabelDLCs.Text = $"DLCs: {selectedDlcCount}/{dlcCount}";
+
+        if (statusLabelOperation is not null)
+            statusLabelOperation.Text = operationStatus ?? "Ready";
+    }
+
+    private void SetStatusReady() => UpdateStatusBar("Ready");
+    private void SetStatusScanning() => UpdateStatusBar("Scanning...");
+    private void SetStatusInstalling() => UpdateStatusBar("Installing...");
+    private void SetStatusUninstalling() => UpdateStatusBar("Uninstalling...");
 }

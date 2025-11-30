@@ -15,7 +15,20 @@ internal static class UbisoftLibrary
     {
         get
         {
-            installsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs");
+            try
+            {
+                installsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs");
+            }
+            catch (System.Security.SecurityException)
+            {
+                // Access to registry denied
+                installsKey = null;
+            }
+            catch (IOException)
+            {
+                // Registry key has been marked for deletion
+                installsKey = null;
+            }
             return installsKey;
         }
     }

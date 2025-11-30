@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
@@ -15,14 +16,31 @@ internal sealed class CustomTreeView : TreeView
 {
     private const string ProxyToggleString = "Proxy";
 
-    private static readonly Color C1 = ColorTranslator.FromHtml("#FFFF99");
-    private static readonly Color C2 = ColorTranslator.FromHtml("#696900");
-    private static readonly Color C3 = ColorTranslator.FromHtml("#AAAA69");
-    private static readonly Color C4 = ColorTranslator.FromHtml("#99FFFF");
-    private static readonly Color C5 = ColorTranslator.FromHtml("#006969");
-    private static readonly Color C6 = ColorTranslator.FromHtml("#69AAAA");
-    private static readonly Color C7 = ColorTranslator.FromHtml("#006900");
-    private static readonly Color C8 = ColorTranslator.FromHtml("#69AA69");
+    // Platform label colors (yellow/gold tones) - adapts to dark/light mode
+    private static Color PlatformHighlighted => ColorTranslator.FromHtml("#FFFF99");
+    private static Color PlatformEnabled => Program.DarkModeEnabled
+        ? ColorTranslator.FromHtml("#E6C200")  // Brighter gold for dark mode
+        : ColorTranslator.FromHtml("#696900");
+    private static Color PlatformDisabled => Program.DarkModeEnabled
+        ? ColorTranslator.FromHtml("#8B7500")  // Dimmed gold for dark mode
+        : ColorTranslator.FromHtml("#AAAA69");
+
+    // ID label colors (cyan/teal tones) - adapts to dark/light mode
+    private static Color IdHighlighted => ColorTranslator.FromHtml("#99FFFF");
+    private static Color IdEnabled => Program.DarkModeEnabled
+        ? ColorTranslator.FromHtml("#00CED1")  // Brighter cyan for dark mode
+        : ColorTranslator.FromHtml("#006969");
+    private static Color IdDisabled => Program.DarkModeEnabled
+        ? ColorTranslator.FromHtml("#20B2AA")  // Dimmed cyan for dark mode
+        : ColorTranslator.FromHtml("#69AAAA");
+
+    // Proxy checkbox colors (green tones) - adapts to dark/light mode
+    private static Color ProxyEnabled => Program.DarkModeEnabled
+        ? ColorTranslator.FromHtml("#32CD32")  // Lime green for dark mode
+        : ColorTranslator.FromHtml("#006900");
+    private static Color ProxyDisabled => Program.DarkModeEnabled
+        ? ColorTranslator.FromHtml("#228B22")  // Forest green for dark mode
+        : ColorTranslator.FromHtml("#69AA69");
 
     private readonly Dictionary<Selection, Rectangle> checkBoxBounds = [];
     private readonly Dictionary<Selection, Rectangle> comboBoxBounds = [];
@@ -36,14 +54,17 @@ internal sealed class CustomTreeView : TreeView
     internal CustomTreeView()
     {
         DrawMode = TreeViewDrawMode.OwnerDrawAll;
+        ShowNodeToolTips = true;
         Invalidated += OnInvalidated;
         DrawNode += DrawTreeNode;
         Disposed += OnDisposed;
     }
 
+    private const int WM_LBUTTONDBLCLK = 0x203;
+
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == 0x203)
+        if (m.Msg == WM_LBUTTONDBLCLK)
             m.Result = nint.Zero;
         else
             base.WndProc(ref m);
@@ -93,10 +114,10 @@ internal sealed class CustomTreeView : TreeView
             return;
 
         Color color = highlighted
-            ? C1
+            ? PlatformHighlighted
             : Enabled
-                ? C2
-                : C3;
+                ? PlatformEnabled
+                : PlatformDisabled;
         string text;
         if (dlcType is not DLCType.None)
         {
@@ -115,10 +136,10 @@ internal sealed class CustomTreeView : TreeView
         if (platform is not Platform.Paradox)
         {
             color = highlighted
-                ? C4
+                ? IdHighlighted
                 : Enabled
-                    ? C5
-                    : C6;
+                    ? IdEnabled
+                    : IdDisabled;
             text = id;
             size = TextRenderer.MeasureText(graphics, text, font);
             const int left = -4;
@@ -163,9 +184,9 @@ internal sealed class CustomTreeView : TreeView
                 checkBoxBounds = new(checkBoxBounds.Location, checkBoxBounds.Size + bounds.Size with { Height = 0 });
                 graphics.FillRectangle(backBrush, bounds);
                 point = new(bounds.Location.X - 1 + left, bounds.Location.Y + 1);
-                TextRenderer.DrawText(graphics, text, font, point, Enabled ? C7 : C8, TextFormatFlags.Default);
+                TextRenderer.DrawText(graphics, text, font, point, Enabled ? ProxyEnabled : ProxyDisabled, TextFormatFlags.Default);
 
-                this.checkBoxBounds[selection] = RectangleToClient(checkBoxBounds);
+                this.checkBoxBounds[selection] = checkBoxBounds;
 
                 if (selection.UseProxy)
                 {
@@ -206,21 +227,21 @@ internal sealed class CustomTreeView : TreeView
                     else
                         ControlPaint.DrawComboButton(graphics, bounds, buttonState);
 
-                    this.comboBoxBounds[selection] = RectangleToClient(comboBoxBounds);
+                    this.comboBoxBounds[selection] = comboBoxBounds;
                 }
                 else
                     _ = comboBoxBounds.Remove(selection);
             }
         }
 
-        this.selectionBounds[node] = RectangleToClient(selectionBounds);
+        this.selectionBounds[node] = selectionBounds;
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
     {
         base.OnMouseDown(e);
         Refresh();
-        Point clickPoint = PointToClient(e.Location);
+        Point clickPoint = e.Location; // e.Location is already in client coordinates
         SelectForm selectForm = (form ??= FindForm()) as SelectForm;
         foreach (KeyValuePair<TreeNode, Rectangle> pair in selectionBounds)
             if (pair.Key.TreeView is null)
@@ -251,7 +272,7 @@ internal sealed class CustomTreeView : TreeView
                         bool canUse = true;
                         foreach ((string directory, BinaryType _) in pair.Key.ExecutableDirectories)
                         {
-                            string path = directory + @"\" + proxy + ".dll";
+                            string path = Path.Combine(directory, proxy + ".dll");
                             if (!path.FileExists() || path.IsResourceFile(ResourceIdentifier.Koaloader) ||
                                 path.IsResourceFile(ResourceIdentifier.Steamworks32) ||
                                 path.IsResourceFile(ResourceIdentifier.Steamworks64))

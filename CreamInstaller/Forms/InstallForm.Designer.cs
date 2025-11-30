@@ -27,7 +27,7 @@ namespace CreamInstaller.Forms
             retryButton = new Button();
             cancelButton = new Button();
             logTextBox = new RichTextBox();
-            reselectButton = new Button();
+            exitButton = new Button();
             SuspendLayout();
             // 
             // userProgressBar
@@ -95,17 +95,17 @@ namespace CreamInstaller.Forms
             logTextBox.TabIndex = 4;
             logTextBox.TabStop = false;
             logTextBox.Text = "";
-            // 
-            // reselectButton
-            // 
-            reselectButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            reselectButton.Location = new System.Drawing.Point(410, 526);
-            reselectButton.Name = "reselectButton";
-            reselectButton.Size = new System.Drawing.Size(200, 23);
-            reselectButton.TabIndex = 2;
-            reselectButton.Text = "Reselect Programs / Games";
-            reselectButton.UseVisualStyleBackColor = true;
-            reselectButton.Click += OnReselect;
+            //
+            // exitButton
+            //
+            exitButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            exitButton.Location = new System.Drawing.Point(93, 526);
+            exitButton.Name = "exitButton";
+            exitButton.Size = new System.Drawing.Size(75, 23);
+            exitButton.TabIndex = 2;
+            exitButton.Text = "Exit";
+            exitButton.UseVisualStyleBackColor = true;
+            exitButton.Click += OnExit;
             // 
             // InstallForm
             // 
@@ -114,7 +114,7 @@ namespace CreamInstaller.Forms
             AutoSize = true;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             ClientSize = new System.Drawing.Size(784, 561);
-            Controls.Add(reselectButton);
+            Controls.Add(exitButton);
             Controls.Add(logTextBox);
             Controls.Add(cancelButton);
             Controls.Add(retryButton);
@@ -140,7 +140,7 @@ namespace CreamInstaller.Forms
         private Button retryButton;
         private Button cancelButton;
         private RichTextBox logTextBox;
-        private Button reselectButton;
+        private Button exitButton;
     }
 }
 
