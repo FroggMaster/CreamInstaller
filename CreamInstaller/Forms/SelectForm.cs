@@ -971,7 +971,27 @@ internal sealed partial class SelectForm : CustomForm
                     ("Web_" + id, IconGrabber.GetDomainFaviconUrl(selection.Website)),
                     (_, _) => Diagnostics.OpenUrlInInternetBrowser(selection.Website)));
             ThemeManager.ApplyContextMenu(contextMenuStrip);
-            contextMenuStrip.Show(selectionTreeView, location);
+
+            // Convert to screen coordinates and validate bounds
+            Point screenLocation = selectionTreeView.PointToScreen(location);
+            Screen currentScreen = Screen.FromPoint(screenLocation);
+            Rectangle workingArea = currentScreen.WorkingArea;
+
+            // Estimate menu size (will be calculated properly after Show, but we can estimate)
+            int estimatedMenuWidth = 250;
+            int estimatedMenuHeight = items.Count * 24 + 10;
+
+            // Adjust position if menu would go off-screen
+            if (screenLocation.X + estimatedMenuWidth > workingArea.Right)
+                screenLocation.X = workingArea.Right - estimatedMenuWidth;
+            if (screenLocation.Y + estimatedMenuHeight > workingArea.Bottom)
+                screenLocation.Y = workingArea.Bottom - estimatedMenuHeight;
+            if (screenLocation.X < workingArea.Left)
+                screenLocation.X = workingArea.Left;
+            if (screenLocation.Y < workingArea.Top)
+                screenLocation.Y = workingArea.Top;
+
+            contextMenuStrip.Show(screenLocation);
             contextMenuStrip.Refresh();
         });
 

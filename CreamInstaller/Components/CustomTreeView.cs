@@ -289,7 +289,24 @@ internal sealed class CustomTreeView : TreeView
                             }) { Font = comboBoxFont });
                     }
 
-                    comboBoxDropDown.Show(this, PointToScreen(new(pair.Value.Left, pair.Value.Bottom - 1)));
+                    // Convert to screen coordinates and validate bounds
+                    Point screenLocation = PointToScreen(new(pair.Value.Left, pair.Value.Bottom - 1));
+                    Screen currentScreen = Screen.FromPoint(screenLocation);
+                    Rectangle workingArea = currentScreen.WorkingArea;
+
+                    // Estimate dropdown size
+                    int estimatedWidth = 120;
+                    int estimatedHeight = comboBoxDropDown.Items.Count * 20 + 10;
+
+                    // Adjust position if dropdown would go off-screen
+                    if (screenLocation.X + estimatedWidth > workingArea.Right)
+                        screenLocation.X = workingArea.Right - estimatedWidth;
+                    if (screenLocation.Y + estimatedHeight > workingArea.Bottom)
+                        screenLocation.Y = pair.Value.Top - estimatedHeight; // Show above instead
+                    if (screenLocation.X < workingArea.Left)
+                        screenLocation.X = workingArea.Left;
+
+                    comboBoxDropDown.Show(screenLocation);
                     break;
                 }
 

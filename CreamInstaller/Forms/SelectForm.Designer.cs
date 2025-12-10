@@ -68,10 +68,10 @@ namespace CreamInstaller.Forms
             installButton.AutoSize = true;
             installButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             installButton.Enabled = false;
-            installButton.Location = new System.Drawing.Point(557, 360);
+            installButton.Location = new System.Drawing.Point(540, 436);
             installButton.Name = "installButton";
-            installButton.Padding = new Padding(12, 4, 12, 4);
-            installButton.Size = new System.Drawing.Size(127, 33);
+            installButton.Padding = new Padding(8, 2, 8, 2);
+            installButton.Size = new System.Drawing.Size(127, 29);
             installButton.TabIndex = 10000;
             installButton.Text = "Generate and Install";
             installButton.UseVisualStyleBackColor = false;
@@ -83,7 +83,7 @@ namespace CreamInstaller.Forms
             cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             cancelButton.AutoSize = true;
             cancelButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            cancelButton.Location = new System.Drawing.Point(16, 438);
+            cancelButton.Location = new System.Drawing.Point(16, 436);
             cancelButton.Name = "cancelButton";
             cancelButton.Padding = new Padding(6, 2, 6, 2);
             cancelButton.Size = new System.Drawing.Size(65, 29);
@@ -306,7 +306,7 @@ namespace CreamInstaller.Forms
             scanButton.AutoSize = true;
             scanButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             scanButton.Enabled = false;
-            scanButton.Location = new System.Drawing.Point(200, 438);
+            scanButton.Location = new System.Drawing.Point(190, 436);
             scanButton.Name = "scanButton";
             scanButton.Padding = new Padding(6, 2, 6, 2);
             scanButton.Size = new System.Drawing.Size(66, 29);
@@ -321,7 +321,7 @@ namespace CreamInstaller.Forms
             uninstallButton.AutoSize = true;
             uninstallButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             uninstallButton.Enabled = false;
-            uninstallButton.Location = new System.Drawing.Point(560, 438);
+            uninstallButton.Location = new System.Drawing.Point(450, 436);
             uninstallButton.Name = "uninstallButton";
             uninstallButton.Padding = new Padding(6, 2, 6, 2);
             uninstallButton.Size = new System.Drawing.Size(75, 29);
@@ -354,7 +354,7 @@ namespace CreamInstaller.Forms
             //
             sortCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             sortCheckBox.AutoSize = true;
-            sortCheckBox.Location = new System.Drawing.Point(90, 443);
+            sortCheckBox.Location = new System.Drawing.Point(90, 441);
             sortCheckBox.Margin = new Padding(3, 0, 0, 0);
             sortCheckBox.Name = "sortCheckBox";
             sortCheckBox.Size = new System.Drawing.Size(98, 19);
@@ -415,7 +415,7 @@ namespace CreamInstaller.Forms
             saveFlowPanel.Controls.Add(resetButton);
             saveFlowPanel.Controls.Add(saveButton);
             saveFlowPanel.Controls.Add(loadButton);
-            saveFlowPanel.Location = new System.Drawing.Point(280, 438);
+            saveFlowPanel.Location = new System.Drawing.Point(280, 436);
             saveFlowPanel.Name = "saveFlowPanel";
             saveFlowPanel.Size = new System.Drawing.Size(141, 29);
             saveFlowPanel.TabIndex = 10008;
