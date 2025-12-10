@@ -366,7 +366,7 @@ internal sealed partial class InstallForm : CustomForm
         acceptButton.Enabled = false;
         retryButton.Enabled = false;
         cancelButton.Enabled = true;
-        reselectButton.Enabled = false;
+        exitButton.Enabled = false;
         userProgressBar.Value = userProgressBar.Minimum;
         try
         {
@@ -387,7 +387,7 @@ internal sealed partial class InstallForm : CustomForm
         userProgressBar.Value = userProgressBar.Maximum;
         acceptButton.Enabled = true;
         cancelButton.Enabled = false;
-        reselectButton.Enabled = true;
+        exitButton.Enabled = true;
     }
 
     private void OnLoad(object sender, EventArgs a)
@@ -416,7 +416,9 @@ internal sealed partial class InstallForm : CustomForm
 
     private void OnAccept(object sender, EventArgs e)
     {
+        // Return to SelectForm to continue working
         Program.Cleanup();
+        Reselecting = true;
         Close();
     }
 
@@ -428,10 +430,10 @@ internal sealed partial class InstallForm : CustomForm
 
     private void OnCancel(object sender, EventArgs e) => Program.Cleanup();
 
-    private void OnReselect(object sender, EventArgs e)
+    private void OnExit(object sender, EventArgs e)
     {
+        // Exit the application
         Program.Cleanup();
-        Reselecting = true;
         Close();
     }
 }

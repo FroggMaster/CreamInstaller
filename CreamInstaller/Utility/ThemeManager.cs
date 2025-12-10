@@ -14,11 +14,58 @@ internal static class ThemeManager
  private static readonly Color DarkFore = ColorTranslator.FromHtml("#D4D4D4");
  private static readonly Color DarkForeDim = ColorTranslator.FromHtml("#9CA3AF");
  private static readonly Color Accent = ColorTranslator.FromHtml("#0E639C");
+ private static readonly Color AccentHover = ColorTranslator.FromHtml("#1177BB");
  private static readonly Color DarkLink = ColorTranslator.FromHtml("#64B5F6");
  private static readonly Color LightBack = SystemColors.Control;
  private static readonly Color LightBackAlt = SystemColors.ControlLightLight;
  private static readonly Color LightFore = SystemColors.ControlText;
  private static readonly Color LightBorder = SystemColors.ControlDark;
+ private static readonly Color LightAccent = ColorTranslator.FromHtml("#0078D4");
+
+ /// <summary>
+ /// Apply accent styling to a primary action button.
+ /// </summary>
+ internal static void ApplyAccentButton(Button button)
+ {
+     if (button is null) return;
+     button.FlatStyle = FlatStyle.Flat;
+     button.FlatAppearance.BorderSize = 0;
+     if (Program.DarkModeEnabled)
+     {
+         button.BackColor = Accent;
+         button.ForeColor = Color.White;
+         button.FlatAppearance.MouseOverBackColor = AccentHover;
+         button.FlatAppearance.MouseDownBackColor = AccentHover;
+     }
+     else
+     {
+         button.BackColor = LightAccent;
+         button.ForeColor = Color.White;
+         button.FlatAppearance.MouseOverBackColor = Accent;
+         button.FlatAppearance.MouseDownBackColor = Accent;
+     }
+ }
+
+ /// <summary>
+ /// Apply secondary/danger styling to a button.
+ /// </summary>
+ internal static void ApplySecondaryButton(Button button)
+ {
+     if (button is null) return;
+     button.FlatStyle = FlatStyle.Flat;
+     if (Program.DarkModeEnabled)
+     {
+         button.BackColor = DarkBackAlt;
+         button.ForeColor = DarkFore;
+         button.FlatAppearance.BorderColor = DarkBorder;
+     }
+     else
+     {
+         button.FlatStyle = FlatStyle.Standard;
+         button.BackColor = LightBack;
+         button.ForeColor = LightFore;
+     }
+ }
 
  internal static void ToggleDarkMode(Form anyForm)
  {
@@ -96,6 +143,15 @@ internal static class ThemeManager
  case FlowLayoutPanel flp:
  flp.BackColor = DarkBack;
  break;
+ case StatusStrip ss:
+ ss.BackColor = DarkBackAlt;
+ ss.ForeColor = DarkFore;
+ foreach (ToolStripItem item in ss.Items)
+ {
+     item.BackColor = DarkBackAlt;
+     item.ForeColor = DarkFore;
+ }
+ break;
  }
  TryApplyScrollbarTheme(control, true);
  }
@@ -148,6 +204,15 @@ internal static class ThemeManager
  case FlowLayoutPanel flp:
  flp.BackColor = LightBack;
  break;
+ case StatusStrip ss:
+ ss.BackColor = LightBack;
+ ss.ForeColor = LightFore;
+ foreach (ToolStripItem item in ss.Items)
+ {
+     item.BackColor = LightBack;
+     item.ForeColor = LightFore;
+ }
+ break;
  }
  TryApplyScrollbarTheme(control, false);
  }
@@ -189,6 +254,77 @@ internal static class ThemeManager
  NativeImports.SetWindowTheme(control.Handle, theme, null);
  }
  catch { }
+ }
+
+ /// <summary>
+ /// Apply theme to a context menu strip.
+ /// </summary>
+ internal static void ApplyContextMenu(ContextMenuStrip menu)
+ {
+     if (menu is null) return;
+
+     if (Program.DarkModeEnabled)
+     {
+         menu.BackColor = DarkBackAlt;
+         menu.ForeColor = DarkFore;
+         menu.Renderer = new DarkMenuRenderer();
+         foreach (ToolStripItem item in menu.Items)
+             ApplyToolStripItem(item, true);
+     }
+     else
+     {
+         menu.BackColor = LightBack;
+         menu.ForeColor = LightFore;
+         menu.Renderer = new ToolStripProfessionalRenderer();
+         foreach (ToolStripItem item in menu.Items)
+             ApplyToolStripItem(item, false);
+     }
+ }
+
+ private static void ApplyToolStripItem(ToolStripItem item, bool dark)
+ {
+     if (dark)
+     {
+         item.BackColor = DarkBackAlt;
+         item.ForeColor = DarkFore;
+     }
+     else
+     {
+         item.BackColor = LightBack;
+         item.ForeColor = LightFore;
+     }
+
+     if (item is ToolStripMenuItem menuItem)
+         foreach (ToolStripItem subItem in menuItem.DropDownItems)
+             ApplyToolStripItem(subItem, dark);
+ }
+
+ /// <summary>
+ /// Custom renderer for dark mode context menus.
+ /// </summary>
+ private class DarkMenuRenderer : ToolStripProfessionalRenderer
+ {
+     public DarkMenuRenderer() : base(new DarkMenuColors()) { }
+ }
+
+ private class DarkMenuColors : ProfessionalColorTable
+ {
+     private static readonly Color DarkMenuBack = ColorTranslator.FromHtml("#252525");
+     private static readonly Color DarkMenuBorder = ColorTranslator.FromHtml("#3F3F46");
+     private static readonly Color DarkMenuHighlight = ColorTranslator.FromHtml("#3F3F46");
+     private static readonly Color DarkMenuHighlightBorder = ColorTranslator.FromHtml("#0E639C");
+
+     public override Color MenuItemSelected => DarkMenuHighlight;
+     public override Color MenuItemSelectedGradientBegin => DarkMenuHighlight;
+     public override Color MenuItemSelectedGradientEnd => DarkMenuHighlight;
+     public override Color MenuItemBorder => DarkMenuHighlightBorder;
+     public override Color MenuBorder => DarkMenuBorder;
+     public override Color ToolStripDropDownBackground => DarkMenuBack;
+     public override Color ImageMarginGradientBegin => DarkMenuBack;
+     public override Color ImageMarginGradientMiddle => DarkMenuBack;
+     public override Color ImageMarginGradientEnd => DarkMenuBack;
+     public override Color SeparatorDark => DarkMenuBorder;
+     public override Color SeparatorLight => DarkMenuBorder;
  }
 }
 

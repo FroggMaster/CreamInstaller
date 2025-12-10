@@ -54,7 +54,7 @@ namespace CreamInstaller.Forms
             ignoreButton.Name = "ignoreButton";
             ignoreButton.Size = new System.Drawing.Size(75, 23);
             ignoreButton.TabIndex = 1;
-            ignoreButton.Text = "Ignore";
+            ignoreButton.Text = "Later";
             ignoreButton.UseVisualStyleBackColor = true;
             ignoreButton.Click += OnIgnore;
             // 

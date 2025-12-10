@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CreamInstaller.Utility;
@@ -15,10 +16,23 @@ internal static class SteamLibrary
     {
         get
         {
-            installPath ??= Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
-            installPath ??=
-                Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam", "InstallPath", null) as string;
-            return installPath.ResolvePath();
+            if (installPath is not null)
+                return installPath.ResolvePath();
+            try
+            {
+                installPath ??= Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
+                installPath ??=
+                    Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam", "InstallPath", null) as string;
+            }
+            catch (System.Security.SecurityException)
+            {
+                // Access to registry denied
+            }
+            catch (System.IO.IOException)
+            {
+                // Registry key has been marked for deletion
+            }
+            return installPath?.ResolvePath();
         }
     }
 
@@ -62,7 +76,7 @@ internal static class SteamLibrary
                     string.IsNullOrWhiteSpace(name)
                     || string.IsNullOrWhiteSpace(buildId))
                     continue;
-                string gameDirectory = (libraryDirectory + @"\common\" + installdir).ResolvePath();
+                string gameDirectory = Path.Combine(libraryDirectory, "common", installdir).ResolvePath();
                 if (gameDirectory is null || !int.TryParse(appId, out int _) ||
                     !int.TryParse(buildId, out int buildIdInt) || games.Any(g => g.appId == appId))
                     continue;
@@ -93,11 +107,11 @@ internal static class SteamLibrary
             string steamInstallPath = InstallPath;
             if (steamInstallPath == null || !steamInstallPath.DirectoryExists())
                 return libraryDirectories;
-            string libraryFolder = steamInstallPath + @"\steamapps";
+            string libraryFolder = Path.Combine(steamInstallPath, "steamapps");
             if (!libraryFolder.DirectoryExists())
                 return libraryDirectories;
             _ = libraryDirectories.Add(libraryFolder);
-            string libraryFolders = libraryFolder + @"\libraryfolders.vdf";
+            string libraryFolders = Path.Combine(libraryFolder, "libraryfolders.vdf");
             if (!libraryFolders.FileExists() ||
                 !ValveDataFile.TryDeserialize(libraryFolders.ReadFile(), out VProperty result))
                 return libraryDirectories;
@@ -108,7 +122,7 @@ internal static class SteamLibrary
                 string path = property.Value.GetChild("path")?.ToString();
                 if (string.IsNullOrWhiteSpace(path))
                     continue;
-                path += @"\steamapps";
+                path = Path.Combine(path, "steamapps");
                 if (path.DirectoryExists())
                     _ = libraryDirectories.Add(path);
             }

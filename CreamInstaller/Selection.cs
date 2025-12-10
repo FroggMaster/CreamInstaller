@@ -64,7 +64,7 @@ internal sealed class Selection : IEquatable<Selection>
         DllDirectories = dllDirectories;
         ExecutableDirectories = executableDirectories;
         _ = All.TryAdd(this, default);
-        TreeNode = new() { Tag = Platform, Name = Id, Text = Name };
+        TreeNode = new() { Tag = Platform, Name = Id, Text = Name, ToolTipText = $"{Name}\nPlatform: {Platform}\nPath: {RootDirectory}" };
         SelectForm selectForm = SelectForm.Current;
         if (selectForm is null)
             return;

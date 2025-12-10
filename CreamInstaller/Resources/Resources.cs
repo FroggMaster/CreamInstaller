@@ -157,7 +157,7 @@ internal static class Resources
                 if (subDirectory is null || dllDirectories.Contains(subDirectory))
                     continue;
                 bool koaloaderInstalled = Koaloader.AutoLoadDLLs
-                    .Select(pair => (pair.unlocker, path: directory + @"\" + pair.dll))
+                    .Select(pair => (pair.unlocker, path: Path.Combine(directory, pair.dll)))
                     .Any(pair => pair.path.FileExists() && pair.path.IsResourceFile());
                 if (platform is Platform.Steam or Platform.Paradox)
                 {

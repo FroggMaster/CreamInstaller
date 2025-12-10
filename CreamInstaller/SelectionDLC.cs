@@ -32,7 +32,7 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
         Type = type;
         Id = id;
         Name = name;
-        TreeNode = new() { Tag = Type, Name = Id, Text = Name };
+        TreeNode = new() { Tag = Type, Name = Id, Text = Name, ToolTipText = $"{Name}\nType: {Type}\nID: {Id}" };
     }
 
     internal bool Enabled
