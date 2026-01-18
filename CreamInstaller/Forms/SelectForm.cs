@@ -35,7 +35,7 @@ internal sealed partial class SelectForm : CustomForm
     private SelectForm()
     {
         InitializeComponent();
-        selectionTreeView.TreeViewNodeSorter = PlatformIdComparer.NodeName;
+        selectionTreeView.TreeViewNodeSorter = sortCheckBox.Checked ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
         Text = Program.ApplicationName;
     }
 

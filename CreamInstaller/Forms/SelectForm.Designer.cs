@@ -346,6 +346,7 @@ namespace CreamInstaller.Forms
             // 
             sortCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             sortCheckBox.AutoSize = true;
+            sortCheckBox.Checked = true; // Enable Sort By Name by default
             sortCheckBox.Location = new System.Drawing.Point(84, 380);
             sortCheckBox.Margin = new Padding(3, 0, 0, 0);
             sortCheckBox.Name = "sortCheckBox";

@@ -14,7 +14,7 @@ internal sealed partial class SelectDialogForm : CustomForm
     internal SelectDialogForm(IWin32Window owner) : base(owner)
     {
         InitializeComponent();
-        selectionTreeView.TreeViewNodeSorter = PlatformIdComparer.NodeName;
+        selectionTreeView.TreeViewNodeSorter = sortCheckBox.Checked ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
     }
 
     internal DialogResult QueryUser(string groupBoxText,
