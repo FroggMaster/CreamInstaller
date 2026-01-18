@@ -346,7 +346,7 @@ internal sealed partial class SelectForm : CustomForm
                     selection.Icon = IconGrabber.SteamAppImagesPath + @$"\{appId}\{cmdAppData?.Common?.Icon}.jpg";
                     selection.SubIcon = storeAppData?.HeaderImage ?? IconGrabber.SteamAppImagesPath
                         + @$"\{appId}\{cmdAppData?.Common?.ClientIcon}.ico";
-                    selection.Publisher = storeAppData?.Publishers[0] ?? cmdAppData?.Extended?.Publisher;
+                    selection.Publisher = storeAppData?.Publishers?.FirstOrDefault() ?? cmdAppData?.Extended?.Publisher;
                     selection.Website = storeAppData?.Website;
                     if (Program.Canceled)
                         return;
