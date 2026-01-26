@@ -167,7 +167,7 @@ internal static class SmokeAPI
                 }
             }
 
-            writer.WriteLine("  },");
+            writer.WriteLine("  }");
         }
         else
             writer.WriteLine("  \"extra_dlcs\": {}");
