@@ -57,16 +57,77 @@ If the program doesn't seem to launch, try downloading and installing [.NET Desk
 ##### **NOTE:** This program does not automatically download nor install actual DLC files for you; as the title of the program states, this program is only a *DLC Unlocker* installer. Should the game you wish to unlock DLC for not already come with the DLCs installed, as is the case with a good majority of games, you must find, download and install those to the game yourself. This process includes manually installing new DLCs and manually updating the previously manually installed DLCs after game updates.
 
 ---
-#### FAQ / Common Issues:
+#### FAQ / Common Issues
 
-**Q:** The program is not launching.
-**A:** First and foremost, note that the program currently only supports Windows 10+ 64-bit machines as seen [here](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md). If that does not apply to you, then make sure you've extracted the executable from the ZIP file before you've launched it, resolved your anti-virus, and have tried downloading the .NET Desktop Runtime mentioned under [installation instructions](https://github.com/FroggMaster/CreamInstaller#installation) above and restarting your computer. If none of the above work, then I simply cannot do anything about it, I do not control .NET. Either your system is not supported by the current version of .NET, or something is wrong/corrupted with your system.
+**Q:** The program won't launch.
 
-**Q:** The game I installed the unlocker(s) to is not working/the DLCs are not unlocked.
-**A:** Make sure you've read the note under [Usage](https://github.com/FroggMaster/CreamInstaller#usage) above! Assuming the program functioned as it was supposed to by properly installing DLC unlockers to your chosen games, this is not an issue I can do anything about and it's entirely up to you to seek the appropriate resources to fix it yourself (hint: https://cs.rin.ru/forum/viewforum.php?f=10).
+**A:** Check the following in order:
 
-**Q:** The program and/or files installed by the program are detected as a virus/trojan/malware.
-**A:** The "issue" of the program's outputted Koaloader DLLs being detected as false positives such as Mamson.A!ac, Phonzy.A!ml, Wacatac.H!ml, Malgent!MSR, Tiggre!rfn, and many many others, has already been posted and explained dozens of times now in many different manners... please do not post it again, you will just be ignored; instead, refer to the explanations within issue #40 and its linked issues: [WebArchived Link: https://github.com/pointfeev/CreamInstaller/issues/40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40).
+1. **System requirements**: Windows 10+ 64-bit only ([.Net 8.0 Supported OS List](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md))
+2. **Extract before running**: Ensure you've extracted the executable from the ZIP file
+3. **Antivirus**: Add an exception for CreamInstaller (see [False Positives](#false-positive-antivirus-detections) below)
+4. **Runtime**: Install [.NET 8 Desktop Runtime](https://github.com/FroggMaster/CreamInstaller#installation) and restart your computer
+
+If none of these work, your system may not support .NET 8 or have underlying system issues.
+
+---
+
+**Q:** DLCs aren't unlocking in my game.
+
+**A:** CreamInstaller only installs the unlockers it doesn't guarantee they'll work for every game. Assuming the program functioned as it was supposed to by properly installing DLC unlockers to your chosen games, this is not an issue I can do anything about and it's entirely up to you to seek the appropriate resources to fix it yourself
+
+If the installation completed successfully but DLCs still aren't unlocked:
+
+- Check the [Usage section](https://github.com/FroggMaster/CreamInstaller#usage) for proper setup
+- Visit the [CS.RIN.RU forum](https://cs.rin.ru/forum/viewforum.php?f=10) for game-specific troubleshooting
+
+This is **not** a bug with CreamInstaller.
+
+---
+
+**Q:** My antivirus detects CreamInstaller as malware.
+
+**A:** **These are false positives.** See the detailed explanation below.
+
+### False Positive Antivirus Detections
+
+<details>
+<summary>Click to expand for information about false positives</summary>
+
+## Why Antivirus Software Flags CreamInstaller
+
+CreamInstaller is **not malware**, but it's commonly flagged because of its functionality:
+
+| Reason | Explanation |
+|--------|-------------|
+| **DLL modification** | Replaces game DLLs to unlock content which is identical behavior to some malware |
+| **DLC Unlocker Process hooking** | Embedded DLC unlockers interact with Steam/Epic/Ubisoft/Game processes |
+| **Compressed executable** | Published as a single-file .exe, which AVs can associate with malware packing |
+| **Not code-signed** | No Extended Validation certificate ($300-500/year) means lower AV reputation (**_I won't be paying for this either._**) |
+| **MISC** | Game modding tools are often flagged by pattern matching, regardless of intent |
+
+## Common False Positive Names
+
+- `Mamson.A!ac`
+- `Phonzy.A!ml`
+- `Wacatac.H!ml`
+- `Malgent!MSR`
+- `Tiggre!rfn`
+- `UDS:DangerousObject.Multi.Generic`
+- `Trojan.Win64.Agent`
+
+**See also**: [Archived issue #40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40)
+
+## Verify Safety Yourself
+
+CreamInstaller is **100% open source**:
+
+1. ✅ **Review the source code** in this repository
+2. ✅ **Build it yourself** using the [build instructions](https://github.com/FroggMaster/CreamInstaller#building)
+3. ✅ **Compare hashes** of your build with the official release
+
+</details>
+
 
 ---
 ##### Bugs/Crashes/Issues:
@@ -75,8 +136,22 @@ For reliable and quick assistance, all bugs, crashes and other issues should be 
 ##### **HOWEVER**: Please read the [FAQ entry](https://github.com/FroggMaster/CreamInstaller#faq--common-issues) above and/or [template issue](https://github.com/FroggMaster/CreamInstaller/issues/new/choose) corresponding to your problem should one exist! Also, note that the [GitHub Issues](https://github.com/FroggMaster/CreamInstaller/issues) page is not your personal assistance hotline, rather it is for genuine bugs/crashes/issues with the program itself. If you post an issue which is off-topic or has already been explained within the FAQ, template issues, and/or within this text in general, I will just close it and you will be ignored.
 
 ---
+
 ##### More Information:
 * SteamCMD installation and appinfo cache can be found at **C:\ProgramData\CreamInstaller**.
 * The program automatically and very quickly updates from [GitHub](https://github.com/FroggMaster/CreamInstaller) by choice of the user through a dialog on startup.
 * The program source and other information can be found on [GitHub](https://github.com/FroggMaster/CreamInstaller).
 * Credit to [Mattahan](https://www.mattahan.com) for the program icon.
+
+---
+#### Legal Disclaimer
+
+CreamInstaller is provided for educational purposes and personal use. Users are responsible for compliance with:
+- Game EULAs and Terms of Service
+- Local laws regarding software modification
+- Platform policies (Steam, Epic Games, Ubisoft)
+
+**Use at your own risk.** I am  not responsible for:
+- Account bans or suspensions however unlikely they may be
+- Game malfunctions or data loss 
+- Violations of terms of service
