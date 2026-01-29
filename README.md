@@ -108,13 +108,16 @@ CreamInstaller is **not malware**, but it's commonly flagged because of its func
 
 ## Common False Positive Names
 
-- `Mamson.A!ac`
-- `Phonzy.A!ml`
-- `Wacatac.H!ml`
-- `Malgent!MSR`
-- `Tiggre!rfn`
-- `UDS:DangerousObject.Multi.Generic`
-- `Trojan.Win64.Agent`
+| Detection Name                          | What It Usually Means / Why It’s a False Positive |
+|----------------------------------------|---------------------------------------------------|
+| Mamson.A!ac                            | Generic heuristic detection. Often triggered by packed or obfuscated executables, especially mods, cracks, or custom tools. |
+| Phonzy.A!ml                            | Machine-learning based detection. Flags unusual behavior patterns rather than known malware signatures. Common with new or unsigned software. |
+| Wacatac.H!ml                           | Very common false positive. Triggered by compressed, encrypted, or self-updating programs (installers, launchers, game mods). |
+| Malgent!MSR                           | “Generic malware” label from Microsoft. Means the file behaves oddly but is not confirmed malicious. Often hits scripts and admin tools. |
+| Tiggre!rfn                            | Heuristic detection related to runtime behavior. Often seen with automation tools, cheats, or programs that inject or hook processes. |
+| UDS:DangerousObject.Multi.Generic     | User-defined or reputation-based detection. Flags tools that *can* be abused (network, scripting, admin utilities). |
+| Trojan.Win64.Agent                    | Extremely broad category. Indicates suspicious activity but not a specific trojan. Very common false positive for unsigned binaries. |
+| Trojan.Win64.Agent.oa!s1              | Variant of the generic Agent detection using cloud/AI heuristics. Often triggered by low-prevalence or newly compiled software. |
 
 **See also**: [Archived issue #40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40)
 
@@ -122,9 +125,9 @@ CreamInstaller is **not malware**, but it's commonly flagged because of its func
 
 CreamInstaller is **100% open source**:
 
-1. ✅ **Review the source code** in this repository
-2. ✅ **Build it yourself** using the [build instructions](https://github.com/FroggMaster/CreamInstaller#building)
-3. ✅ **Compare hashes** of your build with the official release
+1. **Review the source code** in this repository
+2. **Build it yourself**
+3. **Compare hashes** of your build with the official release
 
 </details>
 
