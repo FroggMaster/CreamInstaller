@@ -20,6 +20,18 @@ internal static class ThemeManager
     private static readonly Color LightFore = SystemColors.ControlText;
     private static readonly Color LightBorder = SystemColors.ControlDark;
 
+    internal static Color CustomTreeViewPlatformColor => Program.DarkModeEnabled 
+        ? ColorTranslator.FromHtml("#FFFF99")  // Light yellow for dark mode
+        : ColorTranslator.FromHtml("#696900"); // Dark yellow for light mode
+
+    internal static Color CustomTreeViewIdColor => Program.DarkModeEnabled 
+        ? ColorTranslator.FromHtml("#99FFFF")  // Light cyan for dark mode
+        : ColorTranslator.FromHtml("#006969"); // Dark cyan for light mode
+
+    internal static Color CustomTreeViewProxyColor => Program.DarkModeEnabled 
+        ? ColorTranslator.FromHtml("#99FF99")  // Light green for dark mode
+        : ColorTranslator.FromHtml("#006900"); // Dark green for light mode
+
     internal static void ToggleDarkMode(Form anyForm)
     {
         Program.DarkModeEnabled = !Program.DarkModeEnabled;
@@ -85,6 +97,7 @@ internal static class ThemeManager
                     tv.BackColor = DarkBackAlt;
                     tv.ForeColor = DarkFore;
                     tv.LineColor = DarkBorder;
+                    tv.Invalidate(); // Forces a redraw
                     break;
                 case RichTextBox rtb:
                     rtb.BackColor = DarkBackAlt;
@@ -135,6 +148,7 @@ internal static class ThemeManager
                     tv.BackColor = LightBack;
                     tv.ForeColor = LightFore;
                     tv.LineColor = LightBorder;
+                    tv.Invalidate(); // Forces a redraw
                     break;
                 case RichTextBox rtb:
                     rtb.BackColor = LightBack;

@@ -29,6 +29,7 @@ internal sealed class CustomTreeView : TreeView
 
     private readonly Dictionary<TreeNode, Rectangle> selectionBounds = [];
     private SolidBrush backBrush;
+    private Color lastBackColor; // Tracks the last background color
     private ToolStripDropDown comboBoxDropDown;
     private Font comboBoxFont;
     private Form form;
@@ -65,6 +66,9 @@ internal sealed class CustomTreeView : TreeView
         checkBoxBounds.Clear();
         comboBoxBounds.Clear();
         selectionBounds.Clear();
+        backBrush?.Dispose();
+        backBrush = null;
+        lastBackColor = Color.Empty;
     }
 
     private void DrawTreeNode(object sender, DrawTreeNodeEventArgs e)
@@ -76,7 +80,15 @@ internal sealed class CustomTreeView : TreeView
 
         bool highlighted = (e.State & TreeNodeStates.Selected) == TreeNodeStates.Selected && Focused;
         Graphics graphics = e.Graphics;
-        backBrush ??= new(BackColor);
+        
+        // Recreate brush if background color changed
+        if (backBrush == null || lastBackColor != BackColor)
+        {
+            backBrush?.Dispose();
+            backBrush = new(BackColor);
+            lastBackColor = BackColor;
+        }
+        
         Font font = node.NodeFont ?? Font;
         Brush brush = highlighted ? SystemBrushes.Highlight : backBrush;
         Rectangle bounds = node.Bounds;
@@ -95,7 +107,7 @@ internal sealed class CustomTreeView : TreeView
         Color color = highlighted
             ? C1
             : Enabled
-                ? C2
+                ? ThemeManager.CustomTreeViewPlatformColor
                 : C3;
         string text;
         if (dlcType is not DLCType.None)
@@ -117,7 +129,7 @@ internal sealed class CustomTreeView : TreeView
             color = highlighted
                 ? C4
                 : Enabled
-                    ? C5
+                    ? ThemeManager.CustomTreeViewIdColor
                     : C6;
             text = id;
             size = TextRenderer.MeasureText(graphics, text, font);
@@ -163,7 +175,7 @@ internal sealed class CustomTreeView : TreeView
                 checkBoxBounds = new(checkBoxBounds.Location, checkBoxBounds.Size + bounds.Size with { Height = 0 });
                 graphics.FillRectangle(backBrush, bounds);
                 point = new(bounds.Location.X - 1 + left, bounds.Location.Y + 1);
-                TextRenderer.DrawText(graphics, text, font, point, Enabled ? C7 : C8, TextFormatFlags.Default);
+                TextRenderer.DrawText(graphics, text, font, point, Enabled ? ThemeManager.CustomTreeViewProxyColor : C8, TextFormatFlags.Default);
 
                 this.checkBoxBounds[selection] = RectangleToClient(checkBoxBounds);
 
