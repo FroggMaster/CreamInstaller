@@ -791,6 +791,7 @@ internal sealed partial class SelectForm : CustomForm
         => Invoke(() =>
         {
             ContextMenuStrip contextMenuStrip = new();
+            ThemeManager.ApplyContextMenu(contextMenuStrip);
             ToolStripItemCollection items = contextMenuStrip.Items;
             string id = node.Name;
             Platform platform = (Platform)node.Tag;
@@ -1242,14 +1243,8 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnDarkModeCheckBoxChanged(object sender, EventArgs e)
     {
-        bool requestedDark = darkModeCheckBox.Checked;
-        if (Program.DarkModeEnabled != requestedDark)
-        {
-            Program.DarkModeEnabled = requestedDark;
-            ThemeManager.Apply(this);
-        }
-        else
-            ThemeManager.Apply(this);
+        Program.DarkModeEnabled = darkModeCheckBox.Checked;
+        ThemeManager.ApplyToAllOpenForms();
     }
 
     protected override void OnShown(EventArgs e)
