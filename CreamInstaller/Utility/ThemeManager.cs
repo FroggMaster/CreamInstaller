@@ -32,6 +32,24 @@ internal static class ThemeManager
         ? ColorTranslator.FromHtml("#99FF99")  // Light green for dark mode
         : ColorTranslator.FromHtml("#006900"); // Dark green for light mode
 
+    internal static Color CustomTreeViewHighlightPlatformColor => ColorTranslator.FromHtml("#FFFF99"); // C1
+    internal static Color CustomTreeViewDisabledPlatformColor => ColorTranslator.FromHtml("#AAAA69"); // C3
+    internal static Color CustomTreeViewHighlightIdColor => ColorTranslator.FromHtml("#99FFFF"); // C4
+    internal static Color CustomTreeViewDisabledIdColor => ColorTranslator.FromHtml("#69AAAA"); // C6
+    internal static Color CustomTreeViewDisabledProxyColor => ColorTranslator.FromHtml("#69AA69"); // C8
+
+    internal static Color CustomTreeViewComboBackColor => Program.DarkModeEnabled 
+        ? DarkBackAlt  // #252525
+        : SystemColors.Control;
+
+    internal static Color CustomTreeViewComboBorderColor => Program.DarkModeEnabled 
+        ? DarkBorder  // #3F3F46
+        : SystemColors.ControlDark;
+
+    internal static Color CustomTreeViewComboTextColor => Program.DarkModeEnabled 
+        ? DarkFore  // #D4D4D4
+        : SystemColors.ControlText;
+
     internal static void ToggleDarkMode(Form anyForm)
     {
         Program.DarkModeEnabled = !Program.DarkModeEnabled;
@@ -229,16 +247,57 @@ internal static class ThemeManager
                 ApplyContextMenuItem(subItem, dark);
     }
 
+    internal static void ApplyToolStripDropDown(ToolStripDropDown dropDown)
+    {
+        if (dropDown is null) return;
+
+        bool dark = Program.DarkModeEnabled;
+
+        dropDown.BackColor = dark ? DarkBackAlt : SystemColors.Menu;
+        dropDown.ForeColor = dark ? DarkFore : SystemColors.MenuText;
+        dropDown.Renderer = dark ? new DarkDropDownRenderer() : new ToolStripProfessionalRenderer();
+
+        foreach (ToolStripItem item in dropDown.Items)
+            ApplyToolStripItem(item, dark);
+    }
+
+    private static void ApplyToolStripItem(ToolStripItem item, bool dark)
+    {
+        if (item is null) return;
+
+        item.BackColor = dark ? DarkBackAlt : SystemColors.Menu;
+        item.ForeColor = dark ? DarkFore : SystemColors.MenuText;
+    }
+
     private class DarkContextMenuRenderer : ToolStripProfessionalRenderer
     {
         public DarkContextMenuRenderer() : base(new DarkMenuColorTable()) { }
+        
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            if (e.Item.Selected)
+                e.TextColor = DarkFore;
+            base.OnRenderItemText(e);
+        }
+    }
+
+    private class DarkDropDownRenderer : ToolStripProfessionalRenderer
+    {
+        public DarkDropDownRenderer() : base(new DarkMenuColorTable()) { }
+        
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            // Force text color to stay light even when selected
+            e.TextColor = DarkFore;
+            base.OnRenderItemText(e);
+        }
     }
 
     private class DarkMenuColorTable : ProfessionalColorTable
     {
-        public override Color MenuItemSelected => ColorTranslator.FromHtml("#3F3F46");
-        public override Color MenuItemSelectedGradientBegin => ColorTranslator.FromHtml("#3F3F46");
-        public override Color MenuItemSelectedGradientEnd => ColorTranslator.FromHtml("#3F3F46");
+        public override Color MenuItemSelected => ColorTranslator.FromHtml("#2A2D2E");
+        public override Color MenuItemSelectedGradientBegin => ColorTranslator.FromHtml("#2A2D2E");
+        public override Color MenuItemSelectedGradientEnd => ColorTranslator.FromHtml("#2A2D2E");
         public override Color MenuItemBorder => ColorTranslator.FromHtml("#3F3F46");
         public override Color MenuBorder => ColorTranslator.FromHtml("#3F3F46");
         public override Color MenuItemPressedGradientBegin => ColorTranslator.FromHtml("#252525");
