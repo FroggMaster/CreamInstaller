@@ -44,95 +44,85 @@ internal sealed class ContextMenuItem : ToolStripMenuItem
     }
 
     private static async Task TryImageIdentifier(ContextMenuItem item, string imageIdentifier)
-        => await Task.Run(async () =>
+    {
+        if (Images.TryGetValue(imageIdentifier, out Image image) && image is not null)
         {
-            if (Images.TryGetValue(imageIdentifier, out Image image) && image is not null)
-                item.Image = image;
-            else
+            item.Image = image;
+            return;
+        }
+
+        image = await Task.Run(async () =>
+        {
+            switch (imageIdentifier)
             {
-                switch (imageIdentifier)
-                {
-                    case "Paradox Launcher":
-                        if (ParadoxLauncher.InstallPath.DirectoryExists())
-                            foreach (string file in ParadoxLauncher.InstallPath.EnumerateDirectory("*.exe"))
-                            {
-                                image = file.GetFileIconImage();
-                                break;
-                            }
-
-                        break;
-                    case "Notepad":
-                        image = IconGrabber.GetNotepadImage();
-                        break;
-                    case "Command Prompt":
-                        image = IconGrabber.GetCommandPromptImage();
-                        break;
-                    case "File Explorer":
-                        image = IconGrabber.GetFileExplorerImage();
-                        break;
-                    case "SteamDB":
-                        image = await HttpClientManager.GetImageFromUrl(
-                            IconGrabber.GetDomainFaviconUrl("steamdb.info"));
-                        break;
-                    case "Steam Store":
-                        image = await HttpClientManager.GetImageFromUrl(
-                            IconGrabber.GetDomainFaviconUrl("store.steampowered.com"));
-                        break;
-                    case "Steam Community":
-                        image = await HttpClientManager.GetImageFromUrl(
-                            IconGrabber.GetDomainFaviconUrl("steamcommunity.com"));
-                        break;
-                    case "ScreamDB":
-                        image = await HttpClientManager.GetImageFromUrl(
-                            IconGrabber.GetDomainFaviconUrl("scream-db.web.app"));
-                        break;
-                    case "Epic Games":
-                        image = await HttpClientManager.GetImageFromUrl(
-                            IconGrabber.GetDomainFaviconUrl("epicgames.com"));
-                        break;
-                    case "Ubisoft Store":
-                        image = await HttpClientManager.GetImageFromUrl(
-                            IconGrabber.GetDomainFaviconUrl("store.ubi.com"));
-                        break;
-                    default:
-                        return;
-                }
-
-                if (image is not null)
-                {
-                    Images[imageIdentifier] = image;
-                    item.Image = image;
-                }
+                case "Paradox Launcher":
+                    if (ParadoxLauncher.InstallPath.DirectoryExists())
+                        foreach (string file in ParadoxLauncher.InstallPath.EnumerateDirectory("*.exe"))
+                            return file.GetFileIconImage();
+                    break;
+                case "Notepad":
+                    return IconGrabber.GetNotepadImage();
+                case "Command Prompt":
+                    return IconGrabber.GetCommandPromptImage();
+                case "File Explorer":
+                    return IconGrabber.GetFileExplorerImage();
+                case "SteamDB":
+                    return await HttpClientManager.GetImageFromUrl(
+                        IconGrabber.GetDomainFaviconUrl("steamdb.info"));
+                case "Steam Store":
+                    return await HttpClientManager.GetImageFromUrl(
+                        IconGrabber.GetDomainFaviconUrl("store.steampowered.com"));
+                case "Steam Community":
+                    return await HttpClientManager.GetImageFromUrl(
+                        IconGrabber.GetDomainFaviconUrl("steamcommunity.com"));
+                case "ScreamDB":
+                    return await HttpClientManager.GetImageFromUrl(
+                        IconGrabber.GetDomainFaviconUrl("scream-db.web.app"));
+                case "Epic Games":
+                    return await HttpClientManager.GetImageFromUrl(
+                        IconGrabber.GetDomainFaviconUrl("epicgames.com"));
+                case "Ubisoft Store":
+                    return await HttpClientManager.GetImageFromUrl(
+                        IconGrabber.GetDomainFaviconUrl("store.ubi.com"));
             }
+            return null;
         });
+
+        if (image is not null)
+        {
+            Images[imageIdentifier] = image;
+            item.Image = image;
+        }
+    }
 
     private static async Task TryImageIdentifierInfo(ContextMenuItem item,
         (string id, string iconUrl) imageIdentifierInfo, Action onFail = null)
-        => await Task.Run(async () =>
+    {
+        try
         {
-            try
+            (string id, string iconUrl) = imageIdentifierInfo;
+            string imageIdentifier = "Icon_" + id;
+            
+            if (Images.TryGetValue(imageIdentifier, out Image image) && image is not null)
             {
-                (string id, string iconUrl) = imageIdentifierInfo;
-                string imageIdentifier = "Icon_" + id;
-                if (Images.TryGetValue(imageIdentifier, out Image image) && image is not null)
-                    item.Image = image;
-                else
-                {
-                    image = await HttpClientManager.GetImageFromUrl(iconUrl);
-                    if (image is not null)
-                    {
-                        Images[imageIdentifier] = image;
-                        item.Image = image;
-                    }
-                    else
-                        onFail?.Invoke();
-                }
+                item.Image = image;
+                return;
             }
-            catch
+
+            image = await HttpClientManager.GetImageFromUrl(iconUrl);
+            if (image is not null)
             {
-                // ignored
+                Images[imageIdentifier] = image;
+                item.Image = image;
             }
-        });
+            else
+                onFail?.Invoke();
+        }
+        catch
+        {
+            // ignored
+        }
+    }
 
     protected override void OnClick(EventArgs e)
     {
