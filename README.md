@@ -145,16 +145,3 @@ For reliable and quick assistance, all bugs, crashes and other issues should be 
 * The program automatically and very quickly updates from [GitHub](https://github.com/FroggMaster/CreamInstaller) by choice of the user through a dialog on startup.
 * The program source and other information can be found on [GitHub](https://github.com/FroggMaster/CreamInstaller).
 * Credit to [Mattahan](https://www.mattahan.com) for the program icon.
-
----
-#### Legal Disclaimer
-
-CreamInstaller is provided for educational purposes and personal use. Users are responsible for compliance with:
-- Game EULAs and Terms of Service
-- Local laws regarding software modification
-- Platform policies (Steam, Epic Games, Ubisoft)
-
-**Use at your own risk.** I am  not responsible for:
-- Account bans or suspensions however unlikely they may be
-- Game malfunctions or data loss 
-- Violations of terms of service
