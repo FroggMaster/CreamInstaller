@@ -62,6 +62,7 @@ jobs:
           tag_name: v${{ inputs.version }}
           name: ${{ inputs.title || format('Release v{0}', inputs.version) }}
           body: ${{ inputs.notes }}
+          generate_release_notes: true
           files: |
             ./publish/CreamInstaller.exe
             ./publish/CreamInstaller.zip
