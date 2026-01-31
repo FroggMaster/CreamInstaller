@@ -21,6 +21,11 @@ internal sealed class CustomTreeView : TreeView
     private readonly Dictionary<TreeNode, Rectangle> selectionBounds = [];
     private SolidBrush backBrush;
     private Color lastBackColor; // Tracks the last background color
+
+    // Selection background brush (used instead of SystemBrushes.Highlight to support dark mode)
+    private SolidBrush selectionBrush;
+    private Color lastSelectionBackColor;
+
     private ToolStripDropDown comboBoxDropDown;
     private Font comboBoxFont;
     private Form form;
@@ -46,6 +51,8 @@ internal sealed class CustomTreeView : TreeView
     {
         backBrush?.Dispose();
         backBrush = null;
+        selectionBrush?.Dispose();
+        selectionBrush = null;
         comboBoxFont?.Dispose();
         comboBoxFont = null;
         comboBoxDropDown?.Dispose();
@@ -60,6 +67,10 @@ internal sealed class CustomTreeView : TreeView
         backBrush?.Dispose();
         backBrush = null;
         lastBackColor = Color.Empty;
+
+        selectionBrush?.Dispose();
+        selectionBrush = null;
+        lastSelectionBackColor = Color.Empty;
     }
 
     private void DrawTreeNode(object sender, DrawTreeNodeEventArgs e)
@@ -71,17 +82,29 @@ internal sealed class CustomTreeView : TreeView
 
         bool highlighted = (e.State & TreeNodeStates.Selected) == TreeNodeStates.Selected && Focused;
         Graphics graphics = e.Graphics;
-        
-        // Recreate brush if background color changed
+
+        // Recreate back brush if background color changed
         if (backBrush == null || lastBackColor != BackColor)
         {
             backBrush?.Dispose();
             backBrush = new(BackColor);
             lastBackColor = BackColor;
         }
-        
+
+        // If highlighted, prepare a selection brush that respects the theme
+        if (highlighted)
+        {
+            Color selColor = ThemeManager.CustomTreeViewSelectionBackColor;
+            if (selectionBrush == null || lastSelectionBackColor != selColor)
+            {
+                selectionBrush?.Dispose();
+                selectionBrush = new(selColor);
+                lastSelectionBackColor = selColor;
+            }
+        }
+
         Font font = node.NodeFont ?? Font;
-        Brush brush = highlighted ? SystemBrushes.Highlight : backBrush;
+        Brush brush = highlighted ? (Brush)selectionBrush : backBrush;
         Rectangle bounds = node.Bounds;
         Rectangle selectionBounds = bounds;
 
@@ -166,8 +189,8 @@ internal sealed class CustomTreeView : TreeView
                 checkBoxBounds = new(checkBoxBounds.Location, checkBoxBounds.Size + bounds.Size with { Height = 0 });
                 graphics.FillRectangle(backBrush, bounds);
                 point = new(bounds.Location.X - 1 + left, bounds.Location.Y + 1);
-                TextRenderer.DrawText(graphics, text, font, point, 
-                    Enabled ? ThemeManager.CustomTreeViewProxyColor : ThemeManager.CustomTreeViewDisabledProxyColor, 
+                TextRenderer.DrawText(graphics, text, font, point,
+                    Enabled ? ThemeManager.CustomTreeViewProxyColor : ThemeManager.CustomTreeViewDisabledProxyColor,
                     TextFormatFlags.Default);
 
                 this.checkBoxBounds[selection] = RectangleToClient(checkBoxBounds);
@@ -189,16 +212,9 @@ internal sealed class CustomTreeView : TreeView
                     selectionBounds = new(selectionBounds.Location,
                         selectionBounds.Size + bounds.Size with { Height = 0 });
                     Rectangle comboBoxBounds = bounds;
-                    
-                    // Draw custom themed combobox
-                    using (SolidBrush comboBrush = new(comboBackColor))
-                    using (Pen borderPen = new(comboBorderColor))
-                    {
-                        graphics.FillRectangle(comboBrush, bounds);
-                        graphics.DrawRectangle(borderPen, bounds);
-                        point = new(bounds.Location.X + 3, bounds.Location.Y + bounds.Height / 2 - size.Height / 2);
-                        TextRenderer.DrawText(graphics, text, comboBoxFont, point, comboTextColor, TextFormatFlags.Default);
-                    }
+
+                    // Themed combobox background + text (centralized in ThemeManager)
+                    ThemeManager.DrawCustomComboBox(graphics, bounds, comboBoxFont, text);
 
                     size = new(14, 0);
                     left = -1;
@@ -207,28 +223,9 @@ internal sealed class CustomTreeView : TreeView
                         selectionBounds.Size + new Size(bounds.Size.Width + left, 0));
                     comboBoxBounds = new(comboBoxBounds.Location,
                         comboBoxBounds.Size + new Size(bounds.Size.Width + left, 0));
-                
-                    // Draw custom themed dropdown button
-                    using (SolidBrush comboBrush = new(comboBackColor))
-                    using (Pen borderPen = new(comboBorderColor))
-                    {
-                        graphics.FillRectangle(comboBrush, bounds);
-                        graphics.DrawRectangle(borderPen, bounds);
-                        
-                        // Draw arrow
-                        int arrowSize = 3;
-                        Point arrowTop = new(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2 - 1);
-                        Point[] arrowPoints = new[]
-                        {
-                            arrowTop,
-                            new Point(arrowTop.X - arrowSize, arrowTop.Y - arrowSize),
-                            new Point(arrowTop.X + arrowSize, arrowTop.Y - arrowSize)
-                        };
-                        using (SolidBrush arrowBrush = new(comboTextColor))
-                        {
-                            graphics.FillPolygon(arrowBrush, arrowPoints);
-                        }
-                    }
+
+                    // Themed combobox dropdown button (centralized in ThemeManager)
+                    ThemeManager.DrawCustomComboBoxButton(graphics, bounds);
 
                     this.comboBoxBounds[selection] = RectangleToClient(comboBoxBounds);
                 }
@@ -270,7 +267,7 @@ internal sealed class CustomTreeView : TreeView
                     comboBoxDropDown ??= new();
                     comboBoxDropDown.ShowItemToolTips = false;
                     comboBoxDropDown.Items.Clear();
-                    
+
                     foreach (string proxy in proxies)
                     {
                         bool canUse = true;
