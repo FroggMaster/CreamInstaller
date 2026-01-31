@@ -57,69 +57,66 @@ If the program doesn't seem to launch, try downloading and installing [.NET Desk
 ##### **NOTE:** This program does not automatically download nor install actual DLC files for you; as the title of the program states, this program is only a *DLC Unlocker* installer. Should the game you wish to unlock DLC for not already come with the DLCs installed, as is the case with a good majority of games, you must find, download and install those to the game yourself. This process includes manually installing new DLCs and manually updating the previously manually installed DLCs after game updates.
 
 ---
-#### FAQ / Common Issues
+# FAQ / Common Issues
 
-**Q:** The program won't launch.
+### The program won't launch
 
-**A:** Check the following in order:
+Check the following in order:
 
-1. **System requirements**: Windows 10+ 64-bit only ([.Net 8.0 Supported OS List](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md))
+1. **System requirements**: Windows 10+ 64-bit only ([.NET 8 Supported OS List](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md))
 2. **Extract before running**: Ensure you've extracted the executable from the ZIP file
 3. **Antivirus**: Add an exception for CreamInstaller (see [False Positives](#false-positive-antivirus-detections) below)
 4. **Runtime**: Install [.NET 8 Desktop Runtime](https://github.com/FroggMaster/CreamInstaller#installation) and restart your computer
 
-If none of these work, your system may not support .NET 8 or have underlying system issues.
+If none of these work, your system may not support .NET 8 or may have underlying system issues.
 
 ---
 
-**Q:** DLCs aren't unlocking in my game.
+### DLCs aren't unlocking in my game
 
-**A:** CreamInstaller only installs the unlockers it doesn't guarantee they'll work for every game. Assuming the program functioned as it was supposed to by properly installing DLC unlockers to your chosen games, this is not an issue I can do anything about and it's entirely up to you to seek the appropriate resources to fix it yourself
+CreamInstaller only installs the unlockers — it does **not** guarantee they will work for every game.
 
-If the installation completed successfully but DLCs still aren't unlocked:
+If the program successfully installed the unlockers but DLCs still aren’t unlocking, this is **not an issue with CreamInstaller itself** and isn’t something I can directly fix.
 
-- Check the [Usage section](https://github.com/FroggMaster/CreamInstaller#usage) for proper setup
+Try the following:
+
+- Review the [Usage section](https://github.com/FroggMaster/CreamInstaller#usage) for proper setup
 - Visit the [CS.RIN.RU forum](https://cs.rin.ru/forum/viewforum.php?f=10) for game-specific troubleshooting
 
-This is **not** a bug with CreamInstaller.
-
 ---
 
-**Q:** My antivirus detects CreamInstaller as malware.
+### My antivirus detects CreamInstaller as a virus (False Positives)
 
-**A:** **These are false positives.** See the detailed explanation below.
-
-### False Positive Antivirus Detections
-
+**These are false positives.** See the detailed explanation below:
 <details>
 <summary>Click to expand for information about false positives</summary>
 
 ## Why Antivirus Software Flags CreamInstaller
 
-CreamInstaller is **not malware**, but it's commonly flagged because of its functionality:
+CreamInstaller is **not a virus**, but it's commonly flagged because of its functionality:
 
 | Reason | Explanation |
 |--------|-------------|
-| **DLL modification** | Replaces game DLLs to unlock content which is identical behavior to some malware |
-| **DLC Unlocker Process hooking** | Embedded DLC unlockers interact with Steam/Epic/Ubisoft/Game processes |
-| **Compressed executable** | Published as a single-file .exe, which AVs can associate with malware packing |
-| **Not code-signed** | No Extended Validation certificate ($300-500/year) means lower AV reputation (**_I won't be paying for this either._**) |
-| **MISC** | Game modding tools are often flagged by pattern matching, regardless of intent |
+| **DLL modification** | Replaces game DLLs to unlock content — behavior similar to some malware |
+| **Process hooking** | Embedded DLC unlockers interact with Steam/Epic/Ubisoft/game processes |
+| **Compressed executable** | Single-file executables are often associated with packed malware |
+| **Not code-signed** | No Extended Validation certificate ($300–500/year) means lower AV reputation (**I will not be paying for this**) |
+| **Misc** | Game modding tools frequently trigger heuristic detections regardless of intent |
 
 ## Common False Positive Names
 
-| Detection Name                          | What It Usually Means / Why It’s a False Positive |
+| Detection Name | What It Usually Means / Why It’s a False Positive |
 |----------------------------------------|---------------------------------------------------|
-| Mamson.A!ac                            | Generic heuristic detection. Often triggered by packed or obfuscated executables, especially mods, cracks, or custom tools. |
-| Phonzy.A!ml                            | Machine-learning based detection. Flags unusual behavior patterns rather than known malware signatures. Common with new or unsigned software. |
-| Wacatac.H!ml                           | Very common false positive. Triggered by compressed, encrypted, or self-updating programs (installers, launchers, game mods). |
-| Malgent!MSR                           | “Generic malware” label from Microsoft. Means the file behaves oddly but is not confirmed malicious. Often hits scripts and admin tools. |
-| Tiggre!rfn                            | Heuristic detection related to runtime behavior. Often seen with automation tools, cheats, or programs that inject or hook processes. |
-| UDS:DangerousObject.Multi.Generic     | User-defined or reputation-based detection. Flags tools that *can* be abused (network, scripting, admin utilities). |
-| Trojan.Win64.Agent                    | Extremely broad category. Indicates suspicious activity but not a specific trojan. Very common false positive for unsigned binaries. |
-| Trojan.Win64.Agent.oa!s1              | Variant of the generic Agent detection using cloud/AI heuristics. Often triggered by low-prevalence or newly compiled software. |
+| Mamson.A!ac | Generic heuristic detection; often triggered by packed or obfuscated executables |
+| Phonzy.A!ml | Machine-learning detection; flags unusual behavior patterns |
+| Wacatac.H!ml | Extremely common false positive; triggered by compressed or self-updating programs |
+| Malgent!MSR | Generic Microsoft label for “suspicious behavior,” not confirmed malware |
+| Tiggre!rfn | Heuristic runtime detection often seen with tools that hook processes |
+| UDS:DangerousObject.Multi.Generic | Reputation-based detection for tools that *can* be abused |
+| Trojan.Win64.Agent | Very broad category; common false positive for unsigned binaries |
+| Trojan.Win64.Agent.oa!s1 | Cloud/AI heuristic variant of the above |
 
-**See also**: [Archived issue #40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40)
+**See also:** [Archived issue #40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40)
 
 ## Verify Safety Yourself
 
