@@ -58,9 +58,9 @@ internal static class EpicStore
                 cacheFile.DeleteFile();
             }
 
-        if (response is null)
+        if (response is null || response.Data?.Catalog is null)
             return dlcIds;
-        List<Element> searchStore = [..response.Data.Catalog.SearchStore.Elements];
+        List<Element> searchStore = [..response.Data.Catalog.SearchStore?.Elements ?? []];
         foreach (Element element in searchStore)
         {
             string title = element.Title;
@@ -81,7 +81,7 @@ internal static class EpicStore
                 dlcIds.Populate(item.Id, title, product, icon, null, element.Items.Length == 1);
         }
 
-        List<Element> catalogOffers = [..response.Data.Catalog.CatalogOffers.Elements];
+        List<Element> catalogOffers = [..response.Data.Catalog.CatalogOffers?.Elements ?? []];
         foreach (Element element in catalogOffers)
         {
             string title = element.Title;
@@ -118,6 +118,7 @@ internal static class EpicStore
             (string id, string name, string product, string icon, string developer) app = dlcIds[i];
             if (app.id != id)
                 continue;
+
             found = true;
             dlcIds[i] = canOverwrite
                 ? (app.id, title ?? app.name, product ?? app.product, icon ?? app.icon, developer ?? app.developer)
