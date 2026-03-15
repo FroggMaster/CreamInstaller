@@ -74,14 +74,17 @@ If none of these work, your system may not support .NET 8 or may have underlying
 
 ### DLCs aren't unlocking in my game
 
-CreamInstaller only installs the unlockers — it does **not** guarantee they will work for every game.
+CreamInstaller only installs DLC **unlockers** — it does **not** guarantee they will work for every game.
 
-If the program successfully installed the unlockers but DLCs still aren’t unlocking, this is **not an issue with CreamInstaller itself** and isn’t something I can directly fix.
+If the program successfully installs the unlockers but DLCs still aren’t unlocking, this is **not an issue with CreamInstaller itself** and isn’t something I can directly fix. DLC Unlocker compatibility and behavior vary from game to game.
 
-Try the following:
+**DLC Files:** _This program does **not** automatically download or install actual DLC files for you. As the name implies, it is only a *DLC unlocker installer*. If the game you wish to unlock DLC for does not already include the DLC files (which is the case for many games), you must manually obtain and install those files yourself. This includes manually installing new DLCs and manually updating or reinstalling previously installed DLCs after game updates._
 
-- Review the [Usage section](https://github.com/FroggMaster/CreamInstaller#usage) for proper setup
-- Visit the [CS.RIN.RU forum](https://cs.rin.ru/forum/viewforum.php?f=10) for game-specific troubleshooting
+If you’re having trouble, try the following:
+
+- Review the [Usage section](https://github.com/FroggMaster/CreamInstaller#usage) for proper setup  
+- Visit the [CS.RIN.RU forum](https://cs.rin.ru/forum/viewforum.php?f=10) for game-specific troubleshooting and compatibility info
+
 
 ---
 
