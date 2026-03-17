@@ -64,7 +64,7 @@ internal static class EpicStore
         foreach (Element element in searchStore)
         {
             string title = element.Title;
-            string product = element.CatalogNs is not null && element.CatalogNs.Mappings.Length > 0
+            string product = element.CatalogNs?.Mappings is { Length: > 0 }
                 ? element.CatalogNs.Mappings.First().PageSlug
                 : null;
             string icon = null;
@@ -85,7 +85,7 @@ internal static class EpicStore
         foreach (Element element in catalogOffers)
         {
             string title = element.Title;
-            string product = element.CatalogNs is not null && element.CatalogNs.Mappings.Length > 0
+            string product = element.CatalogNs?.Mappings is { Length: > 0 }
                 ? element.CatalogNs.Mappings.First().PageSlug
                 : null;
             string icon = null;
