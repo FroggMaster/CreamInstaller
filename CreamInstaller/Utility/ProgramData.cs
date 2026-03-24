@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
@@ -27,6 +29,38 @@ internal static class ProgramData
     private static readonly string ProgramChoicesPath = DirectoryPath + @"\choices.json";
     private static readonly string DlcChoicesPath = DirectoryPath + @"\dlc.json";
     private static readonly string KoaloaderProxyChoicesPath = DirectoryPath + @"\proxies.json";
+
+    internal static readonly string LogPath = DirectoryPath + @"\scan.log";
+
+    private static readonly object LogLock = new();
+
+    internal static void Log(string message)
+    {
+        try
+        {
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string entry = $"[{timestamp}] {message}{Environment.NewLine}";
+            lock (LogLock)
+                File.AppendAllText(LogPath, entry, Encoding.UTF8);
+        }
+        catch
+        {
+            // ignored — logging must never crash the application
+        }
+    }
+
+    internal static void ClearLog()
+    {
+        try
+        {
+            if (File.Exists(LogPath))
+                File.Delete(LogPath);
+        }
+        catch
+        {
+            // ignored
+        }
+    }
 
     internal static async Task Setup(Form form = null)
         => await Task.Run(() =>
