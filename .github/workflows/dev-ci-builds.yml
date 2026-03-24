@@ -1,0 +1,49 @@
+name: Dev CI Builds
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore CreamInstaller.sln
+
+      - name: Build Release
+        run: dotnet build CreamInstaller.sln --configuration Release --no-restore
+
+      - name: Publish single-file
+        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
+
+      - name: Set short commit SHA and branch name
+        id: vars
+        run: |
+          $shortSha = $env:GITHUB_SHA.Substring(0,7)
+          $branch = $env:GITHUB_REF_NAME
+          Write-Output "shortSha=$shortSha" >> $env:GITHUB_ENV
+          Write-Output "branch=$branch" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Rename EXE with branch and short commit SHA
+        run: |
+          Rename-Item -Path ./publish/CreamInstaller.exe -NewName "CreamInstaller-CI-$env:branch-$env:shortSha.exe"
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CreamInstaller-CI-${{ env.branch }}-${{ env.shortSha }}
+          path: ./publish/CreamInstaller-CI-${{ env.branch }}-${{ env.shortSha }}.exe
