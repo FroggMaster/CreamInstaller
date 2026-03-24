@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CreamInstaller.Utility;
@@ -28,16 +29,19 @@ internal static class SteamLibrary
         {
             List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
             HashSet<string> gameLibraryDirectories = await GetLibraryDirectories();
+            ProgramData.Log($"[Steam] Found {gameLibraryDirectories.Count} library folder(s).");
             foreach (string libraryDirectory in gameLibraryDirectories)
             {
                 if (Program.Canceled)
                     return games;
+                ProgramData.Log($"[Steam] Scanning library: {libraryDirectory}");
                 foreach ((string appId, string name, string branch, int buildId, string gameDirectory) game in (await
                              GetGamesFromLibraryDirectory(
                                  libraryDirectory)).Where(game => games.All(_game => _game.appId != game.appId)))
                     games.Add(game);
             }
 
+            ProgramData.Log($"[Steam] Total games detected: {games.Count}");
             return games;
         });
 
@@ -47,13 +51,21 @@ internal static class SteamLibrary
         {
             List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
             if (Program.Canceled || !libraryDirectory.DirectoryExists())
+            {
+                ProgramData.Log($"[Steam] Skipping library (not found or canceled): {libraryDirectory}");
                 return games;
+            }
+
             foreach (string file in libraryDirectory.EnumerateDirectory("*.acf"))
             {
                 if (Program.Canceled)
                     return games;
                 if (!ValveDataFile.TryDeserialize(file.ReadFile(), out VProperty result))
+                {
+                    ProgramData.Log($"[Steam] Failed to deserialize ACF: {file}");
                     continue;
+                }
+
                 string appId = result.Value.GetChild("appid")?.ToString();
                 string installdir = result.Value.GetChild("installdir")?.ToString();
                 string name = result.Value.GetChild("name")?.ToString();
@@ -61,11 +73,23 @@ internal static class SteamLibrary
                 if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(installdir) ||
                     string.IsNullOrWhiteSpace(name)
                     || string.IsNullOrWhiteSpace(buildId))
+                {
+                    ProgramData.Log($"[Steam] Skipping ACF with missing fields: {file}");
                     continue;
-                string gameDirectory = (libraryDirectory + @"\common\" + installdir).ResolvePath();
-                if (gameDirectory is null || !int.TryParse(appId, out int _) ||
-                    !int.TryParse(buildId, out int buildIdInt) || games.Any(g => g.appId == appId))
+                }
+
+                string rawGameDirectory = libraryDirectory + @"\common\" + installdir;
+                string gameDirectory = rawGameDirectory.ResolvePath();
+                if (gameDirectory is null)
+                {
+                    ProgramData.Log($"[Steam] Game directory not found (drive may be slow or disconnected): {rawGameDirectory} | App: {name} ({appId})");
                     continue;
+                }
+
+                if (!int.TryParse(appId, out int _) || !int.TryParse(buildId, out int buildIdInt) ||
+                    games.Any(g => g.appId == appId))
+                    continue;
+
                 VToken userConfig = result.Value.GetChild("UserConfig");
                 string branch = userConfig?.GetChild("BetaKey")?.ToString();
                 branch ??= userConfig?.GetChild("betakey")?.ToString();
@@ -78,6 +102,8 @@ internal static class SteamLibrary
 
                 if (string.IsNullOrWhiteSpace(branch))
                     branch = "public";
+
+                ProgramData.Log($"[Steam] Detected game: {name} ({appId}) | Branch: {branch} | Dir: {gameDirectory}");
                 games.Add((appId, name, branch, buildIdInt, gameDirectory));
             }
 
@@ -92,25 +118,50 @@ internal static class SteamLibrary
                 return libraryDirectories;
             string steamInstallPath = InstallPath;
             if (steamInstallPath == null || !steamInstallPath.DirectoryExists())
+            {
+                ProgramData.Log($"[Steam] Steam install path not found or inaccessible: {steamInstallPath ?? "(null)"}");
                 return libraryDirectories;
+            }
+
             string libraryFolder = steamInstallPath + @"\steamapps";
             if (!libraryFolder.DirectoryExists())
+            {
+                ProgramData.Log($"[Steam] Default steamapps folder not found: {libraryFolder}");
                 return libraryDirectories;
+            }
+
             _ = libraryDirectories.Add(libraryFolder);
+            ProgramData.Log($"[Steam] Default library folder: {libraryFolder}");
+
             string libraryFolders = libraryFolder + @"\libraryfolders.vdf";
             if (!libraryFolders.FileExists() ||
                 !ValveDataFile.TryDeserialize(libraryFolders.ReadFile(), out VProperty result))
+            {
+                ProgramData.Log($"[Steam] libraryfolders.vdf not found or failed to parse: {libraryFolders}");
                 return libraryDirectories;
+            }
+
             foreach (VToken vToken in result.Value.Where(p =>
                          p is VProperty property && int.TryParse(property.Key, out int _)))
             {
                 VProperty property = (VProperty)vToken;
-                string path = property.Value.GetChild("path")?.ToString();
-                if (string.IsNullOrWhiteSpace(path))
+                string rawPath = property.Value.GetChild("path")?.ToString();
+                if (string.IsNullOrWhiteSpace(rawPath))
                     continue;
-                path += @"\steamapps";
-                if (path.DirectoryExists())
-                    _ = libraryDirectories.Add(path);
+
+                // Normalize the path from VDF (may use forward slashes or wrong casing)
+                string normalizedPath = Path.GetFullPath(rawPath);
+                string steamappsPath = normalizedPath + @"\steamapps";
+                string resolvedPath = steamappsPath.ResolvePath();
+
+                if (resolvedPath is null)
+                {
+                    ProgramData.Log($"[Steam] External library not accessible (drive may be disconnected or letter changed): {steamappsPath}");
+                    continue;
+                }
+
+                if (libraryDirectories.Add(resolvedPath))
+                    ProgramData.Log($"[Steam] Additional library folder found: {resolvedPath}");
             }
 
             return libraryDirectories;

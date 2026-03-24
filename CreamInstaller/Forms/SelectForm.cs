@@ -569,6 +569,8 @@ internal sealed partial class SelectForm : CustomForm
         progressLabel.Text = "Waiting for user to select which programs/games to scan . . .";
         ShowProgressBar();
         await ProgramData.Setup(this);
+        ProgramData.ClearLog();
+        ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
         bool scan = forceScan;
         if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices))
         {
