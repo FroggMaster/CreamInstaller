@@ -206,6 +206,13 @@ internal static class ThemeManager
                 rtb.ForeColor = DarkFore;
                 break;
 
+            // TextBox follows alternate dark background
+            case TextBox tb:
+                tb.BackColor = DarkBackAlt;
+                tb.ForeColor = DarkFore;
+                tb.BorderStyle = BorderStyle.FixedSingle;
+                break;
+
             // Layout panels set a consistent background
             case TableLayoutPanel tlp:
                 tlp.BackColor = DarkBack;
@@ -257,6 +264,11 @@ internal static class ThemeManager
             case RichTextBox rtb:
                 rtb.BackColor = LightBack;
                 rtb.ForeColor = LightFore;
+                break;
+            case TextBox tb:
+                tb.BackColor = LightBackAlt;
+                tb.ForeColor = LightFore;
+                tb.BorderStyle = BorderStyle.Fixed3D;
                 break;
             case TableLayoutPanel tlp:
                 tlp.BackColor = LightBack;
