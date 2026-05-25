@@ -75,11 +75,14 @@ internal sealed class CustomTreeView : TreeView
 
     private void DrawTreeNode(object sender, DrawTreeNodeEventArgs e)
     {
-        e.DrawDefault = true;
         TreeNode node = e.Node;
         if (node is not { IsVisible: true })
+        {
+            e.DrawDefault = true;
             return;
+        }
 
+        bool dark = Program.DarkModeEnabled;
         bool highlighted = (e.State & TreeNodeStates.Selected) == TreeNodeStates.Selected && Focused;
         Graphics graphics = e.Graphics;
 
@@ -103,12 +106,43 @@ internal sealed class CustomTreeView : TreeView
             }
         }
 
+        Form form = FindForm();
+
+        if (dark && CheckBoxes)
+        {
+            // In dark mode we take full ownership of the row so the system never
+            // gets a chance to paint a light-background checkbox.
+            e.DrawDefault = false;
+
+            // Row background
+            Rectangle rowRect = new(0, node.Bounds.Top, ClientSize.Width, node.Bounds.Height);
+            graphics.FillRectangle(highlighted ? selectionBrush : backBrush, rowRect);
+
+            // Node text
+            Font nodeFont = node.NodeFont ?? Font;
+            Color textColor = Enabled ? ForeColor : SystemColors.GrayText;
+            TextRenderer.DrawText(graphics, node.Text, nodeFont,
+                new Point(node.Bounds.Left, node.Bounds.Top + 1), textColor, TextFormatFlags.Default);
+
+            // Checkbox glyph – pure GDI so it matches the dark-themed CheckBox controls
+            CheckBoxState cbState = node.Checked
+                ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+            Size cbSize = CheckBoxRenderer.GetGlyphSize(graphics, cbState);
+            int cbX = node.Bounds.Left - cbSize.Width - 2;
+            int cbY = node.Bounds.Top + node.Bounds.Height / 2 - cbSize.Height / 2;
+            ThemeManager.DrawDarkCheckBox(graphics, new Point(cbX, cbY), cbSize, node.Checked, Enabled);
+        }
+        else
+        {
+            e.DrawDefault = true;
+        }
+
         Font font = node.NodeFont ?? Font;
         Brush brush = highlighted ? (Brush)selectionBrush : backBrush;
         Rectangle bounds = node.Bounds;
         Rectangle selectionBounds = bounds;
 
-        Form form = FindForm();
         if (form is not SelectForm and not SelectDialogForm)
             return;
 
@@ -168,18 +202,19 @@ internal sealed class CustomTreeView : TreeView
                     graphics.FillRectangle(brush, bounds);
                 }
 
-                CheckBoxState checkBoxState = selection.UseProxy
-                    ? Enabled ? CheckBoxState.CheckedPressed : CheckBoxState.CheckedDisabled
-                    : Enabled
-                        ? CheckBoxState.UncheckedPressed
-                        : CheckBoxState.UncheckedDisabled;
-                size = CheckBoxRenderer.GetGlyphSize(graphics, checkBoxState);
+                CheckBoxState proxyState = selection.UseProxy
+                    ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                    : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+                size = CheckBoxRenderer.GetGlyphSize(graphics, proxyState);
                 bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width };
                 selectionBounds = new(selectionBounds.Location, selectionBounds.Size + bounds.Size with { Height = 0 });
                 Rectangle checkBoxBounds = bounds;
                 graphics.FillRectangle(backBrush, bounds);
                 point = new(bounds.Left, bounds.Top + bounds.Height / 2 - size.Height / 2 - 1);
-                CheckBoxRenderer.DrawCheckBox(graphics, point, checkBoxState);
+                if (dark)
+                    ThemeManager.DrawDarkCheckBox(graphics, point, size, selection.UseProxy, Enabled);
+                else
+                    CheckBoxRenderer.DrawCheckBox(graphics, point, proxyState);
 
                 text = ProxyToggleString;
                 size = TextRenderer.MeasureText(graphics, text, font);

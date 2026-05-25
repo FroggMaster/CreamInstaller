@@ -422,6 +422,70 @@ internal static class ThemeManager
     // button is centralized here so theming resides in ThemeManager.
     // -----------------------------------------------------------------
 
+    // Dark checkbox colors – matched to how the system renders the "All" CheckBox control
+    // in dark mode: dark fill, mid-gray border, light foreground tick.
+    private static readonly Color DarkCbBorder = ColorTranslator.FromHtml("#6B6B6B");
+    private static readonly Color DarkCbDisabledBorder = ColorTranslator.FromHtml("#454545");
+
+    /// <summary>
+    /// Draws a checkbox glyph in pure GDI that matches the appearance of a dark-themed
+    /// WinForms CheckBox control (same background, border, tick colors, and rounded corners).
+    /// Use this in owner-draw contexts where CheckBoxRenderer always paints a white background.
+    /// </summary>
+    internal static void DrawDarkCheckBox(Graphics g, Point point, Size glyphSize, bool isChecked, bool enabled = true)
+    {
+        if (g is null) return;
+        int w = glyphSize.Width;
+        int h = glyphSize.Height;
+        Rectangle box = new(point.X, point.Y, w - 1, h - 1);
+        int radius = Math.Max(2, w / 5); // rounded corner radius proportional to glyph size
+
+        // Build rounded rectangle path
+        using System.Drawing.Drawing2D.GraphicsPath path = RoundedRect(box, radius);
+
+        // Fill
+        using SolidBrush fillBrush = new(DarkBackAlt);
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        g.FillPath(fillBrush, path);
+
+        // Border
+        using Pen borderPen = new(enabled ? DarkCbBorder : DarkCbDisabledBorder);
+        g.DrawPath(borderPen, path);
+
+        if (isChecked)
+        {
+            Color tickColor = enabled ? DarkFore : DarkForeDim;
+            using Pen tickPen = new(tickColor, 1.7f)
+            {
+                StartCap = System.Drawing.Drawing2D.LineCap.Round,
+                EndCap = System.Drawing.Drawing2D.LineCap.Round,
+                LineJoin = System.Drawing.Drawing2D.LineJoin.Round,
+            };
+            // Scale tick proportionally to the glyph size
+            float scaleX = w / 13f;
+            float scaleY = h / 13f;
+            g.DrawLines(tickPen, new PointF[]
+            {
+                new(point.X + 2 * scaleX, point.Y + 6 * scaleY),
+                new(point.X + 5 * scaleX, point.Y + 9 * scaleY),
+                new(point.X + 10 * scaleX, point.Y + 3 * scaleY),
+            });
+        }
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+    }
+
+    private static System.Drawing.Drawing2D.GraphicsPath RoundedRect(Rectangle r, int radius)
+    {
+        int d = radius * 2;
+        System.Drawing.Drawing2D.GraphicsPath path = new();
+        path.AddArc(r.Left, r.Top, d, d, 180, 90);
+        path.AddArc(r.Right - d, r.Top, d, d, 270, 90);
+        path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+        path.AddArc(r.Left, r.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
     /// <summary>
     /// Draws the themed combobox area (background, border and text) used in CustomTreeView.
     /// This centralizes colors and rendering for light/dark modes.
