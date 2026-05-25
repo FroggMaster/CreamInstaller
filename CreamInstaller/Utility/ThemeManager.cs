@@ -211,6 +211,7 @@ internal static class ThemeManager
                 tb.BackColor = DarkBackAlt;
                 tb.ForeColor = DarkFore;
                 tb.BorderStyle = BorderStyle.FixedSingle;
+                NativeMethods.RefreshCueBanner(tb);
                 break;
 
             // Layout panels set a consistent background
@@ -269,6 +270,7 @@ internal static class ThemeManager
                 tb.BackColor = LightBackAlt;
                 tb.ForeColor = LightFore;
                 tb.BorderStyle = BorderStyle.Fixed3D;
+                NativeMethods.RefreshCueBanner(tb);
                 break;
             case TableLayoutPanel tlp:
                 tlp.BackColor = LightBack;
@@ -462,15 +464,54 @@ internal static class ThemeManager
     }
 }
 
+/// <summary>
+/// Wraps Win32 API calls that have no managed equivalent in WinForms.
+/// These P/Invoke declarations are required because .NET does not expose
+/// the underlying Windows messages or DWM attributes through its own APIs.
+/// </summary>
 internal static class NativeMethods
 {
+    // DWM attribute index for enabling/disabling the immersive dark title bar.
+    // Documented in dwmapi.h; value 20 corresponds to DWMWA_USE_IMMERSIVE_DARK_MODE
+    // (Windows 10 build 19041+ / Windows 11).
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
+    // DwmSetWindowAttribute allows setting per-window Desktop Window Manager attributes.
+    // We use it here to flip the title bar to dark or light depending on the active theme,
+    // since WinForms has no built-in API to control title bar coloring.
     [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(System.IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
+    /// <summary>
+    /// Toggles the dark/light title bar chrome for the given window handle.
+    /// Pass <c>1</c> for dark mode, <c>0</c> for light mode.
+    /// </summary>
     internal static void EnableDarkTitleBar(System.IntPtr handle, int useDark)
     {
         _ = DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDark, sizeof(int));
+    }
+
+    // Win32 Edit control message that sets or updates the cue (placeholder) banner text.
+    // WinForms sets PlaceholderText once at creation time via this same message internally,
+    // but does not re-send it when the control's colors change.  When we restyle a TextBox
+    // for dark/light mode the cue banner can disappear, so we must re-send the message
+    // manually to make the placeholder visible again.
+    private const int EM_SETCUEBANNER = 0x1501;
+
+    // SendMessage is the standard Win32 mechanism for posting messages directly to a
+    // window/control handle.  We use the Unicode variant so the placeholder string is
+    // transmitted without any ANSI conversion.
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern System.IntPtr SendMessage(System.IntPtr hWnd, int msg, System.IntPtr wParam, string lParam);
+
+    /// <summary>
+    /// Re-sends <c>EM_SETCUEBANNER</c> to the given TextBox so its placeholder text
+    /// is redrawn after a theme change has altered the control's background or foreground colors.
+    /// Does nothing if the control handle has not yet been created or the placeholder is empty.
+    /// </summary>
+    internal static void RefreshCueBanner(System.Windows.Forms.TextBox textBox)
+    {
+        if (textBox?.IsHandleCreated == true && textBox.PlaceholderText is { Length: > 0 })
+            SendMessage(textBox.Handle, EM_SETCUEBANNER, (System.IntPtr)1, textBox.PlaceholderText);
     }
 }

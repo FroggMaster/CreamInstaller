@@ -33,7 +33,6 @@ namespace CreamInstaller.Forms
             saveButton = new Button();
             uninstallAllButton = new Button();
             selectionTreeView = new CustomTreeView();
-            filterLabel = new System.Windows.Forms.Label();
             filterTextBox = new System.Windows.Forms.TextBox();
             groupBox.SuspendLayout();
             allCheckBoxFlowPanel.SuspendLayout();
@@ -53,21 +52,13 @@ namespace CreamInstaller.Forms
             acceptButton.Text = "OK";
             acceptButton.UseVisualStyleBackColor = true;
             // 
-            // filterLabel
-            // 
-            filterLabel.AutoSize = true;
-            filterLabel.Location = new System.Drawing.Point(12, 17);
-            filterLabel.Name = "filterLabel";
-            filterLabel.Size = new System.Drawing.Size(68, 15);
-            filterLabel.TabIndex = 1008;
-            filterLabel.Text = "Game search:";
-            // 
             // filterTextBox
             // 
             filterTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            filterTextBox.Location = new System.Drawing.Point(100, 14);
+            filterTextBox.Location = new System.Drawing.Point(12, 14);
             filterTextBox.Name = "filterTextBox";
-            filterTextBox.Size = new System.Drawing.Size(436, 23);
+            filterTextBox.PlaceholderText = "Enter the name of a game to search";
+            filterTextBox.Size = new System.Drawing.Size(524, 23);
             filterTextBox.TabIndex = 0;
             filterTextBox.TextChanged += OnFilterTextChanged;
             // 
@@ -209,7 +200,6 @@ namespace CreamInstaller.Forms
             Controls.Add(acceptButton);
             Controls.Add(groupBox);
             Controls.Add(filterTextBox);
-            Controls.Add(filterLabel);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -237,7 +227,6 @@ namespace CreamInstaller.Forms
         private Button saveButton;
         private CheckBox sortCheckBox;
         private Button uninstallAllButton;
-        private System.Windows.Forms.Label filterLabel;
         private System.Windows.Forms.TextBox filterTextBox;
     }
 }
