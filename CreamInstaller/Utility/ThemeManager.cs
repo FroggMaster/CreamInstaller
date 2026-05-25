@@ -438,30 +438,24 @@ internal static class ThemeManager
         int w = glyphSize.Width;
         int h = glyphSize.Height;
         Rectangle box = new(point.X, point.Y, w - 1, h - 1);
-        int radius = Math.Max(2, w / 5); // rounded corner radius proportional to glyph size
+        int radius = Math.Max(2, w / 5);
 
-        // Build rounded rectangle path
         using System.Drawing.Drawing2D.GraphicsPath path = RoundedRect(box, radius);
 
-        // Fill
-        using SolidBrush fillBrush = new(DarkBackAlt);
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        g.FillPath(fillBrush, path);
 
-        // Border
-        using Pen borderPen = new(enabled ? DarkCbBorder : DarkCbDisabledBorder);
-        g.DrawPath(borderPen, path);
-
-        if (isChecked)
+        if (isChecked && enabled)
         {
-            Color tickColor = enabled ? DarkFore : DarkForeDim;
-            using Pen tickPen = new(tickColor, 1.7f)
+            // Checked + enabled: accent fill, no border, white tick — matches Windows 11 dark CheckBox
+            using SolidBrush fillBrush = new(Accent);
+            g.FillPath(fillBrush, path);
+
+            using Pen tickPen = new(Color.White, 1.7f)
             {
                 StartCap = System.Drawing.Drawing2D.LineCap.Round,
                 EndCap = System.Drawing.Drawing2D.LineCap.Round,
                 LineJoin = System.Drawing.Drawing2D.LineJoin.Round,
             };
-            // Scale tick proportionally to the glyph size
             float scaleX = w / 13f;
             float scaleY = h / 13f;
             g.DrawLines(tickPen, new PointF[]
@@ -471,6 +465,38 @@ internal static class ThemeManager
                 new(point.X + 10 * scaleX, point.Y + 3 * scaleY),
             });
         }
+        else if (isChecked)
+        {
+            // Checked + disabled: dimmed accent fill, dimmed tick
+            Color dimAccent = Color.FromArgb(120, Accent);
+            using SolidBrush fillBrush = new(dimAccent);
+            g.FillPath(fillBrush, path);
+
+            using Pen tickPen = new(DarkForeDim, 1.7f)
+            {
+                StartCap = System.Drawing.Drawing2D.LineCap.Round,
+                EndCap = System.Drawing.Drawing2D.LineCap.Round,
+                LineJoin = System.Drawing.Drawing2D.LineJoin.Round,
+            };
+            float scaleX = w / 13f;
+            float scaleY = h / 13f;
+            g.DrawLines(tickPen, new PointF[]
+            {
+                new(point.X + 2 * scaleX, point.Y + 6 * scaleY),
+                new(point.X + 5 * scaleX, point.Y + 9 * scaleY),
+                new(point.X + 10 * scaleX, point.Y + 3 * scaleY),
+            });
+        }
+        else
+        {
+            // Unchecked: dark fill, gray border, no tick
+            using SolidBrush fillBrush = new(DarkBackAlt);
+            g.FillPath(fillBrush, path);
+
+            using Pen borderPen = new(enabled ? DarkCbBorder : DarkCbDisabledBorder);
+            g.DrawPath(borderPen, path);
+        }
+
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
     }
 
