@@ -132,6 +132,53 @@ internal static class EpicStore
 
     public static bool EpicBool = true;
 
+    internal static async Task<List<(string @namespace, string name)>> QuerySearch(string keyword)
+    {
+        List<(string, string)> results = [];
+        try
+        {
+            string query = """
+                query searchByKeyword($keywords: String!) {
+                    Catalog {
+                        searchStore(keywords: $keywords, category: "games/edition/base", count: 10, country: "US", locale: "en-US", allowCountries: "US") {
+                            elements {
+                                title
+                                namespace
+                            }
+                        }
+                    }
+                }
+                """;
+            var payload = new { query, variables = new { keywords = keyword } };
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            using HttpContent content = new StringContent(payloadJson, System.Text.Encoding.UTF8, "application/json");
+            HttpClient client = HttpClientManager.HttpClient;
+            if (client is null)
+                return results;
+            HttpResponseMessage httpResponse =
+                await client.PostAsync(new Uri("https://launcher.store.epicgames.com/graphql"), content);
+            _ = httpResponse.EnsureSuccessStatusCode();
+            string response = await httpResponse.Content.ReadAsStringAsync();
+            Newtonsoft.Json.Linq.JObject root = Newtonsoft.Json.Linq.JObject.Parse(response);
+            Newtonsoft.Json.Linq.JToken elements = root["data"]?["Catalog"]?["searchStore"]?["elements"];
+            if (elements is null)
+                return results;
+            foreach (Newtonsoft.Json.Linq.JToken el in elements)
+            {
+                string name = el["title"]?.ToString();
+                string ns = el["namespace"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(ns)
+                    && results.All(r => r.Item1 != ns))
+                    results.Add((ns, name));
+            }
+        }
+        catch
+        {
+            // ignored
+        }
+        return results;
+    }
+
     private static async Task<Response> QueryGraphQL(string categoryNamespace)
     {
         try

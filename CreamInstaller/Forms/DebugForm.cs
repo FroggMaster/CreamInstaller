@@ -81,4 +81,10 @@ internal sealed partial class DebugForm : CustomForm
                 debugTextBox.AppendText(text, color, true);
             });
     }
+
+    private void OnTestGame(object sender, EventArgs e)
+    {
+        using TestGameForm form = new(this);
+        _ = form.ShowDialog(this);
+    }
 }

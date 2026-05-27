@@ -180,9 +180,9 @@ internal static class ThemeManager
                 ll.VisitedLinkColor = DarkLink;
                 break;
 
-            // Labels: dark background, light foreground
+            // Labels: transparent so they blend with whatever container they sit in
             case Label lbl:
-                lbl.BackColor = DarkBack;
+                lbl.BackColor = Color.Transparent;
                 lbl.ForeColor = DarkFore;
                 break;
 
@@ -204,6 +204,12 @@ internal static class ThemeManager
             case RichTextBox rtb:
                 rtb.BackColor = DarkBackAlt;
                 rtb.ForeColor = DarkFore;
+                break;
+
+            // ListBox follows alternate dark background
+            case ListBox lb:
+                lb.BackColor = DarkBackAlt;
+                lb.ForeColor = DarkFore;
                 break;
 
             // TextBox follows alternate dark background
@@ -249,7 +255,7 @@ internal static class ThemeManager
                 ll.VisitedLinkColor = SystemColors.HotTrack;
                 break;
             case Label lbl:
-                lbl.BackColor = LightBack;
+                lbl.BackColor = Color.Transparent;
                 lbl.ForeColor = LightFore;
                 break;
             case ProgressBar pb:
@@ -265,6 +271,10 @@ internal static class ThemeManager
             case RichTextBox rtb:
                 rtb.BackColor = LightBack;
                 rtb.ForeColor = LightFore;
+                break;
+            case ListBox lb:
+                lb.BackColor = LightBackAlt;
+                lb.ForeColor = LightFore;
                 break;
             case TextBox tb:
                 tb.BackColor = LightBackAlt;

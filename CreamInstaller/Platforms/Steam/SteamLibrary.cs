@@ -10,6 +10,9 @@ namespace CreamInstaller.Platforms.Steam;
 
 internal static class SteamLibrary
 {
+    internal static readonly List<(string appId, string name, string branch, int buildId, string gameDirectory)>
+        TestGames = [];
+
     private static string installPath;
 
     internal static string InstallPath
@@ -41,6 +44,11 @@ internal static class SteamLibrary
                     games.Add(game);
             }
 
+            foreach ((string appId, string name, string branch, int buildId, string gameDirectory) testGame in
+                     TestGames.Where(t => games.All(g => g.appId != t.appId)))
+                games.Add(testGame);
+            if (TestGames.Count > 0)
+                ProgramData.Log($"[Steam] Injected {TestGames.Count} test game(s).");
             ProgramData.Log($"[Steam] Total games detected: {games.Count}");
             return games;
         });
