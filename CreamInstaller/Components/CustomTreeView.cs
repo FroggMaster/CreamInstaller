@@ -162,7 +162,32 @@ internal sealed class CustomTreeView : TreeView
         }
         else
         {
-            e.DrawDefault = true;
+            if (highlighted && CheckBoxes)
+            {
+                // In light mode, take ownership of the row when selected so the
+                // highlight fills the full width (same approach as dark mode).
+                e.DrawDefault = false;
+
+                Rectangle rowRect = new(0, node.Bounds.Top, ClientSize.Width, node.Bounds.Height);
+                graphics.FillRectangle(selectionBrush, rowRect);
+
+                Font nodeFont = node.NodeFont ?? Font;
+                Color textColor = Enabled ? ForeColor : SystemColors.GrayText;
+                TextRenderer.DrawText(graphics, node.Text, nodeFont,
+                    new Point(node.Bounds.Left, node.Bounds.Top + 1), textColor, TextFormatFlags.Default);
+
+                CheckBoxState cbState = node.Checked
+                    ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                    : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+                Size cbSize = CheckBoxRenderer.GetGlyphSize(graphics, cbState);
+                Point cbPoint = new(node.Bounds.Left - cbSize.Width - 2,
+                    node.Bounds.Top + node.Bounds.Height / 2 - cbSize.Height / 2);
+                CheckBoxRenderer.DrawCheckBox(graphics, cbPoint, cbState);
+            }
+            else
+            {
+                e.DrawDefault = true;
+            }
         }
 
         Font font = node.NodeFont ?? Font;

@@ -43,7 +43,7 @@ internal static class ThemeManager
     private static readonly Color LightPlatform = ColorTranslator.FromHtml("#696900");
     private static readonly Color LightId = ColorTranslator.FromHtml("#006969");
     private static readonly Color LightProxy = ColorTranslator.FromHtml("#006900");
-    private static readonly Color LightSelectionBack = SystemColors.Highlight;
+    private static readonly Color LightSelectionBack = ColorTranslator.FromHtml("#ADD6FF");
     private static readonly Color LightComboBack = SystemColors.Control;
     private static readonly Color LightComboBorder = SystemColors.ControlDark;
     private static readonly Color LightComboText = SystemColors.ControlText;
