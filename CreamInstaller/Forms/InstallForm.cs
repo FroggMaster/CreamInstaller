@@ -9,7 +9,6 @@ using CreamInstaller.Resources;
 using CreamInstaller.Utility;
 using static CreamInstaller.Platforms.Paradox.ParadoxLauncher;
 using static CreamInstaller.Resources.Resources;
-
 namespace CreamInstaller.Forms;
 
 internal sealed partial class InstallForm : CustomForm
@@ -350,6 +349,41 @@ internal sealed partial class InstallForm : CustomForm
 
             ++completeOperationsCount;
         }
+
+        // Persist install/uninstall results
+        foreach (Selection selection in Selection.AllEnabled)
+        {
+            if (uninstalling)
+            {
+                selection.InstalledUnlocker = InstalledUnlocker.None;
+                ProgramData.RemoveInstalledGame(selection.Platform, selection.Id);
+            }
+            else
+            {
+                InstalledUnlocker unlocker = selection.DetectInstalledUnlocker();
+                selection.InstalledUnlocker = unlocker;
+                if (unlocker != InstalledUnlocker.None)
+                    ProgramData.UpsertInstalledGame(new InstalledGameRecord
+                    {
+                        Platform = selection.Platform,
+                        Id = selection.Id,
+                        Name = selection.Name,
+                        RootDirectory = selection.RootDirectory,
+                        Unlocker = unlocker,
+                        UseProxy = selection.UseProxy,
+                        Proxy = selection.Proxy,
+                        UseExtraProtection = selection.UseExtraProtection,
+                        Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
+                        {
+                            DlcType = dlc.Type.ToString(),
+                            Id = dlc.Id,
+                            Name = dlc.Name
+                        }).ToList()
+                    });
+            }
+        }
+
+        SelectForm.Current?.Invoke(() => SelectForm.Current?.InvalidateGameList());
 
         Program.Cleanup();
         int activeCount = activeSelections.Count;

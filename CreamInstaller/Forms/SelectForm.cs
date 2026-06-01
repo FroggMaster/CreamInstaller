@@ -689,6 +689,7 @@ internal sealed partial class SelectForm : CustomForm
         }
 
         OnLoadSelections(null, null);
+        await LoadSavedInstalledGames();
         HideProgressBar();
         selectionTreeView.Enabled = !Selection.All.IsEmpty;
         allCheckBox.Enabled = selectionTreeView.Enabled;
@@ -974,6 +975,79 @@ internal sealed partial class SelectForm : CustomForm
             contextMenuStrip.Refresh();
         });
 
+    private async Task LoadSavedInstalledGames()
+    {
+        List<InstalledGameRecord> saved = ProgramData.ReadInstalledGames();
+        if (saved.Count == 0)
+            return;
+
+        List<InstalledGameRecord> toRemove = [];
+        foreach (InstalledGameRecord record in saved)
+        {
+            // Already in the list from this scan — just ensure unlocker is set
+            Selection existing = Selection.FromId(record.Platform, record.Id);
+            if (existing is not null)
+            {
+                if (existing.InstalledUnlocker == InstalledUnlocker.None)
+                    existing.InstalledUnlocker = record.Unlocker;
+                continue;
+            }
+
+            // Root directory no longer exists — mark for removal
+            if (!record.RootDirectory.DirectoryExists())
+            {
+                toRemove.Add(record);
+                continue;
+            }
+
+            // Reconstruct a minimal Selection from the saved record
+            HashSet<string> dllDirectories =
+                await record.RootDirectory.GetDllDirectoriesFromGameDirectory(record.Platform);
+            if (dllDirectories is null || dllDirectories.Count == 0)
+            {
+                toRemove.Add(record);
+                continue;
+            }
+
+            List<(string directory, BinaryType binaryType)> executableDirectories =
+                await record.RootDirectory.GetExecutableDirectories(true);
+
+            Selection selection = Selection.FromId(record.Platform, record.Id) ?? Selection.GetOrCreate(record.Platform, record.Id, record.Name,
+                record.RootDirectory, dllDirectories, executableDirectories);
+            selection.InstalledUnlocker = selection.DetectInstalledUnlocker();
+            if (selection.InstalledUnlocker == InstalledUnlocker.None)
+                selection.InstalledUnlocker = record.Unlocker;
+            selection.UseProxy = record.UseProxy;
+            selection.Proxy = record.Proxy;
+            selection.UseExtraProtection = record.UseExtraProtection;
+
+            Invoke(delegate
+            {
+                if (selection.TreeNode.TreeView is null)
+                    _ = selectionTreeView.Nodes.Add(selection.TreeNode);
+
+                // Restore DLC children from saved record
+                if (record.Dlc != null && record.Dlc.Count > 0)
+                {
+                    foreach (InstalledDlcRecord dlcRecord in record.Dlc)
+                    {
+                        if (!Enum.TryParse(dlcRecord.DlcType, out DLCType dlcType))
+                            continue;
+                        SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, record.Id, dlcRecord.Id, dlcRecord.Name);
+                        dlc.Selection = selection;
+                    }
+                }
+            });
+        }
+
+        // Clean up records for games that are gone
+        if (toRemove.Count > 0)
+        {
+            List<InstalledGameRecord> updated = saved.Except(toRemove).ToList();
+            ProgramData.WriteInstalledGames(updated);
+        }
+    }
+
     private void OnLoad(object sender, EventArgs _)
     {
     retry:
@@ -1177,6 +1251,21 @@ internal sealed partial class SelectForm : CustomForm
         ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
         loadButton.Enabled = CanLoadSelections();
 
+        // Detect installed unlockers from disk for all selections
+        foreach (Selection selection in Selection.All.Keys)
+            selection.InstalledUnlocker = selection.DetectInstalledUnlocker();
+
+        // Merge with persisted installed game records for any saved games not yet having a detected unlocker
+        List<InstalledGameRecord> installedRecords = ProgramData.ReadInstalledGames();
+        foreach (InstalledGameRecord record in installedRecords)
+        {
+            Selection selection = Selection.FromId(record.Platform, record.Id);
+            if (selection is null)
+                continue;
+            if (selection.InstalledUnlocker == InstalledUnlocker.None && record.Unlocker != InstalledUnlocker.None)
+                selection.InstalledUnlocker = record.Unlocker;
+        }
+
         OnProxyChanged();
     }
 
@@ -1205,6 +1294,8 @@ internal sealed partial class SelectForm : CustomForm
 
         OnProxyChanged();
     }
+
+    internal void InvalidateGameList() => selectionTreeView.Invalidate();
 
     internal void OnProxyChanged()
     {
@@ -1257,7 +1348,9 @@ internal sealed partial class SelectForm : CustomForm
     private void OnUseSmokeAPICheckBoxChanged(object sender, EventArgs e)
     {
         Program.UseSmokeAPI = useSmokeAPICheckBox.Checked;
-        OnLoad(forceProvideChoices: false);
+        selectionTreeView.Invalidate();
+        saveButton.Enabled = CanSaveSelections();
+        resetButton.Enabled = CanResetSelections();
     }
 
     private void OnUseSmokeAPIHelpButtonClicked(object sender, EventArgs e)

@@ -31,6 +31,17 @@ internal static class ThemeManager
     private static readonly Color DarkComboBorder = DarkBorder; // #3F3F46
     private static readonly Color DarkComboText = DarkFore; // #D4D4D4
 
+    // Badge colors for unlockers
+    private static readonly Color CreamAPIBadgeBack = ColorTranslator.FromHtml("#C8A078"); // Creamy latte
+    private static readonly Color CreamAPIBadgeBackHighlight = ColorTranslator.FromHtml("#B48C64");
+    private static readonly Color CreamAPIBadgeBorder = ColorTranslator.FromHtml("#DCB48C");
+    private static readonly Color SmokeAPIBadgeBack = ColorTranslator.FromHtml("#69696E"); // Smoky grey
+    private static readonly Color SmokeAPIBadgeBackHighlight = ColorTranslator.FromHtml("#5A5A5F");
+    private static readonly Color SmokeAPIBadgeBorder = ColorTranslator.FromHtml("#8C8C91");
+    private static readonly Color DefaultBadgeBack = ColorTranslator.FromHtml("#008C46"); // Default green
+    private static readonly Color DefaultBadgeBackHighlight = ColorTranslator.FromHtml("#00783C");
+    private static readonly Color DefaultBadgeBorder = ColorTranslator.FromHtml("#00B45A");
+
     // ----------------------------
     // Light mode colors (system defaults)
     // ----------------------------
@@ -75,6 +86,17 @@ internal static class ThemeManager
     internal static Color CustomTreeViewComboBorderColor => IsDark ? DarkComboBorder : LightComboBorder;
 
     internal static Color CustomTreeViewComboTextColor => IsDark ? DarkComboText : LightComboText;
+
+    // Badge colors for unlockers
+    internal static Color CreamAPIBadgeBackgroundColor => CreamAPIBadgeBack;
+    internal static Color CreamAPIBadgeBackgroundHighlightColor => CreamAPIBadgeBackHighlight;
+    internal static Color CreamAPIBadgeBorderColor => CreamAPIBadgeBorder;
+    internal static Color SmokeAPIBadgeBackgroundColor => SmokeAPIBadgeBack;
+    internal static Color SmokeAPIBadgeBackgroundHighlightColor => SmokeAPIBadgeBackHighlight;
+    internal static Color SmokeAPIBadgeBorderColor => SmokeAPIBadgeBorder;
+    internal static Color DefaultBadgeBackgroundColor => DefaultBadgeBack;
+    internal static Color DefaultBadgeBackgroundHighlightColor => DefaultBadgeBackHighlight;
+    internal static Color DefaultBadgeBorderColor => DefaultBadgeBorder;
 
     // -----------------------------------------------------------------
     // Public / Internal API

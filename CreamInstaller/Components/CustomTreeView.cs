@@ -257,7 +257,58 @@ internal sealed class CustomTreeView : TreeView
                     graphics.FillRectangle(brush, bounds);
                 }
 
-                if (!Program.UseSmokeAPI)
+                // Unlocker badge
+                if (selection.InstalledUnlocker != InstalledUnlocker.None)
+                {
+                    string badgeText = selection.InstalledUnlocker.ToString();
+                    size = TextRenderer.MeasureText(graphics, badgeText, font, Size.Empty, TextFormatFlags.NoPadding);
+                    const int badgePadding = 3;
+                    Rectangle badgeBounds = new(bounds.X + bounds.Width + 2, bounds.Y + 1, size.Width + badgePadding * 2, bounds.Height - 2);
+                    selectionBounds = new(selectionBounds.Location, selectionBounds.Size + new Size(badgeBounds.Width + 2, 0));
+
+                    // Get theme-appropriate colors for each unlocker from ThemeManager
+                    Color badgeBack, badgeBorder;
+                    switch (selection.InstalledUnlocker)
+                    {
+                        case InstalledUnlocker.SmokeAPI:
+                            badgeBack = highlighted 
+                                ? ThemeManager.SmokeAPIBadgeBackgroundHighlightColor 
+                                : ThemeManager.SmokeAPIBadgeBackgroundColor;
+                            badgeBorder = ThemeManager.SmokeAPIBadgeBorderColor;
+                            break;
+                        case InstalledUnlocker.CreamAPI:
+                            badgeBack = highlighted 
+                                ? ThemeManager.CreamAPIBadgeBackgroundHighlightColor 
+                                : ThemeManager.CreamAPIBadgeBackgroundColor;
+                            badgeBorder = ThemeManager.CreamAPIBadgeBorderColor;
+                            break;
+                        default:
+                            badgeBack = highlighted 
+                                ? ThemeManager.DefaultBadgeBackgroundHighlightColor 
+                                : ThemeManager.DefaultBadgeBackgroundColor;
+                            badgeBorder = ThemeManager.DefaultBadgeBorderColor;
+                            break;
+                    }
+
+                    using (SolidBrush badgeBrush = new(badgeBack))
+                        graphics.FillRectangle(badgeBrush, badgeBounds);
+                    using (Pen badgePen = new(badgeBorder))
+                        graphics.DrawRectangle(badgePen, badgeBounds);
+                    TextRenderer.DrawText(graphics, badgeText, font,
+                        new Point(badgeBounds.X + badgePadding, badgeBounds.Y + 1),
+                        Color.White, TextFormatFlags.NoPadding);
+                    bounds = bounds with { X = badgeBounds.X, Width = badgeBounds.Width + 2 };
+                }
+
+                // Show Extra Protection checkbox for CreamAPI:
+                // - When CreamAPI is installed, OR
+                // - When no unlocker is installed yet AND user hasn't enabled SmokeAPI mode, OR
+                // - When SmokeAPI is installed BUT user has disabled SmokeAPI mode (about to replace with CreamAPI)
+                bool showExtraProtection = selection.InstalledUnlocker == InstalledUnlocker.CreamAPI ||
+                    (selection.InstalledUnlocker == InstalledUnlocker.None && !Program.UseSmokeAPI) ||
+                    (selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI && !Program.UseSmokeAPI);
+
+                if (showExtraProtection)
                 {
                     CheckBoxState extraProtState = selection.UseExtraProtection
                         ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)

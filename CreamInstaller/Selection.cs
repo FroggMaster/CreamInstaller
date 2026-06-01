@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using CreamInstaller.Forms;
+using CreamInstaller.Platforms.Epic;
+using CreamInstaller.Platforms.Steam;
+using CreamInstaller.Platforms.Ubisoft;
 using CreamInstaller.Resources;
 using CreamInstaller.Utility;
 using static CreamInstaller.Resources.Resources;
-
 namespace CreamInstaller;
 
 public enum Platform
@@ -41,6 +44,7 @@ internal sealed class Selection : IEquatable<Selection>
     internal string Publisher;
     internal string SubIcon;
     internal string Website;
+    internal InstalledUnlocker InstalledUnlocker;
 
     internal IEnumerable<string> GetAvailableProxies()
     {
@@ -134,6 +138,100 @@ internal sealed class Selection : IEquatable<Selection>
 
     internal static Selection FromId(Platform platform, string gameId) =>
         All.Keys.FirstOrDefault(s => s.Platform == platform && s.Id == gameId);
+
+    internal InstalledUnlocker DetectInstalledUnlocker()
+    {
+        foreach (string directory in DllDirectories)
+        {
+            if (Platform is Platform.Steam or Platform.Paradox)
+            {
+                // Use uniquely-named config files to distinguish CreamAPI from SmokeAPI.
+                // Both share steam_api_o.dll so the _o files alone are ambiguous.
+                directory.GetSmokeApiComponents(out _, out _, out _, out _, out string smokeOldConfig,
+                    out string smokeConfig, out _, out _, out _);
+                if (smokeConfig.FileExists() || smokeOldConfig.FileExists())
+                    return InstalledUnlocker.SmokeAPI;
+
+                directory.GetCreamApiComponents(out _, out _, out _, out _, out string creamConfig);
+                if (creamConfig.FileExists())
+                {
+                    ReadCreamApiConfig(creamConfig);
+                    return InstalledUnlocker.CreamAPI;
+                }
+
+                // Fallback: config was deleted but _o files remain — identify by replacement DLL content
+                directory.GetSmokeApiComponents(out string smokeApi32, out string api32_o,
+                    out string smokeApi64, out string api64_o, out _, out _, out _, out _, out _);
+                if (api32_o.FileExists() || api64_o.FileExists())
+                {
+                    if ((smokeApi32.FileExists() && smokeApi32.IsResourceFile(ResourceIdentifier.Steamworks32))
+                        || (smokeApi64.FileExists() && smokeApi64.IsResourceFile(ResourceIdentifier.Steamworks64)))
+                        return InstalledUnlocker.SmokeAPI;
+                    return InstalledUnlocker.CreamAPI;
+                }
+            }
+
+            if (Platform is Platform.Epic or Platform.Paradox)
+            {
+                directory.GetScreamApiComponents(out _, out string api32_o, out _, out string api64_o,
+                    out _, out string config, out _, out _);
+                if (config.FileExists() || api32_o.FileExists() || api64_o.FileExists())
+                    return InstalledUnlocker.ScreamAPI;
+            }
+
+            if (Platform is Platform.Ubisoft)
+            {
+                directory.GetUplayR1Components(out _, out string api32_o, out _, out string api64_o,
+                    out string config, out _);
+                if (config.FileExists() || api32_o.FileExists() || api64_o.FileExists())
+                    return InstalledUnlocker.UplayR1;
+                directory.GetUplayR2Components(out _, out _, out _, out api32_o, out _, out api64_o,
+                    out config, out _);
+                if (config.FileExists() || api32_o.FileExists() || api64_o.FileExists())
+                    return InstalledUnlocker.UplayR2;
+            }
+        }
+
+        foreach ((string directory, _) in ExecutableDirectories)
+        {
+            directory.GetKoaloaderComponents(out _, out string config, out _);
+            if (directory.GetKoaloaderProxies().Any(proxy =>
+                    proxy.FileExists() && proxy.IsResourceFile(ResourceIdentifier.Koaloader))
+                || config.FileExists())
+                return InstalledUnlocker.Koaloader;
+        }
+
+        return InstalledUnlocker.None;
+    }
+
+    private void ReadCreamApiConfig(string configPath)
+    {
+        try
+        {
+            if (!configPath.FileExists())
+                return;
+
+            string[] lines = File.ReadAllLines(configPath);
+            foreach (string line in lines)
+            {
+                string trimmed = line.Trim();
+                if (trimmed.StartsWith("extraprotection", StringComparison.OrdinalIgnoreCase))
+                {
+                    string[] parts = trimmed.Split('=');
+                    if (parts.Length == 2)
+                    {
+                        string value = parts[1].Trim();
+                        UseExtraProtection = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    }
+                    break;
+                }
+            }
+        }
+        catch
+        {
+            // If we can't read the config, leave UseExtraProtection at its default value
+        }
+    }
 
     public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is Selection other && Equals(other);
 

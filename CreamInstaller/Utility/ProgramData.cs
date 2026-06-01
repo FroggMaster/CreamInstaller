@@ -6,9 +6,41 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CreamInstaller;
 using Newtonsoft.Json;
 
 namespace CreamInstaller.Utility;
+
+internal enum InstalledUnlocker
+{
+    None = 0,
+    CreamAPI,
+    SmokeAPI,
+    ScreamAPI,
+    UplayR1,
+    UplayR2,
+    Koaloader
+}
+
+internal sealed class InstalledDlcRecord
+{
+    public string DlcType { get; set; }
+    public string Id { get; set; }
+    public string Name { get; set; }
+}
+
+internal sealed class InstalledGameRecord
+{
+    public Platform Platform { get; set; }
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string RootDirectory { get; set; }
+    public InstalledUnlocker Unlocker { get; set; }
+    public bool UseProxy { get; set; }
+    public string Proxy { get; set; }
+    public bool UseExtraProtection { get; set; }
+    public List<InstalledDlcRecord> Dlc { get; set; } = [];
+}
 
 internal static class ProgramData
 {
@@ -30,6 +62,7 @@ internal static class ProgramData
     private static readonly string DlcChoicesPath = DirectoryPath + @"\dlc.json";
     private static readonly string KoaloaderProxyChoicesPath = DirectoryPath + @"\proxies.json";
     private static readonly string ExtraProtectionChoicesPath = DirectoryPath + @"\extraprotection.json";
+    private static readonly string InstalledGamesPath = DirectoryPath + @"\installed.json";
 
     internal static readonly string LogPath = DirectoryPath + @"\scan.log";
 
@@ -262,5 +295,53 @@ internal static class ProgramData
         {
             // ignored
         }
+    }
+
+    internal static List<InstalledGameRecord> ReadInstalledGames()
+    {
+        if (InstalledGamesPath.FileExists())
+            try
+            {
+                if (JsonConvert.DeserializeObject<List<InstalledGameRecord>>(InstalledGamesPath.ReadFile()) is
+                    { } records)
+                    return records;
+            }
+            catch
+            {
+                // ignored
+            }
+
+        return [];
+    }
+
+    internal static void WriteInstalledGames(IEnumerable<InstalledGameRecord> records)
+    {
+        try
+        {
+            List<InstalledGameRecord> list = records?.ToList() ?? [];
+            if (list.Count == 0)
+                InstalledGamesPath.DeleteFile();
+            else
+                InstalledGamesPath.WriteFile(JsonConvert.SerializeObject(list, Formatting.Indented));
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    internal static void UpsertInstalledGame(InstalledGameRecord record)
+    {
+        List<InstalledGameRecord> records = ReadInstalledGames();
+        _ = records.RemoveAll(r => r.Platform == record.Platform && r.Id == record.Id);
+        records.Add(record);
+        WriteInstalledGames(records);
+    }
+
+    internal static void RemoveInstalledGame(Platform platform, string id)
+    {
+        List<InstalledGameRecord> records = ReadInstalledGames();
+        if (records.RemoveAll(r => r.Platform == platform && r.Id == id) > 0)
+            WriteInstalledGames(records);
     }
 }
