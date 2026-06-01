@@ -1065,13 +1065,18 @@ internal sealed partial class SelectForm : CustomForm
 
     private static bool AreProxySelectionsDefault() => Selection.All.Keys.All(selection => !selection.UseProxy);
 
+    private static bool AreExtraProtectionSelectionsDefault() => Selection.All.Keys.All(selection => !selection.UseExtraProtection);
+
     private bool CanSaveDlc() =>
         installButton.Enabled && (ProgramData.ReadDlcChoices().Any() || !AreSelectionsDefault());
 
     private static bool CanSaveProxy() =>
         ProgramData.ReadProxyChoices().Any() || !AreProxySelectionsDefault();
 
-    private bool CanSaveSelections() => CanSaveDlc() || CanSaveProxy();
+    private static bool CanSaveExtraProtection() =>
+        ProgramData.ReadExtraProtectionChoices().Any() || !AreExtraProtectionSelectionsDefault();
+
+    private bool CanSaveSelections() => CanSaveDlc() || CanSaveProxy() || CanSaveExtraProtection();
 
     private void OnSaveSelections(object sender, EventArgs e)
     {
@@ -1099,6 +1104,17 @@ internal sealed partial class SelectForm : CustomForm
 
         ProgramData.WriteProxyChoices(proxyChoices);
 
+        List<(Platform platform, string id)> extraProtectionChoices =
+            ProgramData.ReadExtraProtectionChoices().ToList();
+        foreach (Selection selection in Selection.All.Keys)
+        {
+            _ = extraProtectionChoices.RemoveAll(c => c.platform == selection.Platform && c.id == selection.Id);
+            if (selection.UseExtraProtection)
+                extraProtectionChoices.Add((selection.Platform, selection.Id));
+        }
+
+        ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
+
         loadButton.Enabled = CanLoadSelections();
         saveButton.Enabled = CanSaveSelections();
     }
@@ -1107,7 +1123,9 @@ internal sealed partial class SelectForm : CustomForm
 
     private static bool CanLoadProxy() => ProgramData.ReadProxyChoices().Any();
 
-    private static bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy();
+    private static bool CanLoadExtraProtection() => ProgramData.ReadExtraProtectionChoices().Any();
+
+    private static bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy() || CanLoadExtraProtection();
 
     private void OnLoadSelections(object sender, EventArgs e)
     {
@@ -1149,6 +1167,14 @@ internal sealed partial class SelectForm : CustomForm
             }
 
         ProgramData.WriteProxyChoices(proxyChoices);
+
+        List<(Platform platform, string id)> extraProtectionChoices =
+            ProgramData.ReadExtraProtectionChoices().ToList();
+        foreach (Selection selection in Selection.All.Keys)
+            selection.UseExtraProtection = extraProtectionChoices.Any(c =>
+                c.platform == selection.Platform && c.id == selection.Id);
+
+        ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
         loadButton.Enabled = CanLoadSelections();
 
         OnProxyChanged();
@@ -1158,7 +1184,9 @@ internal sealed partial class SelectForm : CustomForm
 
     private static bool CanResetProxy() => !AreProxySelectionsDefault();
 
-    private bool CanResetSelections() => CanResetDlc() || CanResetProxy();
+    private static bool CanResetExtraProtection() => !AreExtraProtectionSelectionsDefault();
+
+    private bool CanResetSelections() => CanResetDlc() || CanResetProxy() || CanResetExtraProtection();
 
     private void OnResetSelections(object sender, EventArgs e)
     {
@@ -1172,6 +1200,7 @@ internal sealed partial class SelectForm : CustomForm
         {
             selection.UseProxy = false;
             selection.Proxy = null;
+            selection.UseExtraProtection = false;
         }
 
         OnProxyChanged();
@@ -1185,6 +1214,13 @@ internal sealed partial class SelectForm : CustomForm
         proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
         proxyAllCheckBox.Checked = Selection.All.Keys.Count != 0 && Selection.All.Keys.All(selection => selection.UseProxy);
         proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
+    }
+
+    internal void OnExtraProtectionChanged()
+    {
+        selectionTreeView.Invalidate();
+        saveButton.Enabled = CanSaveSelections();
+        resetButton.Enabled = CanResetSelections();
     }
 
     private void OnBlockProtectedGamesCheckBoxChanged(object sender, EventArgs e)

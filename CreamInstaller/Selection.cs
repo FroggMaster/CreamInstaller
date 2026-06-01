@@ -34,6 +34,7 @@ internal sealed class Selection : IEquatable<Selection>
     internal readonly string RootDirectory;
     internal readonly TreeNode TreeNode;
     internal string Icon;
+    internal bool UseExtraProtection;
     internal bool UseProxy;
     internal string Proxy;
     internal string Product;

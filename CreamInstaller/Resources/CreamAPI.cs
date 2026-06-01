@@ -41,14 +41,15 @@ internal static class CreamAPI
         config.CreateFile(true, installForm)?.Close();
         StreamWriter writer = new(config, true, Encoding.Default);
         WriteConfig(writer, selection.Name, !int.TryParse(selection.Id, out _) ? "0" : selection.Id,
-            new(dlc.ToDictionary(_dlc => _dlc.Id, _dlc => _dlc.Name), PlatformIdComparer.String), installForm);
+            new(dlc.ToDictionary(_dlc => _dlc.Id, _dlc => _dlc.Name), PlatformIdComparer.String),
+            selection.UseExtraProtection, installForm);
         writer.Flush();
         writer.Close();
         return;
     }
 
     private static void WriteConfig(StreamWriter writer, string name, string appId,
-        SortedList<string, string> dlc, InstallForm installForm = null)
+        SortedList<string, string> dlc, bool extraProtection = false, InstallForm installForm = null)
     {
         writer.WriteLine($"; {name}");
         writer.WriteLine("[steam]");
@@ -58,7 +59,7 @@ internal static class CreamAPI
         writer.WriteLine("unlockall = false");
         writer.WriteLine("orgapi = steam_api_o.dll");
         writer.WriteLine("orgapi64 = steam_api64_o.dll");
-        writer.WriteLine("extraprotection = false"); // we may want to set this on by default?
+        writer.WriteLine($"extraprotection = {(extraProtection ? "true" : "false")}");
         writer.WriteLine("forceoffline = false");
         writer.WriteLine();
         writer.WriteLine("[steam_misc]"); // this line seems to be required in v5.3.0.0, or the config won't be read

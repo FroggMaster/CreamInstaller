@@ -14,8 +14,10 @@ namespace CreamInstaller.Components;
 internal sealed class CustomTreeView : TreeView
 {
     private const string ProxyToggleString = "Proxy";
+    private const string ExtraProtectionToggleString = "Extra Protection";
 
     private readonly Dictionary<Selection, Rectangle> checkBoxBounds = [];
+    private readonly Dictionary<Selection, Rectangle> extraProtectionCheckBoxBounds = [];
     private readonly Dictionary<Selection, Rectangle> comboBoxBounds = [];
 
     private readonly Dictionary<TreeNode, Rectangle> selectionBounds = [];
@@ -62,6 +64,7 @@ internal sealed class CustomTreeView : TreeView
     private void OnInvalidated(object sender, EventArgs e)
     {
         checkBoxBounds.Clear();
+        extraProtectionCheckBoxBounds.Clear();
         comboBoxBounds.Clear();
         selectionBounds.Clear();
         backBrush?.Dispose();
@@ -254,6 +257,42 @@ internal sealed class CustomTreeView : TreeView
                     graphics.FillRectangle(brush, bounds);
                 }
 
+                if (!Program.UseSmokeAPI)
+                {
+                    CheckBoxState extraProtState = selection.UseExtraProtection
+                        ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                        : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+                    size = CheckBoxRenderer.GetGlyphSize(graphics, extraProtState);
+                    bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width };
+                    selectionBounds = new(selectionBounds.Location, selectionBounds.Size + bounds.Size with { Height = 0 });
+                    Rectangle extraProtCheckBoxBounds = bounds;
+                    graphics.FillRectangle(brush, bounds);
+                    point = new(bounds.Left, bounds.Top + bounds.Height / 2 - size.Height / 2 - 1);
+                    if (dark)
+                        ThemeManager.DrawDarkCheckBox(graphics, point, size, selection.UseExtraProtection, Enabled);
+                    else
+                        CheckBoxRenderer.DrawCheckBox(graphics, point, extraProtState);
+
+                    text = ExtraProtectionToggleString;
+                    size = TextRenderer.MeasureText(graphics, text, font);
+                    int leftEP = 1;
+                    bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width + leftEP };
+                    selectionBounds = new(selectionBounds.Location, selectionBounds.Size + bounds.Size with { Height = 0 });
+                    extraProtCheckBoxBounds = new(extraProtCheckBoxBounds.Location, extraProtCheckBoxBounds.Size + bounds.Size with { Height = 0 });
+                    graphics.FillRectangle(brush, bounds);
+                    point = new(bounds.Location.X - 1 + leftEP, bounds.Location.Y + 1);
+                    TextRenderer.DrawText(graphics, text, font, point,
+                        Enabled ? ThemeManager.CustomTreeViewProxyColor : ThemeManager.CustomTreeViewDisabledProxyColor,
+                        TextFormatFlags.Default);
+
+                    extraProtectionCheckBoxBounds[selection] = RectangleToClient(extraProtCheckBoxBounds);
+
+                    // Add spacing before proxy checkbox
+                    size = new(4, 0);
+                    bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width };
+                    graphics.FillRectangle(brush, bounds);
+                }
+
                 CheckBoxState proxyState = selection.UseProxy
                     ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
                     : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
@@ -397,6 +436,16 @@ internal sealed class CustomTreeView : TreeView
             {
                 pair.Key.UseProxy = !pair.Key.UseProxy;
                 selectForm?.OnProxyChanged();
+                break;
+            }
+
+        foreach (KeyValuePair<Selection, Rectangle> pair in extraProtectionCheckBoxBounds)
+            if (!Selection.All.ContainsKey(pair.Key))
+                _ = extraProtectionCheckBoxBounds.Remove(pair.Key);
+            else if (pair.Value.Contains(clickPoint))
+            {
+                pair.Key.UseExtraProtection = !pair.Key.UseExtraProtection;
+                selectForm?.OnExtraProtectionChanged();
                 break;
             }
     }

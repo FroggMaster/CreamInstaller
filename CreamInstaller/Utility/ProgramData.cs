@@ -29,6 +29,7 @@ internal static class ProgramData
     private static readonly string ProgramChoicesPath = DirectoryPath + @"\choices.json";
     private static readonly string DlcChoicesPath = DirectoryPath + @"\dlc.json";
     private static readonly string KoaloaderProxyChoicesPath = DirectoryPath + @"\proxies.json";
+    private static readonly string ExtraProtectionChoicesPath = DirectoryPath + @"\extraprotection.json";
 
     internal static readonly string LogPath = DirectoryPath + @"\scan.log";
 
@@ -223,6 +224,39 @@ internal static class ProgramData
                 KoaloaderProxyChoicesPath.DeleteFile();
             else
                 KoaloaderProxyChoicesPath.WriteFile(JsonConvert.SerializeObject(choices));
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    internal static IEnumerable<(Platform platform, string id)> ReadExtraProtectionChoices()
+    {
+        if (ExtraProtectionChoicesPath.FileExists())
+            try
+            {
+                if (JsonConvert.DeserializeObject(ExtraProtectionChoicesPath.ReadFile(),
+                        typeof(IEnumerable<(Platform platform, string id)>)) is
+                    IEnumerable<(Platform platform, string id)> choices)
+                    return choices;
+            }
+            catch
+            {
+                // ignored
+            }
+
+        return [];
+    }
+
+    internal static void WriteExtraProtectionChoices(IEnumerable<(Platform platform, string id)> choices)
+    {
+        try
+        {
+            if (choices is null || !choices.Any())
+                ExtraProtectionChoicesPath.DeleteFile();
+            else
+                ExtraProtectionChoicesPath.WriteFile(JsonConvert.SerializeObject(choices));
         }
         catch
         {
