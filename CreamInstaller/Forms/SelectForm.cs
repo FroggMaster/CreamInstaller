@@ -556,27 +556,29 @@ internal sealed partial class SelectForm : CustomForm
 
     private async void OnLoad(bool forceScan = false, bool forceProvideChoices = false)
     {
-        Program.Canceled = false;
-        blockedGamesCheckBox.Enabled = false;
-        blockProtectedHelpButton.Enabled = false;
-        useSmokeAPICheckBox.Enabled = false;
-        useSmokeAPIHelpButton.Enabled = false;
-        cancelButton.Enabled = true;
-        scanButton.Enabled = false;
-        noneFoundLabel.Visible = false;
-        allCheckBox.Enabled = false;
-        proxyAllCheckBox.Enabled = false;
-        installButton.Enabled = false;
-        uninstallButton.Enabled = installButton.Enabled;
-        selectionTreeView.Enabled = false;
-        saveButton.Enabled = false;
-        loadButton.Enabled = false;
-        resetButton.Enabled = false;
-        progressLabel.Text = "Waiting for user to select which programs/games to scan . . .";
-        ShowProgressBar();
-        await ProgramData.Setup(this);
-        ProgramData.ClearLog();
-        ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+        try
+        {
+            Program.Canceled = false;
+            blockedGamesCheckBox.Enabled = false;
+            blockProtectedHelpButton.Enabled = false;
+            useSmokeAPICheckBox.Enabled = false;
+            useSmokeAPIHelpButton.Enabled = false;
+            cancelButton.Enabled = true;
+            scanButton.Enabled = false;
+            noneFoundLabel.Visible = false;
+            allCheckBox.Enabled = false;
+            proxyAllCheckBox.Enabled = false;
+            installButton.Enabled = false;
+            uninstallButton.Enabled = installButton.Enabled;
+            selectionTreeView.Enabled = false;
+            saveButton.Enabled = false;
+            loadButton.Enabled = false;
+            resetButton.Enabled = false;
+            progressLabel.Text = "Waiting for user to select which programs/games to scan . . .";
+            ShowProgressBar();
+            await ProgramData.Setup(this);
+            ProgramData.ClearLog();
+            ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
         bool scan = forceScan;
         if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices))
         {
@@ -712,6 +714,23 @@ internal sealed partial class SelectForm : CustomForm
         blockProtectedHelpButton.Enabled = true;
         useSmokeAPICheckBox.Enabled = true;
         useSmokeAPIHelpButton.Enabled = true;
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions in async void to prevent unobserved exceptions
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"OnLoad exception: {ex.Message}");
+#endif
+            // Show error and clean up
+            ex.HandleException(this);
+            HideProgressBar();
+            cancelButton.Enabled = false;
+            scanButton.Enabled = true;
+            blockedGamesCheckBox.Enabled = true;
+            blockProtectedHelpButton.Enabled = true;
+            useSmokeAPICheckBox.Enabled = true;
+            useSmokeAPIHelpButton.Enabled = true;
+        }
     }
 
     private void OnTreeViewNodeCheckedChanged(object sender, TreeViewEventArgs e)

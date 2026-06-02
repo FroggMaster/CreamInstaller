@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CreamInstaller.Forms;
 using CreamInstaller.Platforms.Steam;
@@ -91,15 +92,72 @@ internal static class Program
 
     internal static bool Canceled;
 
-    internal static async void Cleanup(bool cancel = true)
+    /// <summary>
+    /// Initiates application cleanup asynchronously. Use this when you can await the result.
+    /// </summary>
+    /// <param name="cancel">Whether to set the Canceled flag</param>
+    /// <returns>Task that completes when cleanup is finished</returns>
+    internal static async Task CleanupAsync(bool cancel = true)
     {
-        Canceled = cancel;
+        if (cancel)
+            Canceled = true;
         await SteamCMD.Cleanup();
+    }
+
+    /// <summary>
+    /// Synchronous cleanup wrapper for event handlers and other synchronous contexts.
+    /// Initiates cleanup without blocking but does not wait for completion.
+    /// </summary>
+    /// <param name="cancel">Whether to set the Canceled flag</param>
+    internal static void Cleanup(bool cancel = true)
+    {
+        if (cancel)
+            Canceled = true;
+
+        // Fire and forget - don't block synchronous callers
+        // Any exceptions will be logged but won't crash the app
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await SteamCMD.Cleanup();
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"Cleanup failed: {ex.Message}");
+#endif
+                // Swallow exceptions during fire-and-forget cleanup
+            }
+        });
     }
 
     private static void OnApplicationExit(object s, EventArgs e)
     {
-        Cleanup();
-        HttpClientManager.Dispose();
+        Canceled = true;
+
+        // For application exit, we should try to wait briefly for cleanup
+        try
+        {
+            Task cleanupTask = SteamCMD.Cleanup();
+            // Wait up to 5 seconds for graceful cleanup
+            if (!cleanupTask.Wait(TimeSpan.FromSeconds(5)))
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine("Cleanup timed out during application exit");
+#endif
+            }
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"Cleanup exception during exit: {ex.Message}");
+#endif
+            // Ignore exceptions during shutdown
+        }
+        finally
+        {
+            HttpClientManager.Dispose();
+        }
     }
 }
