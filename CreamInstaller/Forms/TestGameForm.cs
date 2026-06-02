@@ -81,9 +81,8 @@ internal sealed partial class TestGameForm : CustomForm
 
         string name = await Task.Run(async () =>
         {
-            // Use a dedicated client with a neutral UA so Steam's store API doesn't reject the request.
-            using System.Net.Http.HttpClient client = new();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd($"{Program.Name}/{Program.Version}");
+            // Use an isolated client with neutral UA so Steam's store API doesn't reject the request.
+            using System.Net.Http.HttpClient client = HttpClientManager.CreateIsolatedClient();
             string url = $"https://store.steampowered.com/api/appdetails?appids={appId}&filters=basic";
             try
             {

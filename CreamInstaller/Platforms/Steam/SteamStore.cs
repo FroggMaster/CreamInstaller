@@ -18,6 +18,25 @@ internal static class SteamStore
     private const int CooldownGame = 600;
     private const int CooldownDlc = 1200;
 
+#if DEBUG
+    private static string FormatErrorLog(int attempts, string appId, string gameName, bool isDlc, string reason, 
+        string parentGameName = null, string parentGameAppId = null)
+    {
+        if (isDlc && parentGameName != null && parentGameAppId != null)
+        {
+            return $"[SteamQuery][Attempt {attempts}][FAILED]\n" +
+                   $"BaseGame: \"{parentGameName}\" ({parentGameAppId})\n" +
+                   $"DLC: \"{gameName}\" ({appId})\n" +
+                   $"Type: DLC\n" +
+                   $"Reason: {reason}\n" +
+                   "-------";
+        }
+
+        string type = isDlc ? "DLC" : "Game";
+        return $"[SteamQuery][Attempt {attempts}][FAILED] AppId: {appId} | Name: \"{gameName}\" | Type: {type} | Reason: {reason}";
+    }
+#endif
+
     internal static async Task<HashSet<string>> ParseDlcAppIds(StoreAppData storeAppData)
         => await Task.Run(() =>
         {
@@ -31,8 +50,9 @@ internal static class SteamStore
             return dlcIds;
         });
 
-    internal static async Task<StoreAppData> QueryStoreAPI(string appId, bool isDlc = false, int attempts = 0)
+    internal static async Task<StoreAppData> QueryStoreAPI(string appId, bool isDlc = false, int attempts = 0, string parentGameName = null, string parentGameAppId = null)
     {
+        string gameName = "Unknown";
         while (!Program.Canceled)
         {
             attempts++;
@@ -55,13 +75,14 @@ internal static class SteamStore
                                 if (storeAppDetails is not null)
                                 {
                                     StoreAppData data = storeAppDetails.Data;
+                                    if (data?.Name is not null)
+                                        gameName = data.Name;
+
                                     if (!storeAppDetails.Success)
                                     {
 #if DEBUG
                                         DebugForm.Current.Log(
-                                            "Steam store query failed on attempt #" + attempts + " for " + appId +
-                                            (isDlc ? " (DLC)" : "")
-                                            + ": Query unsuccessful (" + app.Value.ToString(Formatting.None) + ")",
+                                            FormatErrorLog(attempts, appId, gameName, isDlc, "Query unsuccessful", parentGameName, parentGameAppId),
                                             LogTextBox.Warning);
 #endif
                                         if (data is null)
@@ -78,9 +99,8 @@ internal static class SteamStore
 #if DEBUG
                                             (Exception e)
                                         {
-                                            DebugForm.Current.Log("Steam store query failed on attempt #" + attempts +
-                                                                  " for " + appId + (isDlc ? " (DLC)" : "")
-                                                                  + ": Unsuccessful serialization (" + e.Message + ")");
+                                            DebugForm.Current.Log(
+                                                FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful serialization ({e.Message})", parentGameName, parentGameAppId));
                                         }
 #else
                                         {
@@ -90,27 +110,24 @@ internal static class SteamStore
                                         return data;
                                     }
 #if DEBUG
-                                    DebugForm.Current.Log("Steam store query failed on attempt #" + attempts + " for " +
-                                                          appId + (isDlc ? " (DLC)" : "")
-                                                          + ": Response data null (" +
-                                                          app.Value.ToString(Formatting.None) + ")");
+                                    DebugForm.Current.Log(
+                                        FormatErrorLog(attempts, appId, gameName, isDlc, "Response data null", parentGameName, parentGameAppId));
 #endif
                                 }
 #if DEBUG
                                 else
-                                    DebugForm.Current.Log("Steam store query failed on attempt #" + attempts + " for " +
-                                                          appId + (isDlc ? " (DLC)" : "")
-                                                          + ": Response details null (" +
-                                                          app.Value.ToString(Formatting.None) + ")");
+                                {
+                                    DebugForm.Current.Log(
+                                        FormatErrorLog(attempts, appId, gameName, isDlc, "Response details null", parentGameName, parentGameAppId));
+                                }
 #endif
                             }
                             catch
 #if DEBUG
                                 (Exception e)
                             {
-                                DebugForm.Current.Log("Steam store query failed on attempt #" + attempts + " for " +
-                                                      appId + (isDlc ? " (DLC)" : "")
-                                                      + ": Unsuccessful deserialization (" + e.Message + ")");
+                                DebugForm.Current.Log(
+                                    FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful deserialization ({e.Message})", parentGameName, parentGameAppId));
                             }
 #else
                             {
@@ -119,17 +136,19 @@ internal static class SteamStore
 #endif
 #if DEBUG
                     else
-                        DebugForm.Current.Log("Steam store query failed on attempt #" + attempts + " for " + appId +
-                                              (isDlc ? " (DLC)" : "")
-                                              + ": Response deserialization null");
+                    {
+                        DebugForm.Current.Log(
+                            FormatErrorLog(attempts, appId, gameName, isDlc, "Response deserialization null", parentGameName, parentGameAppId));
+                    }
 #endif
                 }
 #if DEBUG
                 else
+                {
                     DebugForm.Current.Log(
-                        "Steam store query failed on attempt #" + attempts + " for " + appId + (isDlc ? " (DLC)" : "") +
-                        ": Response null",
+                        FormatErrorLog(attempts, appId, gameName, isDlc, "Null or empty response", parentGameName, parentGameAppId),
                         LogTextBox.Warning);
+                }
 #endif
             }
 
@@ -148,7 +167,8 @@ internal static class SteamStore
             if (attempts > 10)
             {
 #if DEBUG
-                DebugForm.Current.Log("Failed to query Steam store after 10 tries: " + appId);
+                DebugForm.Current.Log(
+                    FormatErrorLog(attempts, appId, gameName, isDlc, "Maximum retry attempts exceeded (10)", parentGameName, parentGameAppId));
 #endif
                 break;
             }

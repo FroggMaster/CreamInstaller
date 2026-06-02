@@ -247,7 +247,7 @@ internal sealed partial class SelectForm : CustomForm
                                 string dlcName = null;
                                 string dlcIcon = null;
                                 bool onSteamStore = false;
-                                StoreAppData dlcStoreAppData = await SteamStore.QueryStoreAPI(dlcAppId, true);
+                                StoreAppData dlcStoreAppData = await SteamStore.QueryStoreAPI(dlcAppId, true, 0, name, appId);
                                 if (dlcStoreAppData is not null)
                                 {
                                     dlcName = dlcStoreAppData.Name;
@@ -277,7 +277,7 @@ internal sealed partial class SelectForm : CustomForm
                                     string fullGameIcon = null;
                                     bool fullGameOnSteamStore = false;
                                     StoreAppData fullGameStoreAppData =
-                                        await SteamStore.QueryStoreAPI(fullGameAppId, true);
+                                        await SteamStore.QueryStoreAPI(fullGameAppId, true, 0, null, null);
                                     if (fullGameStoreAppData is not null)
                                     {
                                         fullGameName = fullGameStoreAppData.Name;

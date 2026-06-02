@@ -13,23 +13,59 @@ namespace CreamInstaller.Utility;
 
 internal static class HttpClientManager
 {
-    internal static HttpClient HttpClient;
+    private static readonly object _lock = new();
+    private static HttpClient _httpClient;
+    private static SocketsHttpHandler _handler;
+
+    internal static HttpClient HttpClient
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _httpClient;
+            }
+        }
+    }
 
     private static readonly ConcurrentDictionary<string, string> HttpContentCache = new();
 
     internal static void Setup()
     {
-        HttpClient = new();
-        if (CreamInstaller.Platforms.Epic.EpicStore.EpicBool)
+        lock (_lock)
         {
-            HttpClient.DefaultRequestHeaders.UserAgent.Add(new("EpicGamesLauncher", "18.9.0-45233261+++Portal+Release-Live"));
-            CreamInstaller.Platforms.Epic.EpicStore.EpicBool = false;
+            // If already set up, don't recreate to avoid socket exhaustion
+            if (_httpClient != null)
+                return;
+
+            // Create a SocketsHttpHandler with proper pooling and lifecycle settings
+            _handler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(10), // Rotate connections every 10 minutes to respect DNS changes
+                PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2), // Close idle connections after 2 minutes
+                MaxConnectionsPerServer = 10, // Reasonable concurrent connection limit
+                EnableMultipleHttp2Connections = true
+            };
+
+            // Create HttpClient with the handler
+            _httpClient = new HttpClient(_handler, disposeHandler: false)
+            {
+                Timeout = TimeSpan.FromSeconds(30) // 30 second timeout for all requests
+            };
+
+            // Set user agent based on context
+            if (CreamInstaller.Platforms.Epic.EpicStore.EpicBool)
+            {
+                _httpClient.DefaultRequestHeaders.UserAgent.Add(new("EpicGamesLauncher", "18.9.0-45233261+++Portal+Release-Live"));
+                CreamInstaller.Platforms.Epic.EpicStore.EpicBool = false;
+            }
+            else
+            {
+                _httpClient.DefaultRequestHeaders.UserAgent.Add(new(Program.Name, Program.Version));
+            }
+
+            _httpClient.DefaultRequestHeaders.AcceptLanguage.Add(new(CultureInfo.CurrentCulture.ToString()));
         }
-        else
-        {
-            HttpClient.DefaultRequestHeaders.UserAgent.Add(new(Program.Name, Program.Version));
-        }
-        HttpClient.DefaultRequestHeaders.AcceptLanguage.Add(new(CultureInfo.CurrentCulture.ToString()));
     }
 
     internal static async Task<string> EnsureGet(string url)
@@ -52,14 +88,29 @@ internal static class HttpClientManager
             if (e.StatusCode != HttpStatusCode.TooManyRequests)
             {
 #if DEBUG
-                DebugForm.Current.Log("Get request failed to " + url + ": " + e, LogTextBox.Warning);
+                string statusInfo = e.StatusCode.HasValue ? $" (HTTP {(int)e.StatusCode.Value})" : "";
+                DebugForm.Current.Log($"Get request failed to {url}{statusInfo}: {e}", LogTextBox.Warning);
 #endif
                 return null;
             }
 #if DEBUG
-            DebugForm.Current.Log("Too many requests to " + url, LogTextBox.Error);
+            DebugForm.Current.Log($"Too many requests to {url} (HTTP 429 - Rate Limited)", LogTextBox.Error);
 #endif
             // do something special?
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+#if DEBUG
+            DebugForm.Current.Log("Get request timed out for " + url, LogTextBox.Warning);
+#endif
+            return null;
+        }
+        catch (OperationCanceledException)
+        {
+#if DEBUG
+            DebugForm.Current.Log("Get request was cancelled for " + url, LogTextBox.Warning);
+#endif
             return null;
         }
 #if DEBUG
@@ -88,5 +139,37 @@ internal static class HttpClientManager
         }
     }
 
-    internal static void Dispose() => HttpClient?.Dispose();
+    /// <summary>
+    /// Creates a new HttpClient for isolated/one-off use cases.
+    /// The caller is responsible for disposing the returned client.
+    /// </summary>
+    internal static HttpClient CreateIsolatedClient(TimeSpan? timeout = null)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
+            MaxConnectionsPerServer = 5
+        };
+
+        var client = new HttpClient(handler, disposeHandler: true)
+        {
+            Timeout = timeout ?? TimeSpan.FromSeconds(30)
+        };
+
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"{Program.Name}/{Program.Version}");
+        return client;
+    }
+
+    internal static void Dispose()
+    {
+        lock (_lock)
+        {
+            _httpClient?.Dispose();
+            _httpClient = null;
+
+            _handler?.Dispose();
+            _handler = null;
+        }
+    }
 }
