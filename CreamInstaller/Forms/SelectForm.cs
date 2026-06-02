@@ -25,6 +25,7 @@ internal sealed partial class SelectForm : CustomForm
     private const string HelpButtonListPrefix = "\n    •  ";
 
     private static SelectForm current;
+    private static readonly object currentLock = new();
 
     private readonly ConcurrentDictionary<string, string> remainingDLCs = new();
 
@@ -43,9 +44,14 @@ internal sealed partial class SelectForm : CustomForm
     {
         get
         {
-            if (current is not null && (current.Disposing || current.IsDisposed))
-                current = null;
-            return current ??= new();
+            lock (currentLock)
+            {
+                if (current is null || current.Disposing || current.IsDisposed)
+                {
+                    current = new SelectForm();
+                }
+                return current;
+            }
         }
     }
 

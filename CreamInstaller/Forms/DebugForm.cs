@@ -9,6 +9,7 @@ namespace CreamInstaller.Forms;
 internal sealed partial class DebugForm : CustomForm
 {
     private static DebugForm current;
+    private static readonly object currentLock = new();
 
     private Form attachedForm;
 
@@ -22,9 +23,14 @@ internal sealed partial class DebugForm : CustomForm
     {
         get
         {
-            if (current is not null && (current.Disposing || current.IsDisposed))
-                current = null;
-            return current ??= new();
+            lock (currentLock)
+            {
+                if (current is null || current.Disposing || current.IsDisposed)
+                {
+                    current = new DebugForm();
+                }
+                return current;
+            }
         }
     }
 
