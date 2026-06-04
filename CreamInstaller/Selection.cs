@@ -43,15 +43,17 @@ internal sealed class Selection : IEquatable<Selection>
 
     internal IEnumerable<string> GetAvailableProxies()
     {
-        if (!Program.UseSmokeAPI && Platform is Platform.Steam or Platform.Paradox)
-            return CreamAPI.ProxyDLLs;
-        if (Program.UseSmokeAPI && Platform is Platform.Steam or Platform.Paradox)
-            return SmokeAPI.ProxyDLLs;
-        return EmbeddedResources.Where(r => r.StartsWith("Koaloader", StringComparison.Ordinal)).Select(p =>
-        {
-            p.GetProxyInfoFromIdentifier(out string proxyName, out _);
-            return proxyName;
-        }).ToHashSet();
+        if (Platform is Platform.Steam or Platform.Paradox)
+            return Program.UseSmokeAPI ? SmokeAPI.ProxyDLLs : CreamAPI.ProxyDLLs;
+
+        return EmbeddedResources
+            .Where(r => r.StartsWith("Koaloader", StringComparison.Ordinal))
+            .Select(p =>
+            {
+                p.GetProxyInfoFromIdentifier(out string proxyName, out _);
+                return proxyName;
+            })
+            .ToHashSet();
     }
 
     private Selection(Platform platform, string id, string name, string rootDirectory, HashSet<string> dllDirectories,
@@ -102,19 +104,8 @@ internal sealed class Selection : IEquatable<Selection>
 
     private void Validate(List<(Platform platform, string id, string name)> programsToScan)
     {
-        if (programsToScan is null || !programsToScan.Any(p => p.platform == Platform && p.id == Id))
-        {
-            Remove();
-            return;
-        }
-
-        if (Program.IsGameBlocked(Name, RootDirectory))
-        {
-            Remove();
-            return;
-        }
-
-        if (!RootDirectory.DirectoryExists())
+        if (programsToScan is null || !programsToScan.Any(p => p.platform == Platform && p.id == Id) ||
+            Program.IsGameBlocked(Name, RootDirectory) || !RootDirectory.DirectoryExists())
         {
             Remove();
             return;

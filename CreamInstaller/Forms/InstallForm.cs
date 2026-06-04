@@ -360,7 +360,7 @@ internal sealed partial class InstallForm : CustomForm
                 throw new CustomMessageException($"Operation failed for {activeCount} programs.");
     }
 
-    private async void Start()
+    private async Task Start()
     {
         Program.Canceled = false;
         acceptButton.Enabled = false;
@@ -392,25 +392,29 @@ internal sealed partial class InstallForm : CustomForm
 
     private void OnLoad(object sender, EventArgs a)
     {
-        retry:
-        try
+        bool retry = true;
+        while (retry)
         {
-            userInfoLabel.Text = "Loading . . . ";
-            logTextBox.Text = string.Empty;
-            selectionCount = 0;
-            foreach (Selection selection in Selection.AllEnabled)
+            try
             {
-                selectionCount++;
-                _ = activeSelections.Add(selection);
-            }
+                userInfoLabel.Text = "Loading . . . ";
+                logTextBox.Text = string.Empty;
+                selectionCount = 0;
+                foreach (Selection selection in Selection.AllEnabled)
+                {
+                    selectionCount++;
+                    _ = activeSelections.Add(selection);
+                }
 
-            Start();
-        }
-        catch (Exception e)
-        {
-            if (e.HandleException(this))
-                goto retry;
-            Close();
+                _ = Start();
+                retry = false;
+            }
+            catch (Exception e)
+            {
+                retry = e.HandleException(this);
+                if (!retry)
+                    Close();
+            }
         }
     }
 
@@ -423,7 +427,7 @@ internal sealed partial class InstallForm : CustomForm
     private void OnRetry(object sender, EventArgs e)
     {
         Program.Cleanup();
-        Start();
+        _ = Start();
     }
 
     private void OnCancel(object sender, EventArgs e) => Program.Cleanup();

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -38,18 +39,11 @@ internal static class Program
     // Setting is now toggleable. Huzzah! 
     internal static bool UseSmokeAPI = true;
 
-    internal static bool BlockProtectedGames = true;
-    internal static readonly string[] ProtectedGames = ["PAYDAY 2"];
-    internal static readonly string[] ProtectedGameDirectories = [@"\EasyAntiCheat", @"\BattlEye"];
-    internal static readonly string[] ProtectedGameDirectoryExceptions = [];
-
     // Dark mode enabled by default
     internal static bool DarkModeEnabled = true;
 
     internal static bool IsGameBlocked(string name, string directory = null)
-        => BlockProtectedGames && (ProtectedGames.Contains(name) || directory is not null &&
-            !ProtectedGameDirectoryExceptions.Contains(name)
-            && ProtectedGameDirectories.Any(path => (directory + path).DirectoryExists()));
+        => Configuration.IsGameBlocked(name, directory);
 
     [STAThread]
     private static void Main()
@@ -65,24 +59,30 @@ internal static class Program
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException +=
                 (_, e) => (e.ExceptionObject as Exception)?.HandleFatalException();
-            retry:
-            try
+            bool retry = true;
+            while (retry)
             {
-                HttpClientManager.Setup();
-                using UpdateForm form = new();
+                try
+                {
+                    HttpClientManager.Setup();
+                    using UpdateForm form = new();
 #if DEBUG
-                DebugForm.Current.Attach(form);
+                    DebugForm.Current.Attach(form);
 #endif
-                // Apply initial theme (dark by default)
-                Utility.ThemeManager.Apply(form);
-                Application.Run(form);
-            }
-            catch (Exception e)
-            {
-                if (e.HandleException())
-                    goto retry;
-                Application.Exit();
-                return;
+                    // Apply initial theme (dark by default)
+                    Utility.ThemeManager.Apply(form);
+                    Application.Run(form);
+                    retry = false;
+                }
+                catch (Exception e)
+                {
+                    retry = e.HandleException();
+                    if (!retry)
+                    {
+                        Application.Exit();
+                        return;
+                    }
+                }
             }
         }
 
@@ -91,15 +91,15 @@ internal static class Program
 
     internal static bool Canceled;
 
-    internal static async void Cleanup(bool cancel = true)
+    internal static async Task Cleanup(bool cancel = true)
     {
         Canceled = cancel;
         await SteamCMD.Cleanup();
     }
 
-    private static void OnApplicationExit(object s, EventArgs e)
+    private static async void OnApplicationExit(object s, EventArgs e)
     {
-        Cleanup();
+        await Cleanup();
         HttpClientManager.Dispose();
     }
 }

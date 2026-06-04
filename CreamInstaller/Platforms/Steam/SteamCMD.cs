@@ -43,85 +43,86 @@ internal static partial class SteamCMD
               + string.Concat(Enumerable.Repeat("+app_update 4 ", attempts)) + "+quit"
             : $"+login anonymous +app_info_print {appId} +quit";
 
-    private static async Task<string> Run(string appId)
+        private static async Task<string> Run(string appId)
         => await Task.Run(() =>
         {
-            wait_for_lock:
-            if (Program.Canceled)
-                return "";
-            for (int i = 0; i < Locks.Length; i++)
+            while (true)
             {
                 if (Program.Canceled)
                     return "";
-                if (Interlocked.CompareExchange(ref Locks[i], 1, 0) != 0)
-                    continue;
-                if (appId != null)
-                {
-                    _ = AttemptCount.TryGetValue(appId, out int count);
-                    AttemptCount[appId] = ++count;
-                }
-
-                if (Program.Canceled)
-                    return "";
-                ProcessStartInfo processStartInfo = new()
-                {
-                    FileName = FilePath, RedirectStandardOutput = true, RedirectStandardInput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false, Arguments = appId is null ? "+quit" : GetArguments(appId),
-                    CreateNoWindow = true,
-                    StandardInputEncoding = Encoding.UTF8, StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
-                };
-                Process process = Process.Start(processStartInfo);
-                StringBuilder output = new();
-                StringBuilder appInfo = new();
-                bool appInfoStarted = false;
-                DateTime lastOutput = DateTime.UtcNow;
-                while (process != null)
+                for (int i = 0; i < Locks.Length; i++)
                 {
                     if (Program.Canceled)
+                        return "";
+                    if (Interlocked.CompareExchange(ref Locks[i], 1, 0) != 0)
+                        continue;
+                    if (appId != null)
                     {
+                        _ = AttemptCount.TryGetValue(appId, out int count);
+                        AttemptCount[appId] = ++count;
+                    }
+
+                    if (Program.Canceled)
+                        return "";
+                    ProcessStartInfo processStartInfo = new()
+                    {
+                        FileName = FilePath, RedirectStandardOutput = true, RedirectStandardInput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false, Arguments = appId is null ? "+quit" : GetArguments(appId),
+                        CreateNoWindow = true,
+                        StandardInputEncoding = Encoding.UTF8, StandardOutputEncoding = Encoding.UTF8,
+                        StandardErrorEncoding = Encoding.UTF8
+                    };
+                    Process process = Process.Start(processStartInfo);
+                    StringBuilder output = new();
+                    StringBuilder appInfo = new();
+                    bool appInfoStarted = false;
+                    DateTime lastOutput = DateTime.UtcNow;
+                    while (process != null)
+                    {
+                        if (Program.Canceled)
+                        {
+                            process.Kill(true);
+                            process.Close();
+                            break;
+                        }
+
+                        int c = process.StandardOutput.Read();
+                        if (c != -1)
+                        {
+                            lastOutput = DateTime.UtcNow;
+                            char ch = (char)c;
+                            if (ch == '{')
+                                appInfoStarted = true;
+                            _ = appInfoStarted ? appInfo.Append(ch) : output.Append(ch);
+                        }
+
+                        DateTime now = DateTime.UtcNow;
+                        TimeSpan timeDiff = now - lastOutput;
+                        if (!(timeDiff.TotalSeconds > 0.1))
+                            continue;
                         process.Kill(true);
                         process.Close();
-                        break;
+                        if (appId != null &&
+                            output.ToString().Contains($"No app info for AppID {appId} found, requesting..."))
+                        {
+                            AttemptCount[appId]++;
+                            processStartInfo.Arguments = GetArguments(appId);
+                            process = Process.Start(processStartInfo);
+                            appInfoStarted = false;
+                            _ = output.Clear();
+                            _ = appInfo.Clear();
+                        }
+                        else
+                            break;
                     }
 
-                    int c = process.StandardOutput.Read();
-                    if (c != -1)
-                    {
-                        lastOutput = DateTime.UtcNow;
-                        char ch = (char)c;
-                        if (ch == '{')
-                            appInfoStarted = true;
-                        _ = appInfoStarted ? appInfo.Append(ch) : output.Append(ch);
-                    }
-
-                    DateTime now = DateTime.UtcNow;
-                    TimeSpan timeDiff = now - lastOutput;
-                    if (!(timeDiff.TotalSeconds > 0.1))
-                        continue;
-                    process.Kill(true);
-                    process.Close();
-                    if (appId != null &&
-                        output.ToString().Contains($"No app info for AppID {appId} found, requesting..."))
-                    {
-                        AttemptCount[appId]++;
-                        processStartInfo.Arguments = GetArguments(appId);
-                        process = Process.Start(processStartInfo);
-                        appInfoStarted = false;
-                        _ = output.Clear();
-                        _ = appInfo.Clear();
-                    }
-                    else
-                        break;
+                    _ = Interlocked.Decrement(ref Locks[i]);
+                    return appInfo.ToString();
                 }
 
-                _ = Interlocked.Decrement(ref Locks[i]);
-                return appInfo.ToString();
+                Thread.Sleep(200);
             }
-
-            Thread.Sleep(200);
-            goto wait_for_lock;
         });
 
     internal static async Task<bool> Setup(IProgress<int> progress)
@@ -129,27 +130,31 @@ internal static partial class SteamCMD
         await Cleanup();
         if (!FilePath.FileExists())
         {
-            retryDownload:
-            HttpClient httpClient = HttpClientManager.HttpClient;
-            if (httpClient is null)
-                return false;
-            while (!Program.Canceled)
-                try
-                {
-                    byte[] file =
-                        await httpClient.GetByteArrayAsync(
-                            new Uri("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip"));
-                    _ = file.WriteResource(ArchivePath);
-                    ArchivePath.ExtractZip(DirectoryPath);
-                    ArchivePath.DeleteFile();
-                    break;
-                }
-                catch (Exception e)
-                {
-                    if (e.HandleException(caption: Program.Name + " failed to download SteamCMD"))
-                        goto retryDownload;
+            bool retryDownload = true;
+            while (retryDownload)
+            {
+                HttpClient httpClient = HttpClientManager.HttpClient;
+                if (httpClient is null)
                     return false;
-                }
+                while (!Program.Canceled)
+                    try
+                    {
+                        byte[] file =
+                            await httpClient.GetByteArrayAsync(
+                                new Uri("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip"));
+                        _ = file.WriteResource(ArchivePath);
+                        ArchivePath.ExtractZip(DirectoryPath);
+                        ArchivePath.DeleteFile();
+                        retryDownload = false;
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        retryDownload = e.HandleException(caption: Program.Name + " failed to download SteamCMD");
+                        if (!retryDownload)
+                            return false;
+                    }
+            }
         }
 
         if (DllPath.FileExists())

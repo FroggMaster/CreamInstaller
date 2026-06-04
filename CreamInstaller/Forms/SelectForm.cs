@@ -1189,20 +1189,20 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnBlockProtectedGamesCheckBoxChanged(object sender, EventArgs e)
     {
-        Program.BlockProtectedGames = blockedGamesCheckBox.Checked;
+        Configuration.BlockProtectedGames = blockedGamesCheckBox.Checked;
         OnLoad(forceProvideChoices: true);
     }
 
     private void OnBlockProtectedGamesHelpButtonClicked(object sender, EventArgs e)
     {
         StringBuilder blockedGames = new();
-        foreach (string name in Program.ProtectedGames)
+        foreach (string name in Configuration.ProtectedGames)
             _ = blockedGames.Append(HelpButtonListPrefix + name);
         StringBuilder blockedDirectories = new();
-        foreach (string path in Program.ProtectedGameDirectories)
+        foreach (string path in Configuration.ProtectedGameDirectories)
             _ = blockedDirectories.Append(HelpButtonListPrefix + path);
         StringBuilder blockedDirectoryExceptions = new();
-        foreach (string name in Program.ProtectedGameDirectoryExceptions)
+        foreach (string name in Configuration.ProtectedGameDirectoryExceptions)
             _ = blockedDirectoryExceptions.Append(HelpButtonListPrefix + name);
         using DialogForm form = new(this);
         _ = form.Show(SystemIcons.Information,
