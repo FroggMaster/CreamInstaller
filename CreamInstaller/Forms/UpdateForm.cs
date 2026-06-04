@@ -43,7 +43,7 @@ internal sealed partial class UpdateForm : CustomForm
         ThemeManager.Apply(form); // apply current theme when transitioning
     }
 
-    private async void OnLoad()
+    private async Task OnLoad()
     {
         progressBar.Visible = false;
         ignoreButton.Visible = true;
@@ -103,19 +103,23 @@ internal sealed partial class UpdateForm : CustomForm
         }
     }
 
-    private void OnLoad(object sender, EventArgs _)
+    private void OnLoad(object sender, EventArgs args)
     {
-        retry:
-        try
+        bool retry = true;
+        while (retry)
         {
-            UpdaterPath.DeleteFile();
-            OnLoad();
-        }
-        catch (Exception e)
-        {
-            if (e.HandleException(this))
-                goto retry;
-            Close();
+            try
+            {
+                UpdaterPath.DeleteFile();
+                _ = OnLoad();
+                retry = false;
+            }
+            catch (Exception ex)
+            {
+                retry = ex.HandleException(this);
+                if (!retry)
+                    Close();
+            }
         }
     }
 
@@ -238,7 +242,7 @@ internal sealed partial class UpdateForm : CustomForm
         if (!retry)
             StartProgram();
         else
-            OnLoad();
+            _ = OnLoad();
     }
 
     private void OnUpdateCancel(object sender, EventArgs e)
