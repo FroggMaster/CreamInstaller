@@ -32,16 +32,31 @@ partial class DebugForm
     private void InitializeComponent()
     {
         debugTextBox = new RichTextBox();
+        testGameButton = new Button();
         SuspendLayout();
+        // 
+        // testGameButton
+        // 
+        testGameButton.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        testGameButton.AutoSize = true;
+        testGameButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        testGameButton.Location = new System.Drawing.Point(10, 10);
+        testGameButton.Name = "testGameButton";
+        testGameButton.Padding = new Padding(3, 0, 3, 0);
+        testGameButton.Size = new System.Drawing.Size(540, 25);
+        testGameButton.TabIndex = 1;
+        testGameButton.Text = "Test Game";
+        testGameButton.UseVisualStyleBackColor = true;
+        testGameButton.Click += OnTestGame;
         // 
         // debugTextBox
         // 
-        debugTextBox.Dock = DockStyle.Fill;
-        debugTextBox.Location = new System.Drawing.Point(10, 10);
+        debugTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        debugTextBox.Location = new System.Drawing.Point(10, 41);
         debugTextBox.Name = "debugTextBox";
         debugTextBox.ReadOnly = true;
         debugTextBox.ScrollBars = RichTextBoxScrollBars.ForcedBoth;
-        debugTextBox.Size = new System.Drawing.Size(540, 317);
+        debugTextBox.Size = new System.Drawing.Size(540, 286);
         debugTextBox.TabIndex = 0;
         debugTextBox.TabStop = false;
         debugTextBox.Text = "";
@@ -52,6 +67,7 @@ partial class DebugForm
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new System.Drawing.Size(560, 337);
         ControlBox = false;
+        Controls.Add(testGameButton);
         Controls.Add(debugTextBox);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
@@ -68,4 +84,5 @@ partial class DebugForm
     #endregion
 
     private RichTextBox debugTextBox;
+    private Button testGameButton;
 }

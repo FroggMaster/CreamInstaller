@@ -28,10 +28,17 @@ internal static class EpicLibrary
         }
     }
 
+    internal static readonly List<Manifest> TestManifests = [];
+
     internal static async Task<List<Manifest>> GetGames()
         => await Task.Run(async () =>
         {
             List<Manifest> games = new();
+
+            foreach (Manifest test in TestManifests)
+                if (games.All(g => g.CatalogNamespace != test.CatalogNamespace))
+                    games.Add(test);
+
             string manifests = EpicManifestsPath;
             if (manifests.DirectoryExists())
                 foreach (string item in manifests.EnumerateDirectory("*.item"))

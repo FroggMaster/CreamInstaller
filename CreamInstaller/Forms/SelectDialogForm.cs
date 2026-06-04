@@ -10,6 +10,7 @@ namespace CreamInstaller.Forms;
 internal sealed partial class SelectDialogForm : CustomForm
 {
     private readonly List<(Platform platform, string id, string name)> selected = new();
+    private readonly List<(Platform platform, string id, string name, bool alreadySelected)> allChoices = new();
 
     internal SelectDialogForm(IWin32Window owner) : base(owner)
     {
@@ -28,12 +29,12 @@ internal sealed partial class SelectDialogForm : CustomForm
         allCheckBox.Enabled = false;
         acceptButton.Enabled = false;
         selectionTreeView.AfterCheck += OnTreeNodeChecked;
-        foreach ((Platform platform, string id, string name, bool alreadySelected) in potentialChoices)
-        {
-            TreeNode node = new() { Tag = platform, Name = id, Text = name, Checked = alreadySelected };
-            OnTreeNodeChecked(node);
-            _ = selectionTreeView.Nodes.Add(node);
-        }
+        allChoices.Clear();
+        allChoices.AddRange(potentialChoices);
+        foreach ((Platform platform, string id, string name, bool alreadySelected) in allChoices)
+            if (alreadySelected)
+                selected.Add((platform, id, name));
+        ApplyFilter();
 
         if (selected.Count < 1)
             OnLoad(null, null);
@@ -67,6 +68,32 @@ internal sealed partial class SelectDialogForm : CustomForm
             _ = selected.RemoveAll(s => s.platform == platform && s.id == id);
         allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
         allCheckBox.Checked = selectionTreeView.Nodes.Cast<TreeNode>().All(n => n.Checked);
+        allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
+    }
+
+    private void OnFilterTextChanged(object sender, EventArgs e) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        string filter = filterTextBox.Text.Trim();
+        selectionTreeView.AfterCheck -= OnTreeNodeChecked;
+        selectionTreeView.BeginUpdate();
+        selectionTreeView.Nodes.Clear();
+        bool hasSelections = selected.Count > 0;
+        foreach ((Platform platform, string id, string name, bool alreadySelected) in allChoices)
+        {
+            if (filter.Length > 0 && name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
+                continue;
+            bool checkedState = hasSelections
+                ? selected.Any(s => s.platform == platform && s.id == id)
+                : alreadySelected;
+            TreeNode node = new() { Tag = platform, Name = id, Text = name, Checked = checkedState };
+            _ = selectionTreeView.Nodes.Add(node);
+        }
+        selectionTreeView.EndUpdate();
+        selectionTreeView.AfterCheck += OnTreeNodeChecked;
+        allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
+        allCheckBox.Checked = selectionTreeView.Nodes.Count > 0 && selectionTreeView.Nodes.Cast<TreeNode>().All(n => n.Checked);
         allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
     }
 

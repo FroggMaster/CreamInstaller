@@ -54,7 +54,16 @@ internal static class Diagnostics
         if (info.Parent is null)
             return info.Name.ToUpperInvariant();
         string parent = ResolvePath(info.Parent.FullName);
-        string name = info.Parent.GetFileSystemInfos(info.Name)[0].Name;
-        return parent is null ? name : Path.Combine(parent, name);
+        try
+        {
+            FileSystemInfo[] infos = info.Parent.GetFileSystemInfos(info.Name);
+            string name = infos.Length > 0 ? infos[0].Name : info.Name;
+            return parent is null ? name : Path.Combine(parent, name);
+        }
+        catch
+        {
+            // Fall back to the raw name if the filesystem call fails (e.g. on a slow external drive)
+            return parent is null ? info.Name : Path.Combine(parent, info.Name);
+        }
     }
 }

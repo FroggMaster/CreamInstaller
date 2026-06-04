@@ -33,6 +33,7 @@ namespace CreamInstaller.Forms
             saveButton = new Button();
             uninstallAllButton = new Button();
             selectionTreeView = new CustomTreeView();
+            filterTextBox = new System.Windows.Forms.TextBox();
             groupBox.SuspendLayout();
             allCheckBoxFlowPanel.SuspendLayout();
             SuspendLayout();
@@ -51,15 +52,25 @@ namespace CreamInstaller.Forms
             acceptButton.Text = "OK";
             acceptButton.UseVisualStyleBackColor = true;
             // 
+            // filterTextBox
+            // 
+            filterTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            filterTextBox.Location = new System.Drawing.Point(12, 14);
+            filterTextBox.Name = "filterTextBox";
+            filterTextBox.PlaceholderText = "Enter the name of a game to search";
+            filterTextBox.Size = new System.Drawing.Size(524, 23);
+            filterTextBox.TabIndex = 0;
+            filterTextBox.TextChanged += OnFilterTextChanged;
+            // 
             // groupBox
             // 
             groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             groupBox.Controls.Add(selectionTreeView);
             groupBox.Controls.Add(allCheckBoxFlowPanel);
-            groupBox.Location = new System.Drawing.Point(12, 12);
+            groupBox.Location = new System.Drawing.Point(12, 43);
             groupBox.MinimumSize = new System.Drawing.Size(240, 40);
             groupBox.Name = "groupBox";
-            groupBox.Size = new System.Drawing.Size(524, 225);
+            groupBox.Size = new System.Drawing.Size(524, 194);
             groupBox.TabIndex = 3;
             groupBox.TabStop = false;
             groupBox.Text = "Choices";
@@ -188,6 +199,7 @@ namespace CreamInstaller.Forms
             Controls.Add(cancelButton);
             Controls.Add(acceptButton);
             Controls.Add(groupBox);
+            Controls.Add(filterTextBox);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -215,5 +227,6 @@ namespace CreamInstaller.Forms
         private Button saveButton;
         private CheckBox sortCheckBox;
         private Button uninstallAllButton;
+        private System.Windows.Forms.TextBox filterTextBox;
     }
 }

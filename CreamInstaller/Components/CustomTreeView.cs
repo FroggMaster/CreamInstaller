@@ -75,11 +75,14 @@ internal sealed class CustomTreeView : TreeView
 
     private void DrawTreeNode(object sender, DrawTreeNodeEventArgs e)
     {
-        e.DrawDefault = true;
         TreeNode node = e.Node;
         if (node is not { IsVisible: true })
+        {
+            e.DrawDefault = true;
             return;
+        }
 
+        bool dark = Program.DarkModeEnabled;
         bool highlighted = (e.State & TreeNodeStates.Selected) == TreeNodeStates.Selected && Focused;
         Graphics graphics = e.Graphics;
 
@@ -103,12 +106,95 @@ internal sealed class CustomTreeView : TreeView
             }
         }
 
+        Form form = FindForm();
+
+        if (dark && CheckBoxes)
+        {
+            // In dark mode we take full ownership of the row so the system never
+            // gets a chance to paint a light-background checkbox.
+            e.DrawDefault = false;
+
+            // Row background
+            Rectangle rowRect = new(0, node.Bounds.Top, ClientSize.Width, node.Bounds.Height);
+            graphics.FillRectangle(highlighted ? selectionBrush : backBrush, rowRect);
+
+            // Node text
+            Font nodeFont = node.NodeFont ?? Font;
+            Color textColor = Enabled ? ForeColor : SystemColors.GrayText;
+            TextRenderer.DrawText(graphics, node.Text, nodeFont,
+                new Point(node.Bounds.Left, node.Bounds.Top + 1), textColor, TextFormatFlags.Default);
+
+            // Checkbox glyph – pure GDI so it matches the dark-themed CheckBox controls
+            CheckBoxState cbState = node.Checked
+                ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+            Size cbSize = CheckBoxRenderer.GetGlyphSize(graphics, cbState);
+            int cbX = node.Bounds.Left - cbSize.Width - 2;
+            int cbY = node.Bounds.Top + node.Bounds.Height / 2 - cbSize.Height / 2;
+            ThemeManager.DrawDarkCheckBox(graphics, new Point(cbX, cbY), cbSize, node.Checked, Enabled);
+
+            // Expander glyph (expand/collapse) – the system skips this when DrawDefault=false
+            if (node.Nodes.Count > 0)
+            {
+                int indent = Indent;
+                int level = node.Level;
+                int glyphSize = 13;
+                int glyphX = level * indent + (indent - glyphSize) / 2 + (ShowRootLines ? 0 : -indent);
+                int glyphY = node.Bounds.Top + node.Bounds.Height / 2 - glyphSize / 2;
+                Rectangle glyphRect = new(glyphX, glyphY, glyphSize, glyphSize);
+                Color glyphBorder = Color.FromArgb(0x6B, 0x6B, 0x6B);
+                Color glyphBack = Color.FromArgb(0x2D, 0x2D, 0x2D);
+                Color glyphFore = Color.FromArgb(0xD4, 0xD4, 0xD4);
+                using (SolidBrush backFill = new(glyphBack))
+                    graphics.FillRectangle(backFill, glyphRect);
+                using (Pen borderPen = new(glyphBorder))
+                    graphics.DrawRectangle(borderPen, glyphRect);
+                int mid = glyphY + glyphSize / 2;
+                int left = glyphX + 3;
+                int right = glyphX + glyphSize - 3;
+                using (Pen linePen = new(glyphFore))
+                {
+                    graphics.DrawLine(linePen, left, mid, right, mid); // horizontal minus
+                    if (!node.IsExpanded)
+                        graphics.DrawLine(linePen, glyphX + glyphSize / 2, glyphY + 3, glyphX + glyphSize / 2, glyphY + glyphSize - 3); // vertical plus
+                }
+            }
+        }
+        else
+        {
+            if (highlighted && CheckBoxes)
+            {
+                // In light mode, take ownership of the row when selected so the
+                // highlight fills the full width (same approach as dark mode).
+                e.DrawDefault = false;
+
+                Rectangle rowRect = new(0, node.Bounds.Top, ClientSize.Width, node.Bounds.Height);
+                graphics.FillRectangle(selectionBrush, rowRect);
+
+                Font nodeFont = node.NodeFont ?? Font;
+                Color textColor = Enabled ? ForeColor : SystemColors.GrayText;
+                TextRenderer.DrawText(graphics, node.Text, nodeFont,
+                    new Point(node.Bounds.Left, node.Bounds.Top + 1), textColor, TextFormatFlags.Default);
+
+                CheckBoxState cbState = node.Checked
+                    ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                    : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+                Size cbSize = CheckBoxRenderer.GetGlyphSize(graphics, cbState);
+                Point cbPoint = new(node.Bounds.Left - cbSize.Width - 2,
+                    node.Bounds.Top + node.Bounds.Height / 2 - cbSize.Height / 2);
+                CheckBoxRenderer.DrawCheckBox(graphics, cbPoint, cbState);
+            }
+            else
+            {
+                e.DrawDefault = true;
+            }
+        }
+
         Font font = node.NodeFont ?? Font;
         Brush brush = highlighted ? (Brush)selectionBrush : backBrush;
         Rectangle bounds = node.Bounds;
         Rectangle selectionBounds = bounds;
 
-        Form form = FindForm();
         if (form is not SelectForm and not SelectDialogForm)
             return;
 
@@ -168,18 +254,19 @@ internal sealed class CustomTreeView : TreeView
                     graphics.FillRectangle(brush, bounds);
                 }
 
-                CheckBoxState checkBoxState = selection.UseProxy
-                    ? Enabled ? CheckBoxState.CheckedPressed : CheckBoxState.CheckedDisabled
-                    : Enabled
-                        ? CheckBoxState.UncheckedPressed
-                        : CheckBoxState.UncheckedDisabled;
-                size = CheckBoxRenderer.GetGlyphSize(graphics, checkBoxState);
+                CheckBoxState proxyState = selection.UseProxy
+                    ? (Enabled ? CheckBoxState.CheckedNormal : CheckBoxState.CheckedDisabled)
+                    : (Enabled ? CheckBoxState.UncheckedNormal : CheckBoxState.UncheckedDisabled);
+                size = CheckBoxRenderer.GetGlyphSize(graphics, proxyState);
                 bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width };
                 selectionBounds = new(selectionBounds.Location, selectionBounds.Size + bounds.Size with { Height = 0 });
                 Rectangle checkBoxBounds = bounds;
-                graphics.FillRectangle(backBrush, bounds);
+                graphics.FillRectangle(brush, bounds);
                 point = new(bounds.Left, bounds.Top + bounds.Height / 2 - size.Height / 2 - 1);
-                CheckBoxRenderer.DrawCheckBox(graphics, point, checkBoxState);
+                if (dark)
+                    ThemeManager.DrawDarkCheckBox(graphics, point, size, selection.UseProxy, Enabled);
+                else
+                    CheckBoxRenderer.DrawCheckBox(graphics, point, proxyState);
 
                 text = ProxyToggleString;
                 size = TextRenderer.MeasureText(graphics, text, font);
@@ -187,7 +274,7 @@ internal sealed class CustomTreeView : TreeView
                 bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width + left };
                 selectionBounds = new(selectionBounds.Location, selectionBounds.Size + bounds.Size with { Height = 0 });
                 checkBoxBounds = new(checkBoxBounds.Location, checkBoxBounds.Size + bounds.Size with { Height = 0 });
-                graphics.FillRectangle(backBrush, bounds);
+                graphics.FillRectangle(brush, bounds);
                 point = new(bounds.Location.X - 1 + left, bounds.Location.Y + 1);
                 TextRenderer.DrawText(graphics, text, font, point,
                     Enabled ? ThemeManager.CustomTreeViewProxyColor : ThemeManager.CustomTreeViewDisabledProxyColor,

@@ -43,7 +43,7 @@ internal static class ThemeManager
     private static readonly Color LightPlatform = ColorTranslator.FromHtml("#696900");
     private static readonly Color LightId = ColorTranslator.FromHtml("#006969");
     private static readonly Color LightProxy = ColorTranslator.FromHtml("#006900");
-    private static readonly Color LightSelectionBack = SystemColors.Highlight;
+    private static readonly Color LightSelectionBack = ColorTranslator.FromHtml("#ADD6FF");
     private static readonly Color LightComboBack = SystemColors.Control;
     private static readonly Color LightComboBorder = SystemColors.ControlDark;
     private static readonly Color LightComboText = SystemColors.ControlText;
@@ -180,9 +180,9 @@ internal static class ThemeManager
                 ll.VisitedLinkColor = DarkLink;
                 break;
 
-            // Labels: dark background, light foreground
+            // Labels: transparent so they blend with whatever container they sit in
             case Label lbl:
-                lbl.BackColor = DarkBack;
+                lbl.BackColor = Color.Transparent;
                 lbl.ForeColor = DarkFore;
                 break;
 
@@ -204,6 +204,20 @@ internal static class ThemeManager
             case RichTextBox rtb:
                 rtb.BackColor = DarkBackAlt;
                 rtb.ForeColor = DarkFore;
+                break;
+
+            // ListBox follows alternate dark background
+            case ListBox lb:
+                lb.BackColor = DarkBackAlt;
+                lb.ForeColor = DarkFore;
+                break;
+
+            // TextBox follows alternate dark background
+            case TextBox tb:
+                tb.BackColor = DarkBackAlt;
+                tb.ForeColor = DarkFore;
+                tb.BorderStyle = BorderStyle.FixedSingle;
+                NativeMethods.RefreshCueBanner(tb);
                 break;
 
             // Layout panels set a consistent background
@@ -241,7 +255,7 @@ internal static class ThemeManager
                 ll.VisitedLinkColor = SystemColors.HotTrack;
                 break;
             case Label lbl:
-                lbl.BackColor = LightBack;
+                lbl.BackColor = Color.Transparent;
                 lbl.ForeColor = LightFore;
                 break;
             case ProgressBar pb:
@@ -257,6 +271,16 @@ internal static class ThemeManager
             case RichTextBox rtb:
                 rtb.BackColor = LightBack;
                 rtb.ForeColor = LightFore;
+                break;
+            case ListBox lb:
+                lb.BackColor = LightBackAlt;
+                lb.ForeColor = LightFore;
+                break;
+            case TextBox tb:
+                tb.BackColor = LightBackAlt;
+                tb.ForeColor = LightFore;
+                tb.BorderStyle = BorderStyle.Fixed3D;
+                NativeMethods.RefreshCueBanner(tb);
                 break;
             case TableLayoutPanel tlp:
                 tlp.BackColor = LightBack;
@@ -408,6 +432,96 @@ internal static class ThemeManager
     // button is centralized here so theming resides in ThemeManager.
     // -----------------------------------------------------------------
 
+    // Dark checkbox colors – matched to how the system renders the "All" CheckBox control
+    // in dark mode: dark fill, mid-gray border, light foreground tick.
+    private static readonly Color DarkCbBorder = ColorTranslator.FromHtml("#6B6B6B");
+    private static readonly Color DarkCbDisabledBorder = ColorTranslator.FromHtml("#454545");
+
+    /// <summary>
+    /// Draws a checkbox glyph in pure GDI that matches the appearance of a dark-themed
+    /// WinForms CheckBox control (same background, border, tick colors, and rounded corners).
+    /// Use this in owner-draw contexts where CheckBoxRenderer always paints a white background.
+    /// </summary>
+    internal static void DrawDarkCheckBox(Graphics g, Point point, Size glyphSize, bool isChecked, bool enabled = true)
+    {
+        if (g is null) return;
+        int w = glyphSize.Width;
+        int h = glyphSize.Height;
+        Rectangle box = new(point.X, point.Y, w - 1, h - 1);
+        int radius = Math.Max(2, w / 5);
+
+        using System.Drawing.Drawing2D.GraphicsPath path = RoundedRect(box, radius);
+
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+        if (isChecked && enabled)
+        {
+            // Checked + enabled: accent fill, no border, white tick — matches Windows 11 dark CheckBox
+            using SolidBrush fillBrush = new(Accent);
+            g.FillPath(fillBrush, path);
+
+            using Pen tickPen = new(Color.White, 1.7f)
+            {
+                StartCap = System.Drawing.Drawing2D.LineCap.Round,
+                EndCap = System.Drawing.Drawing2D.LineCap.Round,
+                LineJoin = System.Drawing.Drawing2D.LineJoin.Round,
+            };
+            float scaleX = w / 13f;
+            float scaleY = h / 13f;
+            g.DrawLines(tickPen, new PointF[]
+            {
+                new(point.X + 2 * scaleX, point.Y + 6 * scaleY),
+                new(point.X + 5 * scaleX, point.Y + 9 * scaleY),
+                new(point.X + 10 * scaleX, point.Y + 3 * scaleY),
+            });
+        }
+        else if (isChecked)
+        {
+            // Checked + disabled: dimmed accent fill, dimmed tick
+            Color dimAccent = Color.FromArgb(120, Accent);
+            using SolidBrush fillBrush = new(dimAccent);
+            g.FillPath(fillBrush, path);
+
+            using Pen tickPen = new(DarkForeDim, 1.7f)
+            {
+                StartCap = System.Drawing.Drawing2D.LineCap.Round,
+                EndCap = System.Drawing.Drawing2D.LineCap.Round,
+                LineJoin = System.Drawing.Drawing2D.LineJoin.Round,
+            };
+            float scaleX = w / 13f;
+            float scaleY = h / 13f;
+            g.DrawLines(tickPen, new PointF[]
+            {
+                new(point.X + 2 * scaleX, point.Y + 6 * scaleY),
+                new(point.X + 5 * scaleX, point.Y + 9 * scaleY),
+                new(point.X + 10 * scaleX, point.Y + 3 * scaleY),
+            });
+        }
+        else
+        {
+            // Unchecked: dark fill, gray border, no tick
+            using SolidBrush fillBrush = new(DarkBackAlt);
+            g.FillPath(fillBrush, path);
+
+            using Pen borderPen = new(enabled ? DarkCbBorder : DarkCbDisabledBorder);
+            g.DrawPath(borderPen, path);
+        }
+
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+    }
+
+    private static System.Drawing.Drawing2D.GraphicsPath RoundedRect(Rectangle r, int radius)
+    {
+        int d = radius * 2;
+        System.Drawing.Drawing2D.GraphicsPath path = new();
+        path.AddArc(r.Left, r.Top, d, d, 180, 90);
+        path.AddArc(r.Right - d, r.Top, d, d, 270, 90);
+        path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+        path.AddArc(r.Left, r.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
     /// <summary>
     /// Draws the themed combobox area (background, border and text) used in CustomTreeView.
     /// This centralizes colors and rendering for light/dark modes.
@@ -450,15 +564,54 @@ internal static class ThemeManager
     }
 }
 
+/// <summary>
+/// Wraps Win32 API calls that have no managed equivalent in WinForms.
+/// These P/Invoke declarations are required because .NET does not expose
+/// the underlying Windows messages or DWM attributes through its own APIs.
+/// </summary>
 internal static class NativeMethods
 {
+    // DWM attribute index for enabling/disabling the immersive dark title bar.
+    // Documented in dwmapi.h; value 20 corresponds to DWMWA_USE_IMMERSIVE_DARK_MODE
+    // (Windows 10 build 19041+ / Windows 11).
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
+    // DwmSetWindowAttribute allows setting per-window Desktop Window Manager attributes.
+    // We use it here to flip the title bar to dark or light depending on the active theme,
+    // since WinForms has no built-in API to control title bar coloring.
     [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(System.IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
+    /// <summary>
+    /// Toggles the dark/light title bar chrome for the given window handle.
+    /// Pass <c>1</c> for dark mode, <c>0</c> for light mode.
+    /// </summary>
     internal static void EnableDarkTitleBar(System.IntPtr handle, int useDark)
     {
         _ = DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDark, sizeof(int));
+    }
+
+    // Win32 Edit control message that sets or updates the cue (placeholder) banner text.
+    // WinForms sets PlaceholderText once at creation time via this same message internally,
+    // but does not re-send it when the control's colors change.  When we restyle a TextBox
+    // for dark/light mode the cue banner can disappear, so we must re-send the message
+    // manually to make the placeholder visible again.
+    private const int EM_SETCUEBANNER = 0x1501;
+
+    // SendMessage is the standard Win32 mechanism for posting messages directly to a
+    // window/control handle.  We use the Unicode variant so the placeholder string is
+    // transmitted without any ANSI conversion.
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern System.IntPtr SendMessage(System.IntPtr hWnd, int msg, System.IntPtr wParam, string lParam);
+
+    /// <summary>
+    /// Re-sends <c>EM_SETCUEBANNER</c> to the given TextBox so its placeholder text
+    /// is redrawn after a theme change has altered the control's background or foreground colors.
+    /// Does nothing if the control handle has not yet been created or the placeholder is empty.
+    /// </summary>
+    internal static void RefreshCueBanner(System.Windows.Forms.TextBox textBox)
+    {
+        if (textBox?.IsHandleCreated == true && textBox.PlaceholderText is { Length: > 0 })
+            SendMessage(textBox.Handle, EM_SETCUEBANNER, (System.IntPtr)1, textBox.PlaceholderText);
     }
 }
