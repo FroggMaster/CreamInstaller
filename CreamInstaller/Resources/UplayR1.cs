@@ -68,10 +68,10 @@ internal static class UplayR1
                     false);
             }
 
-            writer.WriteLine("  ],");
+            writer.WriteLine("  ]");
         }
         else
-            writer.WriteLine("  \"blacklist\": [],");
+            writer.WriteLine("  \"blacklist\": []");
 
         writer.WriteLine("}");
     }
