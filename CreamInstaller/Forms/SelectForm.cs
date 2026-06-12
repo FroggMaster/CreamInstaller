@@ -1075,18 +1075,22 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnLoad(object sender, EventArgs _)
     {
-    retry:
-        try
+        bool retry = true;
+        while (retry)
         {
-            HideProgressBar();
-            selectionTreeView.AfterCheck += OnTreeViewNodeCheckedChanged;
-            OnLoad(forceProvideChoices: true);
-        }
-        catch (Exception e)
-        {
-            if (e.HandleException(this))
-                goto retry;
-            Close();
+            try
+            {
+                HideProgressBar();
+                selectionTreeView.AfterCheck += OnTreeViewNodeCheckedChanged;
+                OnLoad(forceProvideChoices: true);
+                retry = false;
+            }
+            catch (Exception e)
+            {
+                retry = e.HandleException(this);
+                if (!retry)
+                    Close();
+            }
         }
     }
 

@@ -66,24 +66,30 @@ internal static class Program
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException +=
                 (_, e) => (e.ExceptionObject as Exception)?.HandleFatalException();
-            retry:
-            try
+            bool retry = true;
+            while (retry)
             {
-                HttpClientManager.Setup();
-                using UpdateForm form = new();
+                try
+                {
+                    HttpClientManager.Setup();
+                    using UpdateForm form = new();
 #if DEBUG
-                DebugForm.Current.Attach(form);
+                    DebugForm.Current.Attach(form);
 #endif
-                // Apply initial theme (dark by default)
-                Utility.ThemeManager.Apply(form);
-                Application.Run(form);
-            }
-            catch (Exception e)
-            {
-                if (e.HandleException())
-                    goto retry;
-                Application.Exit();
-                return;
+                    // Apply initial theme (dark by default)
+                    Utility.ThemeManager.Apply(form);
+                    Application.Run(form);
+                    retry = false;
+                }
+                catch (Exception e)
+                {
+                    retry = e.HandleException();
+                    if (!retry)
+                    {
+                        Application.Exit();
+                        return;
+                    }
+                }
             }
         }
 

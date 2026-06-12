@@ -426,25 +426,29 @@ internal sealed partial class InstallForm : CustomForm
 
     private void OnLoad(object sender, EventArgs a)
     {
-        retry:
-        try
+        bool retry = true;
+        while (retry)
         {
-            userInfoLabel.Text = "Loading . . . ";
-            logTextBox.Text = string.Empty;
-            selectionCount = 0;
-            foreach (Selection selection in Selection.AllEnabled)
+            try
             {
-                selectionCount++;
-                _ = activeSelections.Add(selection);
-            }
+                userInfoLabel.Text = "Loading . . . ";
+                logTextBox.Text = string.Empty;
+                selectionCount = 0;
+                foreach (Selection selection in Selection.AllEnabled)
+                {
+                    selectionCount++;
+                    _ = activeSelections.Add(selection);
+                }
 
-            Start();
-        }
-        catch (Exception e)
-        {
-            if (e.HandleException(this))
-                goto retry;
-            Close();
+                Start();
+                retry = false;
+            }
+            catch (Exception e)
+            {
+                retry = e.HandleException(this);
+                if (!retry)
+                    Close();
+            }
         }
     }
 

@@ -119,17 +119,21 @@ internal sealed partial class UpdateForm : CustomForm
 
     private void OnLoad(object sender, EventArgs _)
     {
-        retry:
-        try
+        bool retry = true;
+        while (retry)
         {
-            UpdaterPath.DeleteFile();
-            OnLoad();
-        }
-        catch (Exception e)
-        {
-            if (e.HandleException(this))
-                goto retry;
-            Close();
+            try
+            {
+                UpdaterPath.DeleteFile();
+                OnLoad();
+                retry = false;
+            }
+            catch (Exception e)
+            {
+                retry = e.HandleException(this);
+                if (!retry)
+                    Close();
+            }
         }
     }
 
