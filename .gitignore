@@ -335,3 +335,8 @@ ASALocalRun/
 .localhistory/
 *.exe
 *.zip
+
+# OpenCode / AI Agents and Tools
+.opencode/
+.sisyphus/
+logs/
