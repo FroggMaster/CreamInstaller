@@ -92,7 +92,7 @@ internal sealed partial class TestGameForm : CustomForm
                 if (!string.IsNullOrWhiteSpace(title))
                     return title;
             }
-            catch { /* fall through to SteamCMD */ }
+            catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Store name lookup failed for AppID {appId}: {ex.Message}"); /* fall through to SteamCMD */ }
 
             CmdAppData cmdData = await SteamCMD.GetAppInfo(appId);
             return cmdData?.Common?.Name;
@@ -320,7 +320,7 @@ internal sealed partial class TestGameForm : CustomForm
         SteamLibrary.TestGames.Clear();
         EpicLibrary.TestManifests.Clear();
         foreach (string dir in CreatedDirectories)
-            try { Directory.Delete(dir, true); } catch { /* best-effort */ }
+            try { Directory.Delete(dir, true); } catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Cleanup deletion failed for {dir}: {ex.Message}"); }
         CreatedDirectories.Clear();
         dlcEntries.Clear();
         RefreshDlcList();

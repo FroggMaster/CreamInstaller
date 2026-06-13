@@ -3,13 +3,10 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 using CreamInstaller.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-#if DEBUG
-using System;
-using CreamInstaller.Forms;
-#endif
 
 namespace CreamInstaller.Platforms.Steam;
 
@@ -18,7 +15,6 @@ internal static class SteamStore
     private const int CooldownGame = 600;
     private const int CooldownDlc = 1200;
 
-#if DEBUG
     private static string FormatErrorLog(int attempts, string appId, string gameName, bool isDlc, string reason, 
         string parentGameName = null, string parentGameAppId = null)
     {
@@ -35,7 +31,6 @@ internal static class SteamStore
         string type = isDlc ? "DLC" : "Game";
         return $"[SteamQuery][Attempt {attempts}][FAILED] AppId: {appId} | Name: \"{gameName}\" | Type: {type} | Reason: {reason}";
     }
-#endif
 
     internal static async Task<HashSet<string>> ParseDlcAppIds(StoreAppData storeAppData)
         => await Task.Run(() =>
@@ -80,11 +75,8 @@ internal static class SteamStore
 
                                     if (!storeAppDetails.Success)
                                     {
-#if DEBUG
-                                        DebugForm.Current.Log(
-                                            FormatErrorLog(attempts, appId, gameName, isDlc, "Query unsuccessful", parentGameName, parentGameAppId),
-                                            LogTextBox.Warning);
-#endif
+                                        ProgramData.LogSteamCmd(
+                                            FormatErrorLog(attempts, appId, gameName, isDlc, "Query unsuccessful", parentGameName, parentGameAppId));
                                         if (data is null)
                                             return null;
                                     }
@@ -95,61 +87,38 @@ internal static class SteamStore
                                         {
                                             cacheFile.WriteFile(JsonConvert.SerializeObject(data, Formatting.Indented));
                                         }
-                                        catch
-#if DEBUG
-                                            (Exception e)
+                                        catch (Exception e)
                                         {
-                                            DebugForm.Current.Log(
+                                            ProgramData.LogSteamCmd(
                                                 FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful serialization ({e.Message})", parentGameName, parentGameAppId));
                                         }
-#else
-                                        {
-                                            // ignored
-                                        }
-#endif
                                         return data;
                                     }
-#if DEBUG
-                                    DebugForm.Current.Log(
+                                    ProgramData.LogSteamCmd(
                                         FormatErrorLog(attempts, appId, gameName, isDlc, "Response data null", parentGameName, parentGameAppId));
-#endif
                                 }
-#if DEBUG
                                 else
                                 {
-                                    DebugForm.Current.Log(
+                                    ProgramData.LogSteamCmd(
                                         FormatErrorLog(attempts, appId, gameName, isDlc, "Response details null", parentGameName, parentGameAppId));
                                 }
-#endif
                             }
-                            catch
-#if DEBUG
-                                (Exception e)
+                            catch (Exception e)
                             {
-                                DebugForm.Current.Log(
+                                ProgramData.LogSteamCmd(
                                     FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful deserialization ({e.Message})", parentGameName, parentGameAppId));
                             }
-#else
-                            {
-                                // ignored
-                            }
-#endif
-#if DEBUG
                     else
                     {
-                        DebugForm.Current.Log(
+                        ProgramData.LogSteamCmd(
                             FormatErrorLog(attempts, appId, gameName, isDlc, "Response deserialization null", parentGameName, parentGameAppId));
                     }
-#endif
                 }
-#if DEBUG
                 else
                 {
-                    DebugForm.Current.Log(
-                        FormatErrorLog(attempts, appId, gameName, isDlc, "Null or empty response", parentGameName, parentGameAppId),
-                        LogTextBox.Warning);
+                    ProgramData.LogSteamCmd(
+                        FormatErrorLog(attempts, appId, gameName, isDlc, "Null or empty response", parentGameName, parentGameAppId));
                 }
-#endif
             }
 
             if (cachedExists)
@@ -166,10 +135,8 @@ internal static class SteamStore
                 break;
             if (attempts > 10)
             {
-#if DEBUG
-                DebugForm.Current.Log(
+                ProgramData.LogSteamCmd(
                     FormatErrorLog(attempts, appId, gameName, isDlc, "Maximum retry attempts exceeded (10)", parentGameName, parentGameAppId));
-#endif
                 break;
             }
 

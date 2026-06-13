@@ -130,10 +130,7 @@ internal static class Program
             }
             catch (Exception ex)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"Cleanup failed: {ex.Message}");
-#endif
-                // Swallow exceptions during fire-and-forget cleanup
+                ProgramData.LogWarning($"Cleanup failed: {ex.Message}");
             }
         });
     }
@@ -149,17 +146,12 @@ internal static class Program
             // Wait up to 5 seconds for graceful cleanup
             if (!cleanupTask.Wait(TimeSpan.FromSeconds(5)))
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("Cleanup timed out during application exit");
-#endif
+                ProgramData.LogWarning("Cleanup timed out during application exit");
             }
         }
         catch (Exception ex)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Cleanup exception during exit: {ex.Message}");
-#endif
-            // Ignore exceptions during shutdown
+            ProgramData.LogWarning($"Cleanup exception during exit: {ex.Message}");
         }
         finally
         {

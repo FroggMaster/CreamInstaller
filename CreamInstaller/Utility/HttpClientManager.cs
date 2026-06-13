@@ -5,9 +5,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-#if DEBUG
-using CreamInstaller.Forms;
-#endif
+
 
 namespace CreamInstaller.Utility;
 
@@ -87,44 +85,28 @@ internal static class HttpClientManager
         {
             if (e.StatusCode != HttpStatusCode.TooManyRequests)
             {
-#if DEBUG
                 string statusInfo = e.StatusCode.HasValue ? $" (HTTP {(int)e.StatusCode.Value})" : "";
-                DebugForm.Current.Log($"Get request failed to {url}{statusInfo}: {e}", LogTextBox.Warning);
-#endif
+                ProgramData.LogWarning($"Get request failed to {url}{statusInfo}: {e.Message}");
                 return null;
             }
-#if DEBUG
-            DebugForm.Current.Log($"Too many requests to {url} (HTTP 429 - Rate Limited)", LogTextBox.Error);
-#endif
-            // do something special?
+            ProgramData.LogWarning($"Too many requests to {url} (HTTP 429 - Rate Limited)");
             return null;
         }
         catch (TaskCanceledException)
         {
-#if DEBUG
-            DebugForm.Current.Log("Get request timed out for " + url, LogTextBox.Warning);
-#endif
+            ProgramData.LogWarning("Get request timed out for " + url);
             return null;
         }
         catch (OperationCanceledException)
         {
-#if DEBUG
-            DebugForm.Current.Log("Get request was cancelled for " + url, LogTextBox.Warning);
-#endif
+            ProgramData.LogWarning("Get request was cancelled for " + url);
             return null;
         }
-#if DEBUG
         catch (Exception e)
         {
-            DebugForm.Current.Log("Get request failed to " + url + ": " + e, LogTextBox.Warning);
+            ProgramData.LogWarning("Get request failed to " + url + ": " + e.Message);
             return null;
         }
-#else
-        catch
-        {
-            return null;
-        }
-#endif
     }
 
     internal static async Task<Image> GetImageFromUrl(string url)

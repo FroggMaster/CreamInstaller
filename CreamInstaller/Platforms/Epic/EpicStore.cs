@@ -8,9 +8,7 @@ using CreamInstaller.Platforms.Epic.GraphQL;
 using CreamInstaller.Utility;
 using Newtonsoft.Json;
 
-#if DEBUG
-using CreamInstaller.Forms;
-#endif
+
 
 namespace CreamInstaller.Platforms.Epic;
 
@@ -33,12 +31,10 @@ internal static class EpicStore
         if (!cachedExists || ProgramData.CheckCooldown(categoryNamespace, Cooldown))
         {
             response = await QueryGraphQL(categoryNamespace);
-#if DEBUG
             if (response is null)
             {
-                DebugForm.Current.Log("ES: QueryGraphQL returned null");
+                ProgramData.LogWarning("Epic QueryGraphQL returned null for " + categoryNamespace);
             }
-#endif
             try
             {
                 cacheFile.WriteFile(JsonConvert.SerializeObject(response, Formatting.Indented));
@@ -191,9 +187,7 @@ internal static class EpicStore
             HttpClient client = HttpClientManager.HttpClient;
             if (client is null)
             {
-#if DEBUG
-                DebugForm.Current.Log("ES: Client returned null");
-#endif
+                ProgramData.LogWarning("Epic GraphQL client returned null");
                 return null;
             }
             HttpResponseMessage httpResponse =

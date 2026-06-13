@@ -189,11 +189,16 @@ internal sealed partial class SelectForm : CustomForm
                         return;
                     HashSet<string> dllDirectories =
                         await gameDirectory.GetDllDirectoriesFromGameDirectory(Platform.Steam);
-                    if (dllDirectories is null)
+                    bool steamApiDllMissing = dllDirectories is null;
+                    if (steamApiDllMissing)
                     {
-                        _ = Interlocked.Decrement(ref steamGamesToCheck);
-                        RemoveFromRemainingGames(name);
-                        return;
+                        dllDirectories = [];
+                        if (uninstallAll)
+                        {
+                            _ = Interlocked.Decrement(ref steamGamesToCheck);
+                            RemoveFromRemainingGames(name);
+                            return;
+                        }
                     }
 
                     if (uninstallAll)
@@ -348,6 +353,20 @@ internal sealed partial class SelectForm : CustomForm
                     Selection selection = Selection.GetOrCreate(Platform.Steam, appId, storeAppData?.Name ?? name,
                         gameDirectory, dllDirectories,
                         await gameDirectory.GetExecutableDirectories(true));
+                    selection.SteamApiDllMissing = steamApiDllMissing;
+                    if (steamApiDllMissing)
+                    {
+                        selection.UseProxy = true;
+                        bool has64 = selection.ExecutableDirectories.Any(d => d.binaryType == BinaryType.BIT64);
+                        bool has32 = selection.ExecutableDirectories.Any(d => d.binaryType == BinaryType.BIT32);
+                        string dllName = (has64, has32) switch
+                        {
+                            (true, true) => "steam_api.dll / steam_api64.dll",
+                            (true, false) => "steam_api64.dll",
+                            _ => "steam_api.dll"
+                        };
+                        selection.TreeNode.ToolTipText = dllName + " was not detected in the game directory. Only proxy installation is available.";
+                    }
                     selection.Product = "https://store.steampowered.com/app/" + appId;
                     selection.Icon = IconGrabber.SteamAppImagesPath + @$"\{appId}\{cmdAppData?.Common?.Icon}.jpg";
                     selection.SubIcon = storeAppData?.HeaderImage ?? IconGrabber.SteamAppImagesPath
@@ -717,10 +736,7 @@ internal sealed partial class SelectForm : CustomForm
         }
         catch (Exception ex)
         {
-            // Handle exceptions in async void to prevent unobserved exceptions
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"OnLoad exception: {ex.Message}");
-#endif
+            ProgramData.LogError("SelectForm OnLoad failed", ex);
             // Show error and clean up
             ex.HandleException(this);
             HideProgressBar();
@@ -1263,7 +1279,7 @@ internal sealed partial class SelectForm : CustomForm
                     selection.Proxy = currentProxy == Selection.DefaultProxy ? currentProxy : proxy;
                 }
             }
-            else
+            else if (!selection.SteamApiDllMissing)
             {
                 selection.UseProxy = false;
                 selection.Proxy = null;

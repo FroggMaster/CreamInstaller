@@ -45,6 +45,7 @@ internal sealed class Selection : IEquatable<Selection>
     internal string SubIcon;
     internal string Website;
     internal InstalledUnlocker InstalledUnlocker;
+    internal bool SteamApiDllMissing;
 
     internal IEnumerable<string> GetAvailableProxies()
     {
@@ -125,9 +126,12 @@ internal sealed class Selection : IEquatable<Selection>
             return;
         }
 
-        _ = DllDirectories.RemoveWhere(directory => !directory.DirectoryExists());
-        if (DllDirectories.Count < 1)
-            Remove();
+        if (!SteamApiDllMissing)
+        {
+            _ = DllDirectories.RemoveWhere(directory => !directory.DirectoryExists());
+            if (DllDirectories.Count < 1)
+                Remove();
+        }
     }
 
     internal static void ValidateAll(List<(Platform platform, string id, string name)> programsToScan)
@@ -199,6 +203,24 @@ internal sealed class Selection : IEquatable<Selection>
                     proxy.FileExists() && proxy.IsResourceFile(ResourceIdentifier.Koaloader))
                 || config.FileExists())
                 return InstalledUnlocker.Koaloader;
+
+            if (Platform is Platform.Steam or Platform.Paradox)
+            {
+                directory.GetSmokeApiComponents(out _, out _, out _, out _, out _, out string smokeConfig, out _, out _, out _);
+                if (smokeConfig.FileExists())
+                    return InstalledUnlocker.SmokeAPI;
+                directory.GetCreamApiComponents(out _, out _, out _, out _, out string creamConfig);
+                if (creamConfig.FileExists())
+                    return InstalledUnlocker.CreamAPI;
+                if (directory.GetSmokeApiProxies().Any(proxy =>
+                        proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                               proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                    return InstalledUnlocker.SmokeAPI;
+                if (directory.GetCreamApiProxies().Any(proxy =>
+                        proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
+                                               proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                    return InstalledUnlocker.CreamAPI;
+            }
         }
 
         return InstalledUnlocker.None;

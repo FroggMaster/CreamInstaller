@@ -106,12 +106,10 @@ internal sealed partial class UpdateForm : CustomForm
         }
         catch (Exception ex)
         {
-            // Handle exceptions in async void to prevent unobserved exceptions
+            ProgramData.LogError("UpdateForm OnLoad failed", ex);
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"OnLoad exception: {ex.Message}");
             ex.HandleFatalException();
 #else
-            // In release, try to continue gracefully
             StartProgram();
 #endif
         }
@@ -262,10 +260,7 @@ internal sealed partial class UpdateForm : CustomForm
         }
         catch (Exception ex)
         {
-            // Handle exceptions in async void event handler to prevent unobserved exceptions
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"OnUpdate exception: {ex.Message}");
-#endif
+            ProgramData.LogError("UpdateForm OnUpdate failed", ex);
             // Show error to user
             ex.HandleException(this, Program.Name + " encountered an unexpected error during update");
             StartProgram();

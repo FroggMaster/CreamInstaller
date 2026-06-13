@@ -335,7 +335,7 @@ internal static class ThemeManager
             int useDark = IsDark ? 1 : 0;
             NativeMethods.EnableDarkTitleBar(form.Handle, useDark);
         }
-        catch { }
+        catch (Exception ex) { ProgramData.LogWarning($"[Theme] Title bar theming failed: {ex.Message}"); }
     }
 
     private static void TryApplyScrollbarTheme(Control control, bool dark)
@@ -345,7 +345,7 @@ internal static class ThemeManager
             string theme = dark ? "DarkMode_Explorer" : null;
             NativeImports.SetWindowTheme(control.Handle, theme, null);
         }
-        catch { }
+        catch (Exception ex) { ProgramData.LogWarning($"[Theme] Scrollbar theming failed: {ex.Message}"); }
     }
 
     // -----------------------------------------------------------------
@@ -454,7 +454,7 @@ internal static class ThemeManager
     // button is centralized here so theming resides in ThemeManager.
     // -----------------------------------------------------------------
 
-    // Dark checkbox colors – matched to how the system renders the "All" CheckBox control
+    // Dark checkbox colors ï¿½ matched to how the system renders the "All" CheckBox control
     // in dark mode: dark fill, mid-gray border, light foreground tick.
     private static readonly Color DarkCbBorder = ColorTranslator.FromHtml("#6B6B6B");
     private static readonly Color DarkCbDisabledBorder = ColorTranslator.FromHtml("#454545");
@@ -478,7 +478,7 @@ internal static class ThemeManager
 
         if (isChecked && enabled)
         {
-            // Checked + enabled: accent fill, no border, white tick — matches Windows 11 dark CheckBox
+            // Checked + enabled: accent fill, no border, white tick ï¿½ matches Windows 11 dark CheckBox
             using SolidBrush fillBrush = new(Accent);
             g.FillPath(fillBrush, path);
 

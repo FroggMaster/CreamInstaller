@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CreamInstaller.Forms;
 using CreamInstaller.Utility;
 using Newtonsoft.Json;
 
@@ -38,61 +37,38 @@ internal static partial class SteamCMD
                                 {
                                     cacheFile.WriteFile(JsonConvert.SerializeObject(data, Formatting.Indented));
                                 }
-                                catch
-#if DEBUG
-                                    (Exception e)
+                                catch (Exception e)
                                 {
-                                    DebugForm.Current.Log("SteamCMD web API query failed on attempt #" + attempts +
-                                                          " for " + appId + (isDlc ? " (DLC)" : "")
-                                                          + ": Unsuccessful serialization (" + e.Message + ")");
+                                    ProgramData.LogSteamCmd("SteamCMD web API query failed on attempt #" + attempts +
+                                                           " for " + appId + (isDlc ? " (DLC)" : "")
+                                                           + ": Unsuccessful serialization (" + e.Message + ")");
                                 }
-#else
-                                {
-                                    // ignored
-                                }
-#endif
                                 return data;
                             }
-#if DEBUG
                             else
-                                DebugForm.Current.Log(
+                                ProgramData.LogSteamCmd(
                                     "SteamCMD web API query failed on attempt #" + attempts + " for " + appId +
                                     (isDlc ? " (DLC)" : "")
-                                    + ": No data",
-                                    LogTextBox.Warning);
-#endif
+                                    + ": No data");
                         }
-#if DEBUG
                         else
-                            DebugForm.Current.Log(
+                            ProgramData.LogSteamCmd(
                                 "SteamCMD web API query failed on attempt #" + attempts + " for " + appId +
                                 (isDlc ? " (DLC)" : "")
-                                + ": Status not success (" + appDetails?.Status + ")",
-                                LogTextBox.Warning);
-#endif
+                                + ": Status not success (" + appDetails?.Status + ")");
                     }
-                    catch
-#if DEBUG
-                        (Exception e)
+                    catch (Exception e)
                     {
-                        DebugForm.Current.Log("SteamCMD web API query failed on attempt #" + attempts + " for " +
-                                              appId + (isDlc ? " (DLC)" : "")
-                                              + ": Unsuccessful deserialization (" + e.Message + ")");
+                        ProgramData.LogSteamCmd("SteamCMD web API query failed on attempt #" + attempts + " for " +
+                                               appId + (isDlc ? " (DLC)" : "")
+                                               + ": Unsuccessful deserialization (" + e.Message + ")");
                     }
-#else
-                    {
-                        // ignored
-                    }
-#endif
                 }
-#if DEBUG
                 else
-                    DebugForm.Current.Log(
+                    ProgramData.LogSteamCmd(
                         "SteamCMD web API query failed on attempt #" + attempts + " for " + appId +
                         (isDlc ? " (DLC)" : "") +
-                        ": Response null",
-                        LogTextBox.Warning);
-#endif
+                        ": Response null");
             }
 
             if (cachedExists)
@@ -109,9 +85,7 @@ internal static partial class SteamCMD
                 break;
             if (attempts > 10)
             {
-#if DEBUG
-                DebugForm.Current.Log("Failed to query SteamCMD web API after 10 tries: " + appId);
-#endif
+                ProgramData.LogSteamCmd("Failed to query SteamCMD web API after 10 tries: " + appId);
                 break;
             }
 

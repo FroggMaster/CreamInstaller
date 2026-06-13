@@ -64,7 +64,12 @@ internal static class ProgramData
     private static readonly string ExtraProtectionChoicesPath = DirectoryPath + @"\extraprotection.json";
     private static readonly string InstalledGamesPath = DirectoryPath + @"\installed.json";
 
-    internal static readonly string LogPath = DirectoryPath + @"\scan.log";
+    internal static readonly string ScanLogPath = Path.Combine(DirectoryPath, "game-scan.log");
+internal static readonly string SteamCmdLogPath = Path.Combine(DirectoryPath, "cream-steamcmd.log");
+internal static readonly string AppLogPath = Path.Combine(DirectoryPath, "CreamInstaller.log");
+
+internal static event Action<string> OnLogWarning;
+internal static event Action<string> OnLogError;
 
     private static readonly object LogLock = new();
 
@@ -75,7 +80,7 @@ internal static class ProgramData
             string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
             string entry = $"[{timestamp}] {message}{Environment.NewLine}";
             lock (LogLock)
-                File.AppendAllText(LogPath, entry, Encoding.UTF8);
+                File.AppendAllText(ScanLogPath, entry, Encoding.UTF8);
         }
         catch
         {
@@ -83,12 +88,61 @@ internal static class ProgramData
         }
     }
 
+    internal static void LogSteamCmd(string message)
+    {
+        try
+        {
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string entry = $"[{timestamp}] [SteamCMD] {message}{Environment.NewLine}";
+            lock (LogLock)
+                File.AppendAllText(SteamCmdLogPath, entry, Encoding.UTF8);
+        }
+        catch
+        {
+            // ignored — logging must never crash the application
+        }
+    }
+
+    internal static void LogWarning(string message)
+    {
+        try
+        {
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string entry = $"[{timestamp}] [WARN] {message}{Environment.NewLine}";
+            lock (LogLock)
+                File.AppendAllText(AppLogPath, entry, Encoding.UTF8);
+        }
+        catch
+        {
+            // ignored — logging must never crash the application
+        }
+        OnLogWarning?.Invoke(message);
+    }
+
+    internal static void LogError(string message, Exception ex = null)
+    {
+        try
+        {
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string entry = ex is not null
+                ? $"[{timestamp}] [ERROR] {message}{Environment.NewLine}[{timestamp}] [ERROR]   Exception: {ex}{Environment.NewLine}"
+                : $"[{timestamp}] [ERROR] {message}{Environment.NewLine}";
+            lock (LogLock)
+                File.AppendAllText(AppLogPath, entry, Encoding.UTF8);
+        }
+        catch
+        {
+            // ignored — logging must never crash the application
+        }
+        OnLogError?.Invoke(message);
+    }
+
     internal static void ClearLog()
     {
         try
         {
-            if (File.Exists(LogPath))
-                File.Delete(LogPath);
+            if (File.Exists(ScanLogPath))
+                File.Delete(ScanLogPath);
         }
         catch
         {

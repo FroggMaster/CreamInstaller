@@ -34,7 +34,8 @@ internal sealed class CustomTreeView : TreeView
 
     internal CustomTreeView()
     {
-        DrawMode = TreeViewDrawMode.OwnerDrawAll;
+            ShowNodeToolTips = true;
+            DrawMode = TreeViewDrawMode.OwnerDrawAll;
         Invalidated += OnInvalidated;
         DrawNode += DrawTreeNode;
         Disposed += OnDisposed;
@@ -218,7 +219,16 @@ internal sealed class CustomTreeView : TreeView
             SelectionDLC dlc = SelectionDLC.FromId(dlcType, node.Parent?.Name, id);
             text = dlc?.Selection != null ? dlc.Selection.Platform.ToString() : dlcType.ToString();
         }
-        else text = platform.ToString();
+        else
+        {
+            text = platform.ToString();
+            if (platform is Platform.Steam)
+            {
+                Selection selection = Selection.FromId(platform, id);
+                if (selection is not null && selection.SteamApiDllMissing)
+                    text = "Proxy Only";
+            }
+        }
 
         Size size = TextRenderer.MeasureText(graphics, text, font);
         bounds = bounds with { X = bounds.X + bounds.Width, Width = size.Width };
@@ -485,6 +495,8 @@ internal sealed class CustomTreeView : TreeView
                 _ = checkBoxBounds.Remove(pair.Key);
             else if (pair.Value.Contains(clickPoint))
             {
+                if (pair.Key.SteamApiDllMissing)
+                    return;
                 pair.Key.UseProxy = !pair.Key.UseProxy;
                 selectForm?.OnProxyChanged();
                 break;

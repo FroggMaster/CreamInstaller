@@ -11,6 +11,8 @@ internal sealed partial class DebugForm : CustomForm
     private static DebugForm current;
     private static readonly object currentLock = new();
 
+    internal static bool IsOpen { get; private set; }
+
     private Form attachedForm;
 
     private DebugForm()
@@ -62,6 +64,13 @@ internal sealed partial class DebugForm : CustomForm
         attachedForm.SizeChanged += OnChange;
         attachedForm.VisibleChanged += OnChange;
         UpdateAttachment();
+
+        if (!IsOpen)
+        {
+            IsOpen = true;
+            ProgramData.OnLogWarning += msg => Log(msg, LogTextBox.Warning);
+            ProgramData.OnLogError += msg => Log(msg, LogTextBox.Error);
+        }
     }
 
     private void OnChange(object sender, EventArgs args) => UpdateAttachment();
