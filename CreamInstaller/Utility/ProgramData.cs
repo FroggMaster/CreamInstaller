@@ -65,7 +65,7 @@ internal static class ProgramData
     private static readonly string InstalledGamesPath = DirectoryPath + @"\installed.json";
 
     internal static readonly string ScanLogPath = Path.Combine(DirectoryPath, "game-scan.log");
-internal static readonly string SteamCmdLogPath = Path.Combine(DirectoryPath, "cream-steamcmd.log");
+internal static readonly string SteamLogPath = Path.Combine(DirectoryPath, "cream-steam.log");
 internal static readonly string AppLogPath = Path.Combine(DirectoryPath, "CreamInstaller.log");
 
 internal static event Action<string> OnLogWarning;
@@ -88,14 +88,14 @@ internal static event Action<string> OnLogError;
         }
     }
 
-    internal static void LogSteamCmd(string message)
+    internal static void LogSteam(string message)
     {
         try
         {
             string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-            string entry = $"[{timestamp}] [SteamCMD] {message}{Environment.NewLine}";
+            string entry = $"[{timestamp}] {message}{Environment.NewLine}";
             lock (LogLock)
-                File.AppendAllText(SteamCmdLogPath, entry, Encoding.UTF8);
+                File.AppendAllText(SteamLogPath, entry, Encoding.UTF8);
         }
         catch
         {

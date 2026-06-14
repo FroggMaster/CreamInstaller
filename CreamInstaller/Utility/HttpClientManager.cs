@@ -86,25 +86,25 @@ internal static class HttpClientManager
             if (e.StatusCode != HttpStatusCode.TooManyRequests)
             {
                 string statusInfo = e.StatusCode.HasValue ? $" (HTTP {(int)e.StatusCode.Value})" : "";
-                ProgramData.LogWarning($"Get request failed to {url}{statusInfo}: {e.Message}");
+                ProgramData.LogSteam($"[SteamAPI] Get request failed to {url}{statusInfo}: {e.Message}");
                 return null;
             }
-            ProgramData.LogWarning($"Too many requests to {url} (HTTP 429 - Rate Limited)");
+            ProgramData.LogSteam($"[SteamAPI] Too many requests to {url} (HTTP 429 - Rate Limited)");
             return null;
         }
         catch (TaskCanceledException)
         {
-            ProgramData.LogWarning("Get request timed out for " + url);
+            ProgramData.LogSteam("[SteamAPI] Get request timed out for " + url);
             return null;
         }
         catch (OperationCanceledException)
         {
-            ProgramData.LogWarning("Get request was cancelled for " + url);
+            ProgramData.LogSteam("[SteamAPI] Get request was cancelled for " + url);
             return null;
         }
         catch (Exception e)
         {
-            ProgramData.LogWarning("Get request failed to " + url + ": " + e.Message);
+            ProgramData.LogSteam("[SteamAPI] Get request failed to " + url + ": " + e.Message);
             return null;
         }
     }
