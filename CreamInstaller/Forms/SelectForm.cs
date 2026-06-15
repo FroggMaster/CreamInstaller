@@ -192,10 +192,11 @@ internal sealed partial class SelectForm : CustomForm
                     return;
                 if (!uninstallAll)
                 {
-                    if (Program.IsGameBlocked(name, gameDirectory))
+                    string? blockReason = Program.GetGameBlockedReason(name, gameDirectory);
+                    if (blockReason is not null)
                     {
                         steamBlocked++;
-                        ProgramData.Log($"[Steam] Skipping blocked game: {name} ({appId})");
+                        ProgramData.Log($"[Steam] Skipping blocked game: {name} ({appId}) — {blockReason}");
                         _ = Interlocked.Decrement(ref steamGamesToCheck);
                         continue;
                     }
@@ -218,6 +219,7 @@ internal sealed partial class SelectForm : CustomForm
                     if (steamApiDllMissing)
                     {
                         dllDirectories = [];
+                        ProgramData.Log($"[Steam] {name} ({appId}): no steam_api.dll or steam_api64.dll found — forced proxying will be used");
                         if (uninstallAll)
                         {
                             _ = Interlocked.Decrement(ref steamGamesToCheck);
@@ -444,10 +446,11 @@ internal sealed partial class SelectForm : CustomForm
                     return;
                 if (!uninstallAll)
                 {
-                    if (Program.IsGameBlocked(name, directory))
+                    string? blockReason = Program.GetGameBlockedReason(name, directory);
+                    if (blockReason is not null)
                     {
                         epicBlocked++;
-                        ProgramData.Log($"[Epic] Skipping blocked game: {name} ({@namespace})");
+                        ProgramData.Log($"[Epic] Skipping blocked game: {name} ({@namespace}) — {blockReason}");
                         continue;
                     }
                     if (!programsToScan.Any(c => c.platform is Platform.Epic && c.id == @namespace))
@@ -465,7 +468,7 @@ internal sealed partial class SelectForm : CustomForm
                     HashSet<string> dllDirectories = await directory.GetDllDirectoriesFromGameDirectory(Platform.Epic);
                     if (dllDirectories is null)
                     {
-                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no DLL directory found — game directory may be incomplete");
+                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no EOSSDK-Win32-Shipping.dll or EOSSDK-Win64-Shipping.dll found — game directory may be incomplete");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -576,10 +579,11 @@ internal sealed partial class SelectForm : CustomForm
                     return;
                 if (!uninstallAll)
                 {
-                    if (Program.IsGameBlocked(name, gameDirectory))
+                    string? blockReason = Program.GetGameBlockedReason(name, gameDirectory);
+                    if (blockReason is not null)
                     {
                         ubiBlocked++;
-                        ProgramData.Log($"[Ubisoft] Skipping blocked game: {name} ({gameId})");
+                        ProgramData.Log($"[Ubisoft] Skipping blocked game: {name} ({gameId}) — {blockReason}");
                         continue;
                     }
                     if (!programsToScan.Any(c => c.platform is Platform.Ubisoft && c.id == gameId))
@@ -598,7 +602,7 @@ internal sealed partial class SelectForm : CustomForm
                         await gameDirectory.GetDllDirectoriesFromGameDirectory(Platform.Ubisoft);
                     if (dllDirectories is null)
                     {
-                        ProgramData.Log($"[Ubisoft] Skipping {name} ({gameId}): no DLL directory found");
+                        ProgramData.Log($"[Ubisoft] Skipping {name} ({gameId}): no uplay_r1_loader.dll or uplay_r1_loader64.dll found");
                         RemoveFromRemainingGames(name);
                         return;
                     }

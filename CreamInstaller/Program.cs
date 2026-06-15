@@ -48,9 +48,19 @@ internal static class Program
     internal static bool DarkModeEnabled = true;
 
     internal static bool IsGameBlocked(string name, string directory = null)
-        => BlockProtectedGames && (ProtectedGames.Contains(name) || directory is not null &&
-            !ProtectedGameDirectoryExceptions.Contains(name)
-            && ProtectedGameDirectories.Any(path => (directory + path).DirectoryExists()));
+        => GetGameBlockedReason(name, directory) is not null;
+
+    internal static string? GetGameBlockedReason(string name, string directory = null)
+    {
+        if (!BlockProtectedGames) return null;
+        if (ProtectedGames.Contains(name)) return "on protected games list";
+        if (directory is null) return null;
+        if (ProtectedGameDirectoryExceptions.Contains(name)) return null;
+        string? foundAntiCheat = ProtectedGameDirectories.FirstOrDefault(path => (directory + path).DirectoryExists());
+        return foundAntiCheat is not null
+            ? $"{foundAntiCheat[1..]} directory found"
+            : null;
+    }
 
     [STAThread]
     private static void Main()
