@@ -1397,6 +1397,30 @@ internal sealed partial class SelectForm : CustomForm
                 selection.InstalledUnlocker = record.Unlocker;
         }
 
+        // Persist all selections with a detected DLC unlocker to installed.json, so they are tracked
+        // even when the unlocker was installed outside of CreamInstaller
+        foreach (Selection selection in Selection.All.Keys)
+        {
+            if (selection.InstalledUnlocker != InstalledUnlocker.None)
+                ProgramData.UpsertInstalledGame(new InstalledGameRecord
+                {
+                    Platform = selection.Platform,
+                    Id = selection.Id,
+                    Name = selection.Name,
+                    RootDirectory = selection.RootDirectory,
+                    Unlocker = selection.InstalledUnlocker,
+                    UseProxy = selection.UseProxy,
+                    Proxy = selection.Proxy,
+                    UseExtraProtection = selection.UseExtraProtection,
+                    Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
+                    {
+                        DlcType = dlc.Type.ToString(),
+                        Id = dlc.Id,
+                        Name = dlc.Name
+                    }).ToList()
+                });
+        }
+
         OnProxyChanged();
     }
 
