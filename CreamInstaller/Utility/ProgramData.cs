@@ -151,6 +151,15 @@ internal static event Action<string> OnLogError;
         {
             // ignored
         }
+        try
+        {
+            if (File.Exists(SteamLogPath))
+                File.Delete(SteamLogPath);
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     internal static async Task Setup(Form form = null)
