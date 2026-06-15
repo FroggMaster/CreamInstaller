@@ -68,6 +68,25 @@ internal sealed partial class DebugForm : CustomForm
         if (!IsOpen)
         {
             IsOpen = true;
+            ProgramData.OnLog += msg =>
+            {
+                Color color = msg switch
+                {
+                    string m when m.Contains("not found", StringComparison.OrdinalIgnoreCase) => LogTextBox.Failure,
+                    string m when m.Contains("Skipping", StringComparison.Ordinal) || m.Contains("skipped", StringComparison.Ordinal) || m.Contains("not accessible", StringComparison.Ordinal) => LogTextBox.Warning,
+                    _ => LogTextBox.Action
+                };
+                Log(msg, color);
+            };
+            ProgramData.OnLogSteam += msg =>
+            {
+                Color color = msg switch
+                {
+                    string m when m.Contains("failed", StringComparison.OrdinalIgnoreCase) || m.Contains("timed out", StringComparison.OrdinalIgnoreCase) || m.Contains("cancelled", StringComparison.OrdinalIgnoreCase) || m.Contains("rate limited", StringComparison.OrdinalIgnoreCase) || m.Contains("unsuccessful", StringComparison.OrdinalIgnoreCase) || m.Contains("exceeded", StringComparison.OrdinalIgnoreCase) => LogTextBox.Failure,
+                    _ => LogTextBox.Action
+                };
+                Log(msg, color);
+            };
             ProgramData.OnLogWarning += msg => Log(msg, LogTextBox.Warning);
             ProgramData.OnLogError += msg => Log(msg, LogTextBox.Error);
         }

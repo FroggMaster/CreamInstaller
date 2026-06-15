@@ -73,6 +73,8 @@ internal static class ProgramData
 internal static readonly string SteamLogPath = Path.Combine(DirectoryPath, "cream-steam.log");
 internal static readonly string AppLogPath = Path.Combine(DirectoryPath, "CreamInstaller.log");
 
+internal static event Action<string> OnLog;
+internal static event Action<string> OnLogSteam;
 internal static event Action<string> OnLogWarning;
 internal static event Action<string> OnLogError;
 
@@ -91,6 +93,7 @@ internal static event Action<string> OnLogError;
         {
             // ignored; logging must never crash the application
         }
+        OnLog?.Invoke(message);
     }
 
     internal static void LogSteam(string message)
@@ -106,6 +109,7 @@ internal static event Action<string> OnLogError;
         {
             // ignored; logging must never crash the application
         }
+        OnLogSteam?.Invoke(message);
     }
 
     internal static void LogWarning(string message)

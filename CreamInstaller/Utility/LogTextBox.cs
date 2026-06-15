@@ -10,6 +10,7 @@ internal static class LogTextBox
     internal static readonly Color Action = Color.LightBlue;
     internal static readonly Color Success = Color.LightGreen;
     internal static readonly Color Cleanup = Color.YellowGreen;
+    internal static readonly Color Failure = Color.IndianRed;
     internal static readonly Color Warning = Color.Yellow;
     internal static readonly Color Error = Color.DarkOrange;
 
