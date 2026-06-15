@@ -31,7 +31,7 @@ internal static partial class SteamCMD
 
     private static readonly string AppCachePath = DirectoryPath + @"\appcache";
 
-    private static string DirectoryPath => ProgramData.DirectoryPath;
+    private static string DirectoryPath => ProgramData.DirectoryPath + @"\SteamCMD";
     internal static string AppInfoPath => ProgramData.AppInfoPath;
 
     private static string GetArguments(string appId)
