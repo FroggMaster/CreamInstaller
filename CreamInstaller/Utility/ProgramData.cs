@@ -53,7 +53,9 @@ internal static class ProgramData
     internal static readonly string DirectoryPath =
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\CreamInstaller";
 
-    internal static readonly string AppInfoPath = DirectoryPath + @"\appinfo";
+    private static readonly string CachePath = DirectoryPath + @"\Cache";
+
+    internal static readonly string AppInfoPath = CachePath + @"\appinfo";
     private static readonly string AppInfoVersionPath = AppInfoPath + @"\version.txt";
 
     private static readonly Version MinimumAppInfoVersion = Version.Parse("4.7.0.0");
@@ -65,7 +67,7 @@ internal static class ProgramData
     private static readonly string DlcChoicesPath = DirectoryPath + @"\dlc.json";
     private static readonly string KoaloaderProxyChoicesPath = DirectoryPath + @"\proxies.json";
     private static readonly string ExtraProtectionChoicesPath = DirectoryPath + @"\extraprotection.json";
-    private static readonly string InstalledGamesPath = DirectoryPath + @"\installed.json";
+    private static readonly string InstalledGamesPath = CachePath + @"\installed.json";
 
     internal static readonly string ScanLogPath = Path.Combine(DirectoryPath, "game-scan.log");
 internal static readonly string SteamLogPath = Path.Combine(DirectoryPath, "cream-steam.log");
