@@ -371,7 +371,7 @@ internal sealed partial class InstallForm : CustomForm
                         RootDirectory = selection.RootDirectory,
                         Unlocker = unlocker,
                         UseProxy = selection.UseProxy,
-                        Proxy = selection.Proxy,
+                        ProxyDllName = selection.UseProxy ? selection.Proxy ?? Selection.DefaultProxy : null,
                         UseExtraProtection = selection.UseExtraProtection,
                         Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
                         {

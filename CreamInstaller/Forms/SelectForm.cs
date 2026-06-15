@@ -1111,16 +1111,23 @@ internal sealed partial class SelectForm : CustomForm
         List<InstalledGameRecord> toRemove = [];
         foreach (InstalledGameRecord record in saved)
         {
-            // Already in the list from this scan — just ensure unlocker is set
+            // Already in the list from this scan; ensure unlocker, proxy, and extra protection are set
             Selection existing = Selection.FromId(record.Platform, record.Id);
             if (existing is not null)
             {
                 if (existing.InstalledUnlocker == InstalledUnlocker.None)
                     existing.InstalledUnlocker = record.Unlocker;
+                if (record.UseProxy)
+                {
+                    existing.UseProxy = true;
+                    existing.Proxy = record.ProxyDllName;
+                }
+                if (record.UseExtraProtection)
+                    existing.UseExtraProtection = true;
                 continue;
             }
 
-            // Root directory no longer exists — mark for removal
+            // Root directory no longer exists mark for removal
             if (!record.RootDirectory.DirectoryExists())
             {
                 toRemove.Add(record);
@@ -1144,8 +1151,20 @@ internal sealed partial class SelectForm : CustomForm
             selection.InstalledUnlocker = selection.DetectInstalledUnlocker();
             if (selection.InstalledUnlocker == InstalledUnlocker.None)
                 selection.InstalledUnlocker = record.Unlocker;
-            selection.UseProxy = record.UseProxy;
-            selection.Proxy = record.Proxy;
+            if (selection.InstalledUnlocker != InstalledUnlocker.None)
+            {
+                string detectedProxy = selection.DetectInstalledProxy();
+                if (detectedProxy is not null)
+                {
+                    selection.UseProxy = true;
+                    selection.Proxy = detectedProxy;
+                }
+                else
+                {
+                    selection.UseProxy = record.UseProxy;
+                    selection.Proxy = record.ProxyDllName;
+                }
+            }
             selection.UseExtraProtection = record.UseExtraProtection;
 
             Invoke(delegate
@@ -1382,9 +1401,20 @@ internal sealed partial class SelectForm : CustomForm
         ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
         loadButton.Enabled = CanLoadSelections();
 
-        // Detect installed unlockers from disk for all selections
+        // Detect installed unlockers and proxy DLLs from disk for all selections
         foreach (Selection selection in Selection.All.Keys)
+        {
             selection.InstalledUnlocker = selection.DetectInstalledUnlocker();
+            if (selection.InstalledUnlocker != InstalledUnlocker.None)
+            {
+                string detectedProxy = selection.DetectInstalledProxy();
+                if (detectedProxy is not null)
+                {
+                    selection.UseProxy = true;
+                    selection.Proxy = detectedProxy;
+                }
+            }
+        }
 
         // Merge with persisted installed game records for any saved games not yet having a detected unlocker
         List<InstalledGameRecord> installedRecords = ProgramData.ReadInstalledGames();
@@ -1397,11 +1427,14 @@ internal sealed partial class SelectForm : CustomForm
                 selection.InstalledUnlocker = record.Unlocker;
         }
 
-        // Persist all selections with a detected DLC unlocker to installed.json, so they are tracked
-        // even when the unlocker was installed outside of CreamInstaller
+        // Persist any selections with a detected unlocker to installed.json, preserving existing
+        // proxy/extrapolation data from the saved record so detection does not overwrite prior install state
         foreach (Selection selection in Selection.All.Keys)
         {
             if (selection.InstalledUnlocker != InstalledUnlocker.None)
+            {
+                InstalledGameRecord existing = installedRecords.FirstOrDefault(r =>
+                    r.Platform == selection.Platform && r.Id == selection.Id);
                 ProgramData.UpsertInstalledGame(new InstalledGameRecord
                 {
                     Platform = selection.Platform,
@@ -1409,9 +1442,9 @@ internal sealed partial class SelectForm : CustomForm
                     Name = selection.Name,
                     RootDirectory = selection.RootDirectory,
                     Unlocker = selection.InstalledUnlocker,
-                    UseProxy = selection.UseProxy,
-                    Proxy = selection.Proxy,
-                    UseExtraProtection = selection.UseExtraProtection,
+                    UseProxy = existing?.UseProxy ?? false,
+                    ProxyDllName = existing?.UseProxy == true ? existing.ProxyDllName : null,
+                    UseExtraProtection = existing?.UseExtraProtection ?? false,
                     Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
                     {
                         DlcType = dlc.Type.ToString(),
@@ -1419,6 +1452,7 @@ internal sealed partial class SelectForm : CustomForm
                         Name = dlc.Name
                     }).ToList()
                 });
+            }
         }
 
         OnProxyChanged();

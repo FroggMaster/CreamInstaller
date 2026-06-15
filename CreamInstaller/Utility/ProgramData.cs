@@ -37,7 +37,10 @@ internal sealed class InstalledGameRecord
     public string RootDirectory { get; set; }
     public InstalledUnlocker Unlocker { get; set; }
     public bool UseProxy { get; set; }
-    public string Proxy { get; set; }
+
+    [JsonProperty("Proxy DLL Name")]
+    public string ProxyDllName { get; set; }
+
     public bool UseExtraProtection { get; set; }
     public List<InstalledDlcRecord> Dlc { get; set; } = [];
 }
@@ -84,7 +87,7 @@ internal static event Action<string> OnLogError;
         }
         catch
         {
-            // ignored — logging must never crash the application
+            // ignored; logging must never crash the application
         }
     }
 
@@ -99,7 +102,7 @@ internal static event Action<string> OnLogError;
         }
         catch
         {
-            // ignored — logging must never crash the application
+            // ignored; logging must never crash the application
         }
     }
 
@@ -114,7 +117,7 @@ internal static event Action<string> OnLogError;
         }
         catch
         {
-            // ignored — logging must never crash the application
+            // ignored; logging must never crash the application
         }
         OnLogWarning?.Invoke(message);
     }
@@ -132,7 +135,7 @@ internal static event Action<string> OnLogError;
         }
         catch
         {
-            // ignored — logging must never crash the application
+            // ignored; logging must never crash the application
         }
         OnLogError?.Invoke(message);
     }

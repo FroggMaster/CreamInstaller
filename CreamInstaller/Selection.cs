@@ -163,7 +163,7 @@ internal sealed class Selection : IEquatable<Selection>
                     return InstalledUnlocker.CreamAPI;
                 }
 
-                // Fallback: config was deleted but _o files remain — identify by replacement DLL content
+                // Fallback: config was deleted but _o files remain identify by replacement DLL content
                 directory.GetSmokeApiComponents(out string smokeApi32, out string api32_o,
                     out string smokeApi64, out string api64_o, out _, out _, out _, out _, out _);
                 if (api32_o.FileExists() || api64_o.FileExists())
@@ -224,6 +224,19 @@ internal sealed class Selection : IEquatable<Selection>
         }
 
         return InstalledUnlocker.None;
+    }
+
+    internal string DetectInstalledProxy()
+    {
+        HashSet<string> knownProxies = ["winmm", "winhttp", "version"];
+        foreach (string directory in DllDirectories)
+            foreach (string proxy in knownProxies)
+            {
+                string proxyPath = directory + @"\" + proxy + ".dll";
+                if (proxyPath.FileExists())
+                    return proxy;
+            }
+        return null;
     }
 
     private void ReadCreamApiConfig(string configPath)
