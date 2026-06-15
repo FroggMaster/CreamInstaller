@@ -146,13 +146,6 @@ internal static event Action<string> OnLogError;
         {
             if (File.Exists(ScanLogPath))
                 File.Delete(ScanLogPath);
-        }
-        catch
-        {
-            // ignored
-        }
-        try
-        {
             if (File.Exists(SteamLogPath))
                 File.Delete(SteamLogPath);
         }
