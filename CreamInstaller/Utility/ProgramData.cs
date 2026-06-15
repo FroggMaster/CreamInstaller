@@ -77,7 +77,7 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
             string entry = $"[{timestamp}] {message}{Environment.NewLine}";
             lock (LogLock)
                 File.AppendAllText(ScanLogPath, entry, Encoding.UTF8);
@@ -92,7 +92,7 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
             string entry = $"[{timestamp}] {message}{Environment.NewLine}";
             lock (LogLock)
                 File.AppendAllText(SteamLogPath, entry, Encoding.UTF8);
@@ -107,7 +107,7 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
             string entry = $"[{timestamp}] [WARN] {message}{Environment.NewLine}";
             lock (LogLock)
                 File.AppendAllText(AppLogPath, entry, Encoding.UTF8);
@@ -123,7 +123,7 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
             string entry = ex is not null
                 ? $"[{timestamp}] [ERROR] {message}{Environment.NewLine}[{timestamp}] [ERROR]   Exception: {ex}{Environment.NewLine}"
                 : $"[{timestamp}] [ERROR] {message}{Environment.NewLine}";
