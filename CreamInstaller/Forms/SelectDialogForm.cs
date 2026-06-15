@@ -109,11 +109,9 @@ internal sealed partial class SelectDialogForm : CustomForm
     private void OnAllCheckBoxChanged(object sender, EventArgs e)
     {
         bool shouldCheck = selectionTreeView.Nodes.Cast<TreeNode>().Any(n => !n.Checked);
+        selected.Clear();
         foreach (TreeNode node in selectionTreeView.Nodes)
-        {
             node.Checked = shouldCheck;
-            OnTreeNodeChecked(node);
-        }
 
         allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
         allCheckBox.Checked = shouldCheck;
@@ -126,10 +124,7 @@ internal sealed partial class SelectDialogForm : CustomForm
         if (choices.Count < 1)
             return;
         foreach (TreeNode node in selectionTreeView.Nodes)
-        {
             node.Checked = choices.Any(n => n.platform == (Platform)node.Tag && n.id == node.Name);
-            OnTreeNodeChecked(node);
-        }
     }
 
     private void OnSave(object sender, EventArgs e)

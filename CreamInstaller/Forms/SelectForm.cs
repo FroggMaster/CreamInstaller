@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -145,6 +146,14 @@ internal sealed partial class SelectForm : CustomForm
             return;
         remainingGames.Clear(); // for display purposes only, otherwise ignorable
         remainingDLCs.Clear(); // for display purposes only, otherwise ignorable
+        Stopwatch scanTimer = Stopwatch.StartNew();
+        double totalLibraryScanSeconds = 0;
+        int totalGamesDetected = 0;
+        if (!uninstallAll && programsToScan is { Count: > 0 })
+        {
+            string platforms = string.Join(", ", programsToScan.Select(p => p.platform.ToString()).Distinct());
+            ProgramData.Log($"[Scan] User selected {programsToScan.Count} game(s) for scanning on {platforms}");
+        }
         List<Task> appTasks = new();
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Paradox))
         {
@@ -168,20 +177,36 @@ internal sealed partial class SelectForm : CustomForm
         int steamGamesToCheck;
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Steam))
         {
+            Stopwatch steamLibTimer = Stopwatch.StartNew();
             List<(string appId, string name, string branch, int buildId, string gameDirectory)> steamGames =
                 await SteamLibrary.GetGames();
+            steamLibTimer.Stop();
+            totalLibraryScanSeconds += steamLibTimer.Elapsed.TotalSeconds;
+            ProgramData.Log($"[Steam] Scanned library: {steamGames.Count} games in {steamLibTimer.Elapsed.TotalSeconds:F1}s");
+            totalGamesDetected += steamGames.Count;
+            int steamToProcess = 0, steamBlocked = 0, steamNotSelected = 0;
             steamGamesToCheck = steamGames.Count;
             foreach ((string appId, string name, string branch, int buildId, string gameDirectory) in steamGames)
             {
                 if (Program.Canceled)
                     return;
-                if (!uninstallAll && (Program.IsGameBlocked(name, gameDirectory) ||
-                                      !programsToScan.Any(c => c.platform is Platform.Steam && c.id == appId)))
+                if (!uninstallAll)
                 {
-                    _ = Interlocked.Decrement(ref steamGamesToCheck);
-                    continue;
+                    if (Program.IsGameBlocked(name, gameDirectory))
+                    {
+                        steamBlocked++;
+                        ProgramData.Log($"[Steam] Skipping blocked game: {name} ({appId})");
+                        _ = Interlocked.Decrement(ref steamGamesToCheck);
+                        continue;
+                    }
+                    if (!programsToScan.Any(c => c.platform is Platform.Steam && c.id == appId))
+                    {
+                        steamNotSelected++;
+                        _ = Interlocked.Decrement(ref steamGamesToCheck);
+                        continue;
+                    }
                 }
-
+                steamToProcess++;
                 AddToRemainingGames(name);
                 Task task = Task.Run(async () =>
                 {
@@ -218,6 +243,7 @@ internal sealed partial class SelectForm : CustomForm
                     CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 16000);
                     if (storeAppData is null && cmdAppData is null)
                     {
+                        ProgramData.Log($"[Steam] Skipping {name} ({appId}): no store data from Steam Store or SteamCMD — unable to determine DLCs");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -330,6 +356,7 @@ internal sealed partial class SelectForm : CustomForm
                         }
                     else
                     {
+                        ProgramData.Log($"[Steam] Skipping {name} ({appId}): no DLC entries found in store data");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -346,6 +373,7 @@ internal sealed partial class SelectForm : CustomForm
                     steamGamesToCheck = 0;
                     if (dlc.IsEmpty)
                     {
+                        ProgramData.Log($"[Steam] Skipping {name} ({appId}): no DLCs remained after processing");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -394,11 +422,19 @@ internal sealed partial class SelectForm : CustomForm
                 });
                 appTasks.Add(task);
             }
+            if (!uninstallAll)
+                ProgramData.Log($"[Steam] Will process {steamToProcess} selected game(s) for DLC scan ({steamBlocked} blocked, {steamNotSelected} not in current selection)");
         }
 
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Epic))
         {
+            Stopwatch epicLibTimer = Stopwatch.StartNew();
             List<Manifest> epicGames = await EpicLibrary.GetGames();
+            epicLibTimer.Stop();
+            totalLibraryScanSeconds += epicLibTimer.Elapsed.TotalSeconds;
+            ProgramData.Log($"[Epic] Scanned library: {epicGames.Count} games in {epicLibTimer.Elapsed.TotalSeconds:F1}s");
+            totalGamesDetected += epicGames.Count;
+            int epicToProcess = 0, epicBlocked = 0, epicNotSelected = 0;
             foreach (Manifest manifest in epicGames)
             {
                 string @namespace = manifest.CatalogNamespace;
@@ -406,9 +442,21 @@ internal sealed partial class SelectForm : CustomForm
                 string directory = manifest.InstallLocation;
                 if (Program.Canceled)
                     return;
-                if (!uninstallAll && (Program.IsGameBlocked(name, directory) ||
-                                      !programsToScan.Any(c => c.platform is Platform.Epic && c.id == @namespace)))
-                    continue;
+                if (!uninstallAll)
+                {
+                    if (Program.IsGameBlocked(name, directory))
+                    {
+                        epicBlocked++;
+                        ProgramData.Log($"[Epic] Skipping blocked game: {name} ({@namespace})");
+                        continue;
+                    }
+                    if (!programsToScan.Any(c => c.platform is Platform.Epic && c.id == @namespace))
+                    {
+                        epicNotSelected++;
+                        continue;
+                    }
+                }
+                epicToProcess++;
                 AddToRemainingGames(name);
                 Task task = Task.Run(async () =>
                 {
@@ -417,6 +465,7 @@ internal sealed partial class SelectForm : CustomForm
                     HashSet<string> dllDirectories = await directory.GetDllDirectoriesFromGameDirectory(Platform.Epic);
                     if (dllDirectories is null)
                     {
+                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no DLL directory found — game directory may be incomplete");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -468,6 +517,7 @@ internal sealed partial class SelectForm : CustomForm
 
                     if (catalogItems.IsEmpty)
                     {
+                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no catalog/DLC entries found");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -507,18 +557,38 @@ internal sealed partial class SelectForm : CustomForm
                 });
                 appTasks.Add(task);
             }
+            if (!uninstallAll)
+                ProgramData.Log($"[Epic] Will process {epicToProcess} selected game(s) for DLC scan ({epicBlocked} blocked, {epicNotSelected} not in current selection)");
         }
 
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Ubisoft))
         {
+            Stopwatch ubiLibTimer = Stopwatch.StartNew();
             List<(string gameId, string name, string gameDirectory)> ubisoftGames = await UbisoftLibrary.GetGames();
+            ubiLibTimer.Stop();
+            totalLibraryScanSeconds += ubiLibTimer.Elapsed.TotalSeconds;
+            ProgramData.Log($"[Ubisoft] Scanned library: {ubisoftGames.Count} games in {ubiLibTimer.Elapsed.TotalSeconds:F1}s");
+            totalGamesDetected += ubisoftGames.Count;
+            int ubiToProcess = 0, ubiBlocked = 0, ubiNotSelected = 0;
             foreach ((string gameId, string name, string gameDirectory) in ubisoftGames)
             {
                 if (Program.Canceled)
                     return;
-                if (!uninstallAll && (Program.IsGameBlocked(name, gameDirectory) ||
-                                      !programsToScan.Any(c => c.platform is Platform.Ubisoft && c.id == gameId)))
-                    continue;
+                if (!uninstallAll)
+                {
+                    if (Program.IsGameBlocked(name, gameDirectory))
+                    {
+                        ubiBlocked++;
+                        ProgramData.Log($"[Ubisoft] Skipping blocked game: {name} ({gameId})");
+                        continue;
+                    }
+                    if (!programsToScan.Any(c => c.platform is Platform.Ubisoft && c.id == gameId))
+                    {
+                        ubiNotSelected++;
+                        continue;
+                    }
+                }
+                ubiToProcess++;
                 AddToRemainingGames(name);
                 Task task = Task.Run(async () =>
                 {
@@ -528,6 +598,7 @@ internal sealed partial class SelectForm : CustomForm
                         await gameDirectory.GetDllDirectoriesFromGameDirectory(Platform.Ubisoft);
                     if (dllDirectories is null)
                     {
+                        ProgramData.Log($"[Ubisoft] Skipping {name} ({gameId}): no DLL directory found");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -561,16 +632,27 @@ internal sealed partial class SelectForm : CustomForm
                 });
                 appTasks.Add(task);
             }
+            if (!uninstallAll)
+                ProgramData.Log($"[Ubisoft] Will process {ubiToProcess} selected game(s) ({ubiBlocked} blocked, {ubiNotSelected} not in current selection)");
         }
 
+        if (!uninstallAll)
+            ProgramData.Log($"[Scan] Total games detected across all libraries: {totalGamesDetected}");
+        Stopwatch gameDlcTimer = Stopwatch.StartNew();
         foreach (Task task in appTasks)
         {
             if (Program.Canceled)
                 return;
             await task;
         }
+        gameDlcTimer.Stop();
 
         steamGamesToCheck = 0;
+
+        scanTimer.Stop();
+        ProgramData.Log($"[Scan] Library scan total: {totalLibraryScanSeconds:F1}s across all platforms");
+        ProgramData.Log($"[Scan] Game and DLC data gathering: {gameDlcTimer.Elapsed.TotalSeconds:F1}s");
+        ProgramData.Log($"[Scan] Scan completed in {scanTimer.Elapsed.TotalSeconds:F1}s");
     }
 
     private async void OnLoad(bool forceScan = false, bool forceProvideChoices = false)
@@ -597,7 +679,7 @@ internal sealed partial class SelectForm : CustomForm
             ShowProgressBar();
             await ProgramData.Setup(this);
             ProgramData.ClearLog();
-            ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+            ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         bool scan = forceScan;
         if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices))
         {
