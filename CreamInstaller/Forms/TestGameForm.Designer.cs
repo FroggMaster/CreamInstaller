@@ -23,26 +23,20 @@ partial class TestGameForm
         platformGroupBox = new GroupBox();
         steamRadioButton = new RadioButton();
         epicRadioButton = new RadioButton();
+        ubisoftRadioButton = new RadioButton();
         appIdLabel = new Label();
         appIdTextBox = new TextBox();
         gameNameLabel = new Label();
         gameNameTextBox = new TextBox();
         epicSearchButton = new Button();
+        ubisoftSearchButton = new Button();
         epicResultsListBox = new ListBox();
-        dlcGroupBox = new GroupBox();
-        dlcListBox = new ListBox();
-        dlcIdLabel = new Label();
-        dlcIdTextBox = new TextBox();
-        dlcNameLabel = new Label();
-        dlcNameTextBox = new TextBox();
-        addDlcButton = new Button();
-        removeDlcButton = new Button();
+        ubisoftResultsListBox = new ListBox();
         generateButton = new Button();
         clearButton = new Button();
         closeButton = new Button();
         statusLabel = new Label();
         platformGroupBox.SuspendLayout();
-        dlcGroupBox.SuspendLayout();
         SuspendLayout();
 
         // ── Platform group box ── y=8, h=44
@@ -52,6 +46,7 @@ partial class TestGameForm
         platformGroupBox.Text = "Platform";
         platformGroupBox.Controls.Add(steamRadioButton);
         platformGroupBox.Controls.Add(epicRadioButton);
+        platformGroupBox.Controls.Add(ubisoftRadioButton);
 
         steamRadioButton.AutoSize = true;
         steamRadioButton.Checked = true;
@@ -64,6 +59,11 @@ partial class TestGameForm
         epicRadioButton.Location = new System.Drawing.Point(80, 17);
         epicRadioButton.Text = "Epic";
         epicRadioButton.CheckedChanged += OnPlatformChanged;
+
+        ubisoftRadioButton.AutoSize = true;
+        ubisoftRadioButton.Location = new System.Drawing.Point(140, 17);
+        ubisoftRadioButton.Text = "Ubisoft";
+        ubisoftRadioButton.CheckedChanged += OnPlatformChanged;
 
         // ── App ID row ── y=62
         appIdLabel.AutoSize = true;
@@ -89,58 +89,26 @@ partial class TestGameForm
         epicSearchButton.Visible = false;
         epicSearchButton.Click += OnEpicSearch;
 
+        // ── Ubisoft search button ── shares same position as Epic button (mutually exclusive)
+        ubisoftSearchButton.Location = new System.Drawing.Point(468, 97);
+        ubisoftSearchButton.Size = new System.Drawing.Size(80, 23);
+        ubisoftSearchButton.Text = "Search";
+        ubisoftSearchButton.Visible = false;
+        ubisoftSearchButton.Click += OnUbisoftSearch;
+
         // ── Epic results list ── y=130, same slot as DLC group
         epicResultsListBox.Location = new System.Drawing.Point(12, 130);
         epicResultsListBox.Size = new System.Drawing.Size(536, 80);
         epicResultsListBox.Visible = false;
         epicResultsListBox.SelectedIndexChanged += OnEpicResultSelected;
 
-        // ── DLC group box ── y=130, h=130
-        dlcGroupBox.Location = new System.Drawing.Point(12, 130);
-        dlcGroupBox.Size = new System.Drawing.Size(536, 130);
-        dlcGroupBox.TabStop = false;
-        dlcGroupBox.Text = "DLC Entries (Steam only)";
-        dlcGroupBox.Controls.Add(dlcListBox);
-        dlcGroupBox.Controls.Add(dlcIdLabel);
-        dlcGroupBox.Controls.Add(dlcIdTextBox);
-        dlcGroupBox.Controls.Add(dlcNameLabel);
-        dlcGroupBox.Controls.Add(dlcNameTextBox);
-        dlcGroupBox.Controls.Add(addDlcButton);
-        dlcGroupBox.Controls.Add(removeDlcButton);
+        // ── Ubisoft results list ── shares same position as Epic results (mutually exclusive)
+        ubisoftResultsListBox.Location = new System.Drawing.Point(12, 130);
+        ubisoftResultsListBox.Size = new System.Drawing.Size(536, 80);
+        ubisoftResultsListBox.Visible = false;
+        ubisoftResultsListBox.SelectedIndexChanged += OnUbisoftResultSelected;
 
-        dlcListBox.Location = new System.Drawing.Point(6, 20);
-        dlcListBox.Size = new System.Drawing.Size(524, 60);
-
-        // DLC row inside group box — left-to-right:
-        // "DLC ID:" label + 70px box + "DLC Name:" label + 160px box + "Add"(60) + "Remove"(70)
-        // Total: ~48 + 70 + ~72 + 160 + 60 + 70 = 480  (fits in 524)
-        dlcIdLabel.AutoSize = true;
-        dlcIdLabel.Location = new System.Drawing.Point(6, 92);
-        dlcIdLabel.Text = "DLC ID:";
-
-        dlcIdTextBox.Location = new System.Drawing.Point(62, 89);
-        dlcIdTextBox.Size = new System.Drawing.Size(70, 23);
-        dlcIdTextBox.PlaceholderText = "e.g. 12345";
-
-        dlcNameLabel.AutoSize = true;
-        dlcNameLabel.Location = new System.Drawing.Point(140, 92);
-        dlcNameLabel.Text = "DLC Name:";
-
-        dlcNameTextBox.Location = new System.Drawing.Point(216, 89);
-        dlcNameTextBox.Size = new System.Drawing.Size(184, 23);
-        dlcNameTextBox.PlaceholderText = "e.g. Test DLC";
-
-        addDlcButton.Location = new System.Drawing.Point(406, 89);
-        addDlcButton.Size = new System.Drawing.Size(52, 23);
-        addDlcButton.Text = "Add";
-        addDlcButton.Click += OnAddDlc;
-
-        removeDlcButton.Location = new System.Drawing.Point(462, 89);
-        removeDlcButton.Size = new System.Drawing.Size(62, 23);
-        removeDlcButton.Text = "Remove";
-        removeDlcButton.Click += OnRemoveDlc;
-
-        // ── Action buttons ── y=270
+        // ── Action buttons ── y=220 (was y=270 with DLC section)
         generateButton.Location = new System.Drawing.Point(12, 270);
         generateButton.Size = new System.Drawing.Size(150, 26);
         generateButton.Text = "Generate Test Game";
@@ -176,8 +144,9 @@ partial class TestGameForm
         Controls.Add(gameNameLabel);
         Controls.Add(gameNameTextBox);
         Controls.Add(epicSearchButton);
+        Controls.Add(ubisoftSearchButton);
         Controls.Add(epicResultsListBox);
-        Controls.Add(dlcGroupBox);
+        Controls.Add(ubisoftResultsListBox);
         Controls.Add(generateButton);
         Controls.Add(clearButton);
         Controls.Add(closeButton);
@@ -185,8 +154,6 @@ partial class TestGameForm
 
         platformGroupBox.ResumeLayout(false);
         platformGroupBox.PerformLayout();
-        dlcGroupBox.ResumeLayout(false);
-        dlcGroupBox.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -194,20 +161,15 @@ partial class TestGameForm
     private GroupBox platformGroupBox;
     private RadioButton steamRadioButton;
     private RadioButton epicRadioButton;
+    private RadioButton ubisoftRadioButton;
+    private Button ubisoftSearchButton;
+    private ListBox ubisoftResultsListBox;
     private Label appIdLabel;
     private TextBox appIdTextBox;
     private Label gameNameLabel;
     private TextBox gameNameTextBox;
     private Button epicSearchButton;
     private ListBox epicResultsListBox;
-    private GroupBox dlcGroupBox;
-    private ListBox dlcListBox;
-    private Label dlcIdLabel;
-    private TextBox dlcIdTextBox;
-    private Label dlcNameLabel;
-    private TextBox dlcNameTextBox;
-    private Button addDlcButton;
-    private Button removeDlcButton;
     private Button generateButton;
     private Button clearButton;
     private Button closeButton;

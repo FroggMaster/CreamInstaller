@@ -194,7 +194,7 @@ internal sealed partial class SelectForm : CustomForm
                     return;
                 if (!uninstallAll)
                 {
-                    string? blockReason = Program.GetGameBlockedReason(name, gameDirectory);
+                    var blockReason = Program.GetGameBlockedReason(name, gameDirectory);
                     if (blockReason is not null)
                     {
                         steamBlocked++;
@@ -448,7 +448,7 @@ internal sealed partial class SelectForm : CustomForm
                     return;
                 if (!uninstallAll)
                 {
-                    string? blockReason = Program.GetGameBlockedReason(name, directory);
+                    var blockReason = Program.GetGameBlockedReason(name, directory);
                     if (blockReason is not null)
                     {
                         epicBlocked++;
@@ -581,7 +581,7 @@ internal sealed partial class SelectForm : CustomForm
                     return;
                 if (!uninstallAll)
                 {
-                    string? blockReason = Program.GetGameBlockedReason(name, gameDirectory);
+                    var blockReason = Program.GetGameBlockedReason(name, gameDirectory);
                     if (blockReason is not null)
                     {
                         ubiBlocked++;

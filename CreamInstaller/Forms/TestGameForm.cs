@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using CreamInstaller.Components;
 using CreamInstaller.Platforms.Epic;
 using CreamInstaller.Platforms.Steam;
+using CreamInstaller.Platforms.Ubisoft;
 using CreamInstaller.Utility;
 
 namespace CreamInstaller.Forms;
@@ -18,48 +19,63 @@ internal sealed partial class TestGameForm : CustomForm
 
     private static readonly List<string> CreatedDirectories = [];
 
-    // Steam DLC entries per-form: (dlcId, dlcName)
-    private readonly List<(string id, string name)> dlcEntries = [];
-
     // Cached Epic search results from the last search: (namespace, name)
     private readonly List<(string ns, string name)> epicSearchResults = [];
 
+    // Cached Ubisoft search results from the last search: (id, name)
+    private readonly List<(string id, string name)> ubisoftSearchResults = [];
+
     private bool IsEpicMode => epicRadioButton.Checked;
+
+    private bool IsUbisoftMode => ubisoftRadioButton.Checked;
 
     internal TestGameForm(IWin32Window owner) : base(owner)
     {
         InitializeComponent();
         appIdTextBox.Leave += OnAppIdLeave;
-        RefreshDlcList();
+        appIdTextBox.KeyDown += OnAppIdKeyDown;
+        gameNameTextBox.KeyDown += OnGameNameKeyDown;
         UpdatePlatformMode();
     }
 
     private void UpdatePlatformMode()
     {
         bool epic = IsEpicMode;
+        bool ubisoft = IsUbisoftMode;
 
-        // App ID row: Steam only
-        appIdLabel.Visible = !epic;
-        appIdTextBox.Visible = !epic;
+        // App ID row: only Steam needs it; Epic and Ubisoft use name search
+        appIdLabel.Visible = !epic && !ubisoft;
+        appIdTextBox.Visible = !epic && !ubisoft;
+        appIdLabel.Text = "App ID:";
+        appIdTextBox.PlaceholderText = "e.g. 480";
+        NativeMethods.RefreshCueBanner(appIdTextBox);
 
-        // Search button: Epic only — shrink the game name box to make room
+        // Search button: Epic and Ubisoft — shrink the game name box to make room
+        bool showSearch = epic || ubisoft;
         epicSearchButton.Visible = epic;
-        gameNameTextBox.Size = new System.Drawing.Size(epic ? 354 : 443, 23);
+        ubisoftSearchButton.Visible = ubisoft;
+        gameNameTextBox.Size = new System.Drawing.Size(showSearch ? 354 : 443, 23);
 
         // Placeholder text — call RefreshCueBanner to flush the Win32 cue so only one text shows
-        gameNameTextBox.PlaceholderText = epic ? "Enter game name and click Search" : "e.g. Spacewar";
+        gameNameTextBox.PlaceholderText = showSearch
+            ? "Enter a game name and press Enter to search"
+            : "e.g. Spacewar";
         NativeMethods.RefreshCueBanner(gameNameTextBox);
 
-        // DLC group and Epic results share the same vertical slot
-        dlcGroupBox.Visible = !epic;
-        epicResultsListBox.Visible = false; // hidden until search runs
+        // Clear game name and results when switching mode
+        gameNameTextBox.Clear();
+        epicResultsListBox.Visible = false;
+        ubisoftResultsListBox.Visible = false;
 
         if (!epic)
             epicSearchResults.Clear();
 
-        SetStatus(epic
-            ? "Enter a game name and click Search to find it on the Epic store."
-            : "Enter the App ID, then tab out to auto-detect the game name.");
+        if (!ubisoft)
+            ubisoftSearchResults.Clear();
+
+        SetStatus(showSearch
+            ? "Enter a game name and press Enter to search."
+            : "Enter the App ID and press Enter to search.");
     }
 
     private void OnPlatformChanged(object sender, EventArgs e) => UpdatePlatformMode();
@@ -68,7 +84,7 @@ internal sealed partial class TestGameForm : CustomForm
 
     private async void OnAppIdLeave(object sender, EventArgs e)
     {
-        if (IsEpicMode)
+        if (IsEpicMode || IsUbisoftMode)
             return;
         string appId = appIdTextBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(appId) || !int.TryParse(appId, out _))
@@ -107,7 +123,7 @@ internal sealed partial class TestGameForm : CustomForm
         }
         else
         {
-            SetStatus("Could not auto-detect name — enter it manually.");
+            SetStatus("Could not auto-detect name; enter it manually.");
         }
     }
 
@@ -157,53 +173,74 @@ internal sealed partial class TestGameForm : CustomForm
         SetStatus($"✓ Selected: {epicSearchResults[idx].name}");
     }
 
-    // ── DLC (Steam) ──────────────────────────────────────────────────────────
+    // ── Ubisoft: search by name ──────────────────────────────────────────────
 
-    private void OnAddDlc(object sender, EventArgs e)
+    private async void OnUbisoftSearch(object sender, EventArgs e)
     {
-        string dlcId = dlcIdTextBox.Text.Trim();
-        string dlcName = dlcNameTextBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(dlcId) || !int.TryParse(dlcId, out _))
+        string keyword = gameNameTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(keyword))
         {
-            SetStatus("DLC ID must be a valid integer.");
+            SetStatus("Enter a game name to search.");
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(dlcName))
+        SetStatus("Searching Ubisoft store . . .");
+        ubisoftSearchButton.Enabled = false;
+        generateButton.Enabled = false;
+        ubisoftResultsListBox.Items.Clear();
+        ubisoftResultsListBox.Visible = false;
+        ubisoftSearchResults.Clear();
+
+        List<(string id, string name)> results = await UbisoftStore.QuerySearch(keyword);
+
+        ubisoftSearchButton.Enabled = true;
+        generateButton.Enabled = true;
+
+        if (results.Count == 0)
         {
-            SetStatus("DLC Name cannot be empty.");
+            SetStatus("No results found. Try a different name.");
             return;
         }
 
-        if (dlcEntries.Any(d => d.id == dlcId))
-        {
-            SetStatus($"DLC ID {dlcId} is already in the list.");
-            return;
-        }
+        ubisoftSearchResults.AddRange(results);
+        foreach ((string _, string name) in results)
+            ubisoftResultsListBox.Items.Add(name);
 
-        dlcEntries.Add((dlcId, dlcName));
-        RefreshDlcList();
-        dlcIdTextBox.Clear();
-        dlcNameTextBox.Clear();
-        SetStatus($"Added DLC: {dlcId} = {dlcName}");
+        ubisoftResultsListBox.Visible = true;
+        SetStatus($"Found {results.Count} result(s). Select one to use it.");
     }
 
-    private void OnRemoveDlc(object sender, EventArgs e)
+    private void OnUbisoftResultSelected(object sender, EventArgs e)
     {
-        if (dlcListBox.SelectedIndex < 0)
+        int idx = ubisoftResultsListBox.SelectedIndex;
+        if (idx < 0 || idx >= ubisoftSearchResults.Count)
             return;
-        dlcEntries.RemoveAt(dlcListBox.SelectedIndex);
-        RefreshDlcList();
-        SetStatus("Removed selected DLC entry.");
+        gameNameTextBox.Text = ubisoftSearchResults[idx].name;
+        SetStatus($"✓ Selected: {ubisoftSearchResults[idx].name}");
     }
 
-    private void OnDlcListBoxSelectionChanged(object sender, EventArgs e) { }
+    // ── Enter key handlers ───────────────────────────────────────────────────
 
-    private void RefreshDlcList()
+    private void OnAppIdKeyDown(object sender, KeyEventArgs e)
     {
-        dlcListBox.Items.Clear();
-        foreach ((string id, string name) in dlcEntries)
-            dlcListBox.Items.Add($"{id} = {name}");
+        if (e.KeyCode == Keys.Enter && !IsEpicMode && !IsUbisoftMode)
+        {
+            e.SuppressKeyPress = true;
+            OnAppIdLeave(sender, e);
+        }
+    }
+
+    private void OnGameNameKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter)
+            return;
+        e.SuppressKeyPress = true;
+        if (IsEpicMode)
+            OnEpicSearch(sender, e);
+        else if (IsUbisoftMode)
+            OnUbisoftSearch(sender, e);
+        else
+            OnAppIdLeave(sender, e);
     }
 
     // ── Generate ────────────────────────────────────────────────────────────
@@ -212,6 +249,8 @@ internal sealed partial class TestGameForm : CustomForm
     {
         if (IsEpicMode)
             GenerateEpic();
+        else if (IsUbisoftMode)
+            GenerateUbisoft();
         else
             GenerateSteam();
     }
@@ -245,7 +284,7 @@ internal sealed partial class TestGameForm : CustomForm
             Directory.CreateDirectory(gameDir);
 
             string dllPath = Path.Combine(gameDir, "steam_api64.dll");
-            WriteSteamApiStub(dllPath);
+            WriteDllStub(dllPath);
 
             CreatedDirectories.Add(gameDir);
             SteamLibrary.TestGames.Add((appId, gameName, "public", 1, gameDir));
@@ -293,7 +332,7 @@ internal sealed partial class TestGameForm : CustomForm
 
             // Stub DLL so Epic DLL-directory scanning finds the game
             string dllPath = Path.Combine(gameDir, "EOSSDK-Win64-Shipping.dll");
-            WriteSteamApiStub(dllPath);
+            WriteDllStub(dllPath);
 
             CreatedDirectories.Add(gameDir);
 
@@ -313,20 +352,86 @@ internal sealed partial class TestGameForm : CustomForm
         }
     }
 
+    private void GenerateUbisoft()
+    {
+        string gameName = gameNameTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(gameName))
+        {
+            SetStatus("Game Name cannot be empty. Search for a game first.");
+            return;
+        }
+
+        // Use the selected search result ID if available, otherwise derive a stub
+        string gameId;
+        int selIdx = ubisoftResultsListBox.SelectedIndex;
+        if (selIdx >= 0 && selIdx < ubisoftSearchResults.Count)
+        {
+            gameId = ubisoftSearchResults[selIdx].id;
+            gameName = ubisoftSearchResults[selIdx].name;
+        }
+        else
+        {
+            gameId = $"test_{SanitizeName(gameName).ToLowerInvariant()}";
+        }
+
+        if (UbisoftLibrary.TestGames.Any(g => g.gameId == gameId))
+        {
+            SetStatus("An Ubisoft test game with that ID already exists.");
+            return;
+        }
+
+        try
+        {
+            string gameDir = Path.Combine(TestGamesRoot, $"ubisoft_{SanitizeName(gameId)}_{SanitizeName(gameName)}");
+            Directory.CreateDirectory(gameDir);
+
+            // Write stub DLLs for both Uplay R1 and R2 unlocker detection
+            WriteDllStub(Path.Combine(gameDir, "uplay_r1_loader.dll"));
+            WriteDllStub(Path.Combine(gameDir, "uplay_r1_loader64.dll"));
+            WriteDllStub(Path.Combine(gameDir, "upc_r2_loader.dll"));
+            WriteDllStub(Path.Combine(gameDir, "upc_r2_loader64.dll"));
+
+            CreatedDirectories.Add(gameDir);
+            UbisoftLibrary.TestGames.Add((gameId, gameName, gameDir));
+            ProgramData.Log($"[TestGame] Ubisoft: {gameName} ({gameId}) at {gameDir}");
+            SetStatus($"✓ Ubisoft test game '{gameName}' ({gameId}) generated. Press Rescan.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Error: {ex.Message}");
+        }
+    }
+
     // ── Clear / Close ────────────────────────────────────────────────────────
 
     private void OnClearAll(object sender, EventArgs e)
     {
         SteamLibrary.TestGames.Clear();
         EpicLibrary.TestManifests.Clear();
+        UbisoftLibrary.TestGames.Clear();
         foreach (string dir in CreatedDirectories)
             try { Directory.Delete(dir, true); } catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Cleanup deletion failed for {dir}: {ex.Message}"); }
         CreatedDirectories.Clear();
-        dlcEntries.Clear();
-        RefreshDlcList();
+        if (Directory.Exists(TestGamesRoot))
+            try { Directory.Delete(TestGamesRoot, true); } catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Cleanup failed to delete TestGames root: {ex.Message}"); }
+        // Remove any installed.json records for test games (e.g. if an unlocker was installed to a test game)
+        List<InstalledGameRecord> installedRecords = ProgramData.ReadInstalledGames();
+        int removed = installedRecords.RemoveAll(r => r.RootDirectory?.StartsWith(TestGamesRoot, StringComparison.OrdinalIgnoreCase) == true);
+        if (removed > 0)
+        {
+            ProgramData.WriteInstalledGames(installedRecords);
+            ProgramData.Log($"[TestGame] Removed {removed} stale installed-game record(s) from test games.");
+        }
+        // Remove any Selection entries under the TestGames root so the main game list updates immediately
+        foreach (Selection selection in Selection.All.Keys.ToHashSet().Where(s =>
+            s.RootDirectory?.StartsWith(TestGamesRoot, StringComparison.OrdinalIgnoreCase) == true))
+            selection.Remove();
         epicSearchResults.Clear();
         epicResultsListBox.Items.Clear();
         epicResultsListBox.Visible = false;
+        ubisoftSearchResults.Clear();
+        ubisoftResultsListBox.Items.Clear();
+        ubisoftResultsListBox.Visible = false;
         SetStatus("All test games cleared. Press Rescan in the main window.");
     }
 
@@ -337,8 +442,7 @@ internal sealed partial class TestGameForm : CustomForm
     private void SetStatus(string message)
     {
         statusLabel.Text = message;
-        statusLabel.ForeColor = message.StartsWith("✓", StringComparison.Ordinal)
-            ? System.Drawing.Color.Green
+        statusLabel.ForeColor = message.StartsWith('✓') ? System.Drawing.Color.Green
             : System.Drawing.Color.FromArgb(212, 212, 212);
     }
 
@@ -348,7 +452,7 @@ internal sealed partial class TestGameForm : CustomForm
         return new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
     }
 
-    private static void WriteSteamApiStub(string path)
+    private static void WriteDllStub(string path)
     {
         byte[] mzStub =
         [
