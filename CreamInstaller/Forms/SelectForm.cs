@@ -32,6 +32,8 @@ internal sealed partial class SelectForm : CustomForm
 
     private readonly ConcurrentDictionary<string, string> remainingGames = new();
 
+    private bool initialLoad = true;
+
     private List<(Platform platform, string id, string name)> programsToScan;
 
     private SelectForm()
@@ -468,7 +470,7 @@ internal sealed partial class SelectForm : CustomForm
                     HashSet<string> dllDirectories = await directory.GetDllDirectoriesFromGameDirectory(Platform.Epic);
                     if (dllDirectories is null)
                     {
-                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no EOSSDK-Win32-Shipping.dll or EOSSDK-Win64-Shipping.dll found — game directory may be incomplete");
+                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no EOSSDK-Win32-Shipping.dll or EOSSDK-Win64-Shipping.dll found. Game directory may be incomplete");
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -685,7 +687,15 @@ internal sealed partial class SelectForm : CustomForm
             ProgramData.ClearLog();
             ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         bool scan = forceScan;
-        if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices))
+        // On initial launch, if the user has games with installed DLC unlockers, don't re-display the scan window.
+        bool skipScanDialog = initialLoad && programsToScan is null && ProgramData.ReadInstalledGames() is { Count: > 0 };
+        initialLoad = false;
+        if (skipScanDialog)
+        {
+            ProgramData.Log("[Scan] Found previously installed DLC unlockers; skipping scan window on initial launch");
+            progressLabel.Text = "Loading previously installed DLC unlockers from last session...";
+        }
+        if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices) && !skipScanDialog)
         {
             List<(Platform platform, string id, string name, bool alreadySelected)> gameChoices = new();
             if (ParadoxLauncher.InstallPath.DirectoryExists())
