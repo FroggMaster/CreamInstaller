@@ -42,6 +42,21 @@ internal static class ThemeManager
     private static readonly Color DefaultBadgeBackHighlight = ColorTranslator.FromHtml("#00783C");
     private static readonly Color DefaultBadgeBorder = ColorTranslator.FromHtml("#00B45A");
 
+    // ScreamAPI badge: Epic Games black
+    private static readonly Color ScreamAPIBadgeBack = ColorTranslator.FromHtml("#131313");
+    private static readonly Color ScreamAPIBadgeBackHighlight = ColorTranslator.FromHtml("#0A0A0A");
+    private static readonly Color ScreamAPIBadgeBorder = ColorTranslator.FromHtml("#2A2A2A");
+
+    // Koaloader badge: koala gray
+    private static readonly Color KoaloaderBadgeBack = ColorTranslator.FromHtml("#8C8C8C");
+    private static readonly Color KoaloaderBadgeBackHighlight = ColorTranslator.FromHtml("#7A7A7A");
+    private static readonly Color KoaloaderBadgeBorder = ColorTranslator.FromHtml("#A8A8A8");
+
+    // Uplay badge: light blue
+    private static readonly Color UplayBadgeBack = ColorTranslator.FromHtml("#64B5F6");
+    private static readonly Color UplayBadgeBackHighlight = ColorTranslator.FromHtml("#42A5F5");
+    private static readonly Color UplayBadgeBorder = ColorTranslator.FromHtml("#90CAF9");
+
     // ----------------------------
     // Light mode colors (system defaults)
     // ----------------------------
@@ -97,6 +112,21 @@ internal static class ThemeManager
     internal static Color DefaultBadgeBackgroundColor => DefaultBadgeBack;
     internal static Color DefaultBadgeBackgroundHighlightColor => DefaultBadgeBackHighlight;
     internal static Color DefaultBadgeBorderColor => DefaultBadgeBorder;
+
+    // ScreamAPI badge colors
+    internal static Color ScreamAPIBadgeBackgroundColor => ScreamAPIBadgeBack;
+    internal static Color ScreamAPIBadgeBackgroundHighlightColor => ScreamAPIBadgeBackHighlight;
+    internal static Color ScreamAPIBadgeBorderColor => ScreamAPIBadgeBorder;
+
+    // Koaloader badge colors
+    internal static Color KoaloaderBadgeBackgroundColor => KoaloaderBadgeBack;
+    internal static Color KoaloaderBadgeBackgroundHighlightColor => KoaloaderBadgeBackHighlight;
+    internal static Color KoaloaderBadgeBorderColor => KoaloaderBadgeBorder;
+
+    // Uplay badge colors (shared by R1 and R2)
+    internal static Color UplayBadgeBackgroundColor => UplayBadgeBack;
+    internal static Color UplayBadgeBackgroundHighlightColor => UplayBadgeBackHighlight;
+    internal static Color UplayBadgeBorderColor => UplayBadgeBorder;
 
     // -----------------------------------------------------------------
     // Public / Internal API

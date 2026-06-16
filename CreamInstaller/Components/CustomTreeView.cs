@@ -292,6 +292,25 @@ internal sealed class CustomTreeView : TreeView
                                 : ThemeManager.CreamAPIBadgeBackgroundColor;
                             badgeBorder = ThemeManager.CreamAPIBadgeBorderColor;
                             break;
+                        case InstalledUnlocker.ScreamAPI:
+                            badgeBack = highlighted 
+                                ? ThemeManager.ScreamAPIBadgeBackgroundHighlightColor 
+                                : ThemeManager.ScreamAPIBadgeBackgroundColor;
+                            badgeBorder = ThemeManager.ScreamAPIBadgeBorderColor;
+                            break;
+                        case InstalledUnlocker.Koaloader:
+                            badgeBack = highlighted 
+                                ? ThemeManager.KoaloaderBadgeBackgroundHighlightColor 
+                                : ThemeManager.KoaloaderBadgeBackgroundColor;
+                            badgeBorder = ThemeManager.KoaloaderBadgeBorderColor;
+                            break;
+                        case InstalledUnlocker.UplayR1:
+                        case InstalledUnlocker.UplayR2:
+                            badgeBack = highlighted 
+                                ? ThemeManager.UplayBadgeBackgroundHighlightColor 
+                                : ThemeManager.UplayBadgeBackgroundColor;
+                            badgeBorder = ThemeManager.UplayBadgeBorderColor;
+                            break;
                         default:
                             badgeBack = highlighted 
                                 ? ThemeManager.DefaultBadgeBackgroundHighlightColor 
