@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using CreamInstaller;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace CreamInstaller.Utility;
 
@@ -31,10 +32,12 @@ internal sealed class InstalledDlcRecord
 
 internal sealed class InstalledGameRecord
 {
+    [JsonConverter(typeof(StringEnumConverter))]
     public Platform Platform { get; set; }
     public string Id { get; set; }
     public string Name { get; set; }
     public string RootDirectory { get; set; }
+    [JsonConverter(typeof(StringEnumConverter))]
     public InstalledUnlocker Unlocker { get; set; }
     public bool UseProxy { get; set; }
 
