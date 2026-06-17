@@ -41,7 +41,7 @@ internal static partial class SteamCMD
             : $"+login anonymous +app_info_print {appId} +quit";
 
     private static async Task<string> Run(string appId)
-        => await Task.Run(() =>
+        => await Task.Run(async () =>
         {
             while (true)
             {
@@ -72,10 +72,14 @@ internal static partial class SteamCMD
                         StandardErrorEncoding = Encoding.UTF8
                     };
                     Process process = Process.Start(processStartInfo);
+                    // Drain stderr asynchronously to prevent pipe deadlock
+                    process.BeginErrorReadLine();
                     StringBuilder output = new();
                     StringBuilder appInfo = new();
                     bool appInfoStarted = false;
                     DateTime lastOutput = DateTime.UtcNow;
+                    const int bufferSize = 4096;
+                    char[] buffer = new char[bufferSize];
                     while (process != null)
                     {
                         if (Program.Canceled)
@@ -85,21 +89,30 @@ internal static partial class SteamCMD
                             break;
                         }
 
-                        int c = process.StandardOutput.Read();
-                        if (c != -1)
+                        // Buffered read: ReadAsync returns up to bufferSize chars per call,
+                        // with Task.WhenAny providing a 5s idle timeout
+                        Task<int> readTask = process.StandardOutput.ReadAsync(buffer, 0, bufferSize);
+                        if (await Task.WhenAny(readTask, Task.Delay(5000)) == readTask)
                         {
-                            lastOutput = DateTime.UtcNow;
-                            char ch = (char)c;
-                            if (ch == '{')
-                                appInfoStarted = true;
-                            _ = appInfoStarted ? appInfo.Append(ch) : output.Append(ch);
+                            int charsRead = await readTask;
+                            if (charsRead > 0)
+                            {
+                                lastOutput = DateTime.UtcNow;
+                                for (int j = 0; j < charsRead; j++)
+                                {
+                                    char ch = buffer[j];
+                                    if (ch == '{')
+                                        appInfoStarted = true;
+                                    _ = appInfoStarted ? appInfo.Append(ch) : output.Append(ch);
+                                }
+                                continue;
+                            }
+                            // charsRead == 0: stream closed, process exited naturally
                         }
+                        // else: timeout — 5 seconds without any output
 
-                        DateTime now = DateTime.UtcNow;
-                        TimeSpan timeDiff = now - lastOutput;
-                        if (!(timeDiff.TotalSeconds > 0.1))
-                            continue;
-                        process.Kill(true);
+                        if (!process.HasExited)
+                            process.Kill(true);
                         process.Close();
                         if (appId != null &&
                             output.ToString().Contains($"No app info for AppID {appId} found, requesting..."))
@@ -107,6 +120,7 @@ internal static partial class SteamCMD
                             AttemptCount[appId]++;
                             processStartInfo.Arguments = GetArguments(appId);
                             process = Process.Start(processStartInfo);
+                            process.BeginErrorReadLine();
                             appInfoStarted = false;
                             _ = output.Clear();
                             _ = appInfo.Clear();
@@ -119,7 +133,7 @@ internal static partial class SteamCMD
                     return appInfo.ToString();
                 }
 
-                Thread.Sleep(200);
+                await Task.Delay(200);
             }
         });
 

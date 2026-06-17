@@ -66,7 +66,7 @@ internal static class HttpClientManager
         }
     }
 
-    internal static async Task<string> EnsureGet(string url)
+    internal static async Task<(string content, bool permanentFailure)> EnsureGet(string url)
     {
         try
         {
@@ -75,37 +75,40 @@ internal static class HttpClientManager
                 await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             if (response.StatusCode is HttpStatusCode.NotModified &&
                 HttpContentCache.TryGetValue(url, out string content))
-                return content;
+                return (content, false);
             _ = response.EnsureSuccessStatusCode();
             content = await response.Content.ReadAsStringAsync();
             HttpContentCache[url] = content;
-            return content;
+            return (content, false);
         }
         catch (HttpRequestException e)
         {
-            if (e.StatusCode != HttpStatusCode.TooManyRequests)
+            if (e.StatusCode is not null)
             {
-                string statusInfo = e.StatusCode.HasValue ? $" (HTTP {(int)e.StatusCode.Value})" : "";
-                ProgramData.LogSteam($"[SteamAPI] Get request failed to {url}{statusInfo}: {e.Message}");
-                return null;
+                int code = (int)e.StatusCode.Value;
+                bool permanent = code is >= 400 and < 500 and not 429;
+                string label = permanent ? "Permanent failure" : code == 429 ? "Too many requests" : "Get request failed";
+                string statusInfo = $" (HTTP {code}{(permanent ? " - Permanent" : code == 429 ? " - Rate Limited" : "")})";
+                ProgramData.LogSteam($"[SteamAPI] {label} to {url}{statusInfo}: {e.Message}");
+                return (null, permanent);
             }
-            ProgramData.LogSteam($"[SteamAPI] Too many requests to {url} (HTTP 429 - Rate Limited)");
-            return null;
+            ProgramData.LogSteam($"[SteamAPI] Get request failed to {url}: {e.Message}");
+            return (null, false);
         }
         catch (TaskCanceledException)
         {
             ProgramData.LogSteam("[SteamAPI] Get request timed out for " + url);
-            return null;
+            return (null, false);
         }
         catch (OperationCanceledException)
         {
             ProgramData.LogSteam("[SteamAPI] Get request was cancelled for " + url);
-            return null;
+            return (null, false);
         }
         catch (Exception e)
         {
             ProgramData.LogSteam("[SteamAPI] Get request failed to " + url + ": " + e.Message);
-            return null;
+            return (null, false);
         }
     }
 

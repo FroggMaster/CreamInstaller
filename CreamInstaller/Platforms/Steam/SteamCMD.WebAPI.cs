@@ -21,8 +21,15 @@ internal static partial class SteamCMD
             bool cachedExists = cacheFile.FileExists();
             if (!cachedExists || ProgramData.CheckCooldown(appId + ".cmd", isDlc ? CooldownDlc : CooldownGame))
             {
-                string response =
+                (string response, bool permanentFailure) =
                     await HttpClientManager.EnsureGet($"https://api.steamcmd.net/v1/info/{appId}");
+                if (permanentFailure)
+                {
+                    ProgramData.LogSteam("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " +
+                                            appId + (isDlc ? " (DLC)" : "") +
+                                            ": Permanent failure, aborting retries");
+                    return null;
+                }
                 if (response is not null)
                 {
                     try
@@ -83,13 +90,14 @@ internal static partial class SteamCMD
 
             if (isDlc)
                 break;
-            if (attempts > 10)
+            if (attempts > 3)
             {
-                ProgramData.LogSteam("[SteamAPI] Failed to query SteamCMD web API after 10 tries: " + appId);
+                ProgramData.LogSteam("[SteamAPI] Failed to query SteamCMD web API after 3 tries: " + appId);
                 break;
             }
 
-            Thread.Sleep(1000);
+            int delayMs = Math.Min(1000 * (int)Math.Pow(2, attempts - 1), 10000);
+            await Task.Delay(delayMs + Random.Shared.Next(0, 1000));
         }
 
         return null;

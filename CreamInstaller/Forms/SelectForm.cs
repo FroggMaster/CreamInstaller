@@ -177,6 +177,7 @@ internal sealed partial class SelectForm : CustomForm
         }
 
         int steamGamesToCheck;
+        TaskCompletionSource gameQueriesDone = new();
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Steam))
         {
             Stopwatch steamLibTimer = Stopwatch.StartNew();
@@ -244,6 +245,8 @@ internal sealed partial class SelectForm : CustomForm
                         return;
                     StoreAppData storeAppData = await SteamStore.QueryStoreAPI(appId);
                     _ = Interlocked.Decrement(ref steamGamesToCheck);
+                    if (Volatile.Read(ref steamGamesToCheck) == 0)
+                        gameQueriesDone.TrySetResult();
                     CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 16000);
                     if (storeAppData is null && cmdAppData is null)
                     {
@@ -273,9 +276,12 @@ internal sealed partial class SelectForm : CustomForm
                             {
                                 if (Program.Canceled)
                                     return;
-                                do // give games steam store api limit priority
-                                    Thread.Sleep(200);
-                                while (!Program.Canceled && steamGamesToCheck > 0);
+                                while (!Program.Canceled)
+                                {
+                                    Task completed = await Task.WhenAny(gameQueriesDone.Task, Task.Delay(250));
+                                    if (completed == gameQueriesDone.Task)
+                                        break;
+                                }
                                 if (Program.Canceled)
                                     return;
                                 string fullGameAppId = null;
@@ -374,7 +380,7 @@ internal sealed partial class SelectForm : CustomForm
                         await task;
                     }
 
-                    steamGamesToCheck = 0;
+                    gameQueriesDone.TrySetResult();
                     if (dlc.IsEmpty)
                     {
                         ProgramData.Log($"[Steam] Skipping {name} ({appId}): no DLCs remained after processing");
@@ -653,7 +659,7 @@ internal sealed partial class SelectForm : CustomForm
         }
         gameDlcTimer.Stop();
 
-        steamGamesToCheck = 0;
+        gameQueriesDone.TrySetResult();
 
         scanTimer.Stop();
         ProgramData.Log($"[Scan] Library scan total: {totalLibraryScanSeconds:F1}s across all platforms");

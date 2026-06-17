@@ -55,8 +55,14 @@ internal static class SteamStore
             bool cachedExists = cacheFile.FileExists();
             if (!cachedExists || ProgramData.CheckCooldown(appId, isDlc ? CooldownDlc : CooldownGame))
             {
-                string response =
+                (string response, bool permanentFailure) =
                     await HttpClientManager.EnsureGet($"https://store.steampowered.com/api/appdetails?appids={appId}");
+                if (permanentFailure)
+                {
+                    ProgramData.LogSteam(
+                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Permanent failure, aborting retries", parentGameName, parentGameAppId));
+                    return null;
+                }
                 if (response is not null)
                 {
                     Dictionary<string, JToken> apps =
@@ -133,14 +139,15 @@ internal static class SteamStore
 
             if (isDlc)
                 break;
-            if (attempts > 10)
+            if (attempts > 3)
             {
                 ProgramData.LogSteam(
-                    "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Maximum retry attempts exceeded (10)", parentGameName, parentGameAppId));
+                    "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Maximum retry attempts exceeded (3)", parentGameName, parentGameAppId));
                 break;
             }
 
-            Thread.Sleep(1000);
+            int delayMs = Math.Min(1000 * (int)Math.Pow(2, attempts - 1), 10000);
+            await Task.Delay(delayMs + Random.Shared.Next(0, 1000));
         }
 
         return null;

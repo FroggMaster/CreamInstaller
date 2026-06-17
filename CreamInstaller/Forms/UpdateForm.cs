@@ -62,7 +62,7 @@ internal sealed partial class UpdateForm : CustomForm
             Version currentVersion = new(Program.Version);
 #endif
             List<ProgramRelease> releases = null;
-            string response =
+            (string response, _) =
                 await HttpClientManager.EnsureGet(
                     $"https://api.github.com/repos/{Program.RepositoryOwner}/{Program.RepositoryName}/releases");
             if (response is not null)
