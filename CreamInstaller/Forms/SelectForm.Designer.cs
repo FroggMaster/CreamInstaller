@@ -278,7 +278,7 @@ namespace CreamInstaller.Forms
             // progressBar
             // 
             progressBar.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            progressBar.Location = new System.Drawing.Point(12, 344);
+            progressBar.Location = new System.Drawing.Point(12, 352);
             progressBar.Name = "progressBar";
             progressBar.Size = new System.Drawing.Size(610, 23);
             progressBar.TabIndex = 9;
@@ -288,7 +288,7 @@ namespace CreamInstaller.Forms
             progressLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             progressLabel.Location = new System.Drawing.Point(12, 302);
             progressLabel.Name = "progressLabel";
-            progressLabel.Size = new System.Drawing.Size(610, 15);
+            progressLabel.Size = new System.Drawing.Size(610, 23);
             progressLabel.TabIndex = 10;
             progressLabel.Text = "Gathering and caching your applicable games and their DLCs . . . 0%";
             // 
@@ -326,7 +326,7 @@ namespace CreamInstaller.Forms
             // 
             progressLabelGames.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             progressLabelGames.Font = new System.Drawing.Font("Segoe UI", 7F);
-            progressLabelGames.Location = new System.Drawing.Point(12, 317);
+            progressLabelGames.Location = new System.Drawing.Point(12, 325);
             progressLabelGames.Name = "progressLabelGames";
             progressLabelGames.Size = new System.Drawing.Size(610, 12);
             progressLabelGames.TabIndex = 11;
@@ -336,7 +336,7 @@ namespace CreamInstaller.Forms
             // 
             progressLabelDLCs.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             progressLabelDLCs.Font = new System.Drawing.Font("Segoe UI", 7F);
-            progressLabelDLCs.Location = new System.Drawing.Point(12, 329);
+            progressLabelDLCs.Location = new System.Drawing.Point(12, 337);
             progressLabelDLCs.Name = "progressLabelDLCs";
             progressLabelDLCs.Size = new System.Drawing.Size(610, 12);
             progressLabelDLCs.TabIndex = 12;
