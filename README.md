@@ -28,10 +28,13 @@ games and DLCs the user selects; however, through the use of **right-click conte
 * Automatic uninstallation of DLLs and configurations for CreamAPI, Koaloader, SmokeAPI, ScreamAPI, Uplay R1 Unlocker and Uplay R2 Unlocker.
 * Automatic reparation of the Paradox Launcher (and manually via the right-click context menu "Repair" option). *For when the launcher updates whilst you have CreamAPI, SmokeAPI or ScreamAPI installed to it.*
 ---
-<details>
-  <summary><strong>Continuous Integration (CI) Builds</strong></summary>
+<a name="ci-builds"></a>
+#### Continuous Integration (CI) Builds
 
-  - CreamInstaller is automatically built and tested using GitHub Actions on every push to the **main** branch. You can view all recent CI build runs by clicking the status badge at the top or here: [![CI Build](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml/badge.svg)](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml)
+<details>
+<summary>Expand for more info on CI Builds</summary>
+
+- CreamInstaller is automatically built and tested using GitHub Actions on every push to the **main** branch. You can view all recent CI build runs by clicking the status badge at the top or here: [![CI Build](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml/badge.svg)](https://github.com/FroggMaster/CreamInstaller/actions/workflows/ci-builds.yml)
 
 </details>
 
@@ -61,6 +64,9 @@ If the program doesn't seem to launch, try downloading and installing [.NET Desk
 
 ### The program won't launch
 
+<details>
+<summary>Click to expand for troubleshooting steps</summary>
+
 Check the following in order:
 
 1. **System requirements**: Windows 10+ 64-bit only ([.NET 8 Supported OS List](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md))
@@ -70,25 +76,33 @@ Check the following in order:
 
 If none of these work, your system may not support .NET 8 or may have underlying system issues.
 
+</details>
+
 ---
 
 ### DLCs aren't unlocking in my game
 
-CreamInstaller only installs DLC **unlockers** — it does **not** guarantee they will work for every game.
+<details>
+<summary>Click to expand for troubleshooting steps</summary>
 
-If the program successfully installs the unlockers but DLCs still aren’t unlocking, this is **not an issue with CreamInstaller itself** and isn’t something I can directly fix. DLC Unlocker compatibility and behavior vary from game to game.
+CreamInstaller only installs DLC **unlockers** it does **not** guarantee they will work for every game.
+
+If the program successfully installs the unlockers but DLCs still aren't unlocking, this is **not an issue with CreamInstaller itself** and isn't something I can directly fix. DLC Unlocker compatibility and behavior vary from game to game.
 
 **DLC Files:** _This program does **not** automatically download or install actual DLC files for you. As the name implies, it is only a *DLC unlocker installer*. If the game you wish to unlock DLC for does not already include the DLC files (which is the case for many games), you must manually obtain and install those files yourself. This includes manually installing new DLCs and manually updating or reinstalling previously installed DLCs after game updates._
 
-If you’re having trouble, try the following:
+If you're having trouble, try the following:
 
 - Review the [Usage section](https://github.com/FroggMaster/CreamInstaller#usage) for proper setup  
 - Visit the [CS.RIN.RU forum](https://cs.rin.ru/forum/viewforum.php?f=10) for game-specific troubleshooting and compatibility info
 
+</details>
 
 ---
 
 ### My antivirus detects CreamInstaller as a virus (False Positives)
+
+<a name="false-positive-antivirus-detections"></a>
 
 **These are false positives.** See the detailed explanation below:
 <details>
@@ -100,9 +114,9 @@ CreamInstaller is **not a virus**, but it's commonly flagged because of its func
 
 | Reason | Explanation |
 |--------|-------------|
-| **DLL modification** | Replaces game DLLs to unlock content — behavior similar to some malware |
+| **DLL modification** | Replaces game DLLs to unlock content behavior similar to some malware |
 | **Process hooking** | Embedded DLC unlockers interact with Steam/Epic/Ubisoft/game processes |
-| **Compressed executable** | Single-file executables are often associated with packed malware |
+| **Compressed executable** | Single file executables are often associated with packed malware |
 | **Not code-signed** | No Extended Validation certificate ($300–500/year) means lower AV reputation (**I will not be paying for this**) |
 | **Misc** | Game modding tools frequently trigger heuristic detections regardless of intent |
 
@@ -111,13 +125,14 @@ CreamInstaller is **not a virus**, but it's commonly flagged because of its func
 | Detection Name | What It Usually Means / Why It’s a False Positive |
 |----------------------------------------|---------------------------------------------------|
 | Mamson.A!ac | Generic heuristic detection; often triggered by packed or obfuscated executables |
-| Phonzy.A!ml | Machine-learning detection; flags unusual behavior patterns |
+| Phonzy.A!ml | Machine learning detection; flags unusual behavior patterns |
 | Wacatac.H!ml | Extremely common false positive; triggered by compressed or self-updating programs |
 | Malgent!MSR | Generic Microsoft label for “suspicious behavior,” not confirmed malware |
 | Tiggre!rfn | Heuristic runtime detection often seen with tools that hook processes |
-| UDS:DangerousObject.Multi.Generic | Reputation-based detection for tools that *can* be abused |
+| UDS:DangerousObject.Multi.Generic | Reputation based detection for tools that *can* be abused |
 | Trojan.Win64.Agent | Very broad category; common false positive for unsigned binaries |
 | Trojan.Win64.Agent.oa!s1 | Cloud/AI heuristic variant of the above |
+| Backdoor.Agent | Heuristic detection for applications that download remote content, extract archives, spawn processes, and self-replace. |
 
 **See also:** [Archived issue #40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40)
 
@@ -131,6 +146,95 @@ CreamInstaller is **100% open source**:
 
 </details>
 
+---
+
+### How do I find a working proxy DLL for my game?
+
+<details>
+<summary>Click to expand for full walkthrough</summary>
+
+If CreamInstaller's default proxy mode (winmm.dll) doesn't work for your game, you may need to proxy a different DLL one that the game already attempts to load on its own. The easiest way to discover which DLLs your game tries to load is **Process Monitor (ProcMon)** from Microsoft Sysinternals.
+
+This method reveals:
+
+- Which DLL names the game attempts to load.
+- The exact directories being searched.
+- Which DLLs are missing from those locations.
+- The right DLL name to select in CreamInstaller's proxy mode.
+
+#### Prerequisites
+
+Download and run **Process Monitor (ProcMon)** from Microsoft Sysinternals. Running ProcMon **as Administrator** is required to capture all process and file events.
+
+#### Step 1: Launch Process Monitor
+
+Start ProcMon. Clear any pre-existing events using **Ctrl + X** or **Edit → Clear Display**.
+
+#### Step 2: Configure Filters
+
+Open the filter dialog with **Ctrl + L** and add the following filters:
+
+| Column | Relation | Value | Action |
+|--------|----------|-------|--------|
+| Process Name | contains | `<GameName>` | Include |
+| Result | contains | NAME NOT FOUND | Include |
+| Path | ends with | dll | Include |
+
+Replace `<GameName>` with part of the game executable name e.g., `Risk of Rain` for `Risk of Rain 2.exe`.
+<img width="1454" height="432" alt="image" src="https://github.com/user-attachments/assets/39aeef36-207f-40fa-bdd9-2f7a34c1cdda" />
+
+#### Step 3: Start Capturing
+
+1. Click the capture event button (Play button with pause symbol or **Ctrl + E**).
+2. Launch the game.
+3. Wait until startup completes or the main menu appears.
+
+ProcMon will record every DLL load attempt matching your filters.
+
+#### Step 4: Examine Missing DLLs
+
+Look for entries with:
+- `Result: NAME NOT FOUND`
+- A path within the game's installation directory
+
+These entries indicate the game searched for those DLLs but did not find them exactly the kind of load attempt a proxy DLL can hook into.
+
+Example output:
+
+```
+GameFolder\version.dll
+GameFolder\winmm.dll
+GameFolder\winhttp.dll
+```
+
+#### Step 5: Identify Your Proxy DLL Candidate
+
+The recorded paths reveal exactly where the game expects each DLL to exist and which DLL names it looks for.
+
+If ProcMon shows:
+
+```
+C:\Games\ExampleGame\version.dll   NAME NOT FOUND
+```
+Then the game attempted to load `version.dll` from its own directory. **That DLL name is your proxy candidate** select it in CreamInstaller's "Proxy DLL" dropdown when installing.
+The below example image shows all the proxy DLL names available for Risk of Rain 2. 
+<img width="1199" height="331" alt="image" src="https://github.com/user-attachments/assets/724f3e46-1d51-4438-bca4-af8b38f70c7f" />
+
+#### Common Proxy DLLs Found in Games
+
+| DLL | Commonly Used By |
+|-----|-----------------|
+| `winmm.dll` | Many Steam games CreamInstaller's default |
+| `version.dll` | Unreal Engine 4/5 games Koaloader's default |
+| `winhttp.dll` | Games and applications that use Windows HTTP Services (networking, authentication, telemetry, updates) |
+
+The right choice entirely depends on what your specific game attempts to load use the ProcMon steps above to find it.
+
+#### Next Steps
+
+Once you've identified a candidate DLL name via ProcMon, re-run CreamInstaller, select that game, check the **Proxy** option, and pick that same DLL name from the dropdown. CreamInstaller will handle the rest naming the unlocker DLL correctly and placing it in the right directory.
+
+</details>
 
 ---
 ##### Bugs/Crashes/Issues:
@@ -141,7 +245,5 @@ For reliable and quick assistance, all bugs, crashes and other issues should be 
 ---
 
 ##### More Information:
-* SteamCMD installation and appinfo cache can be found at **C:\ProgramData\CreamInstaller**.
-* The program automatically and very quickly updates from [GitHub](https://github.com/FroggMaster/CreamInstaller) by choice of the user through a dialog on startup.
-* The program source and other information can be found on [GitHub](https://github.com/FroggMaster/CreamInstaller).
+* SteamCMD installation, appinfo cache and logs can be found at **C:\ProgramData\CreamInstaller**.
 * Credit to [Mattahan](https://www.mattahan.com) for the program icon.
