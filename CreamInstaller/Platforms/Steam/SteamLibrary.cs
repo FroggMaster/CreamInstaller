@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,6 +31,7 @@ internal static class SteamLibrary
         GetGames()
         => await Task.Run(async () =>
         {
+            Stopwatch timer = Stopwatch.StartNew();
             List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
             HashSet<string> gameLibraryDirectories = await GetLibraryDirectories();
             ProgramData.Log($"[Steam] Found {gameLibraryDirectories.Count} library folder(s).");
@@ -49,7 +51,8 @@ internal static class SteamLibrary
                 games.Add(testGame);
             if (TestGames.Count > 0)
                 ProgramData.Log($"[Steam] Injected {TestGames.Count} test game(s).");
-            ProgramData.Log($"[Steam] Total games detected: {games.Count}");
+            timer.Stop();
+            ProgramData.Log($"[Steam] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}");
             return games;
         });
 

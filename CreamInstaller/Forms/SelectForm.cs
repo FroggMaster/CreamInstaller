@@ -151,6 +151,8 @@ internal sealed partial class SelectForm : CustomForm
         Stopwatch scanTimer = Stopwatch.StartNew();
         double totalLibraryScanSeconds = 0;
         int totalGamesDetected = 0;
+        int steamCount = 0, epicCount = 0, ubisoftCount = 0;
+        double steamSeconds = 0, epicSeconds = 0, ubiSeconds = 0;
         if (!uninstallAll && programsToScan is { Count: > 0 })
         {
             string platforms = string.Join(", ", programsToScan.Select(p => p.platform.ToString()).Distinct());
@@ -184,9 +186,11 @@ internal sealed partial class SelectForm : CustomForm
             List<(string appId, string name, string branch, int buildId, string gameDirectory)> steamGames =
                 await SteamLibrary.GetGames();
             steamLibTimer.Stop();
-            totalLibraryScanSeconds += steamLibTimer.Elapsed.TotalSeconds;
-            ProgramData.Log($"[Steam] Scanned library: {steamGames.Count} games in {steamLibTimer.Elapsed.TotalSeconds:F1}s");
-            totalGamesDetected += steamGames.Count;
+            steamCount = steamGames.Count;
+            steamSeconds = steamLibTimer.Elapsed.TotalSeconds;
+            totalLibraryScanSeconds += steamSeconds;
+            ProgramData.Log($"[Steam] Scanned library: {steamCount} games in {steamSeconds:F1}s");
+            totalGamesDetected += steamCount;
             int steamToProcess = 0, steamBlocked = 0, steamNotSelected = 0;
             steamGamesToCheck = steamGames.Count;
             foreach ((string appId, string name, string branch, int buildId, string gameDirectory) in steamGames)
@@ -441,9 +445,11 @@ internal sealed partial class SelectForm : CustomForm
             Stopwatch epicLibTimer = Stopwatch.StartNew();
             List<Manifest> epicGames = await EpicLibrary.GetGames();
             epicLibTimer.Stop();
-            totalLibraryScanSeconds += epicLibTimer.Elapsed.TotalSeconds;
-            ProgramData.Log($"[Epic] Scanned library: {epicGames.Count} games in {epicLibTimer.Elapsed.TotalSeconds:F1}s");
-            totalGamesDetected += epicGames.Count;
+            epicCount = epicGames.Count;
+            epicSeconds = epicLibTimer.Elapsed.TotalSeconds;
+            totalLibraryScanSeconds += epicSeconds;
+            ProgramData.Log($"[Epic] Scanned library: {epicCount} games in {epicSeconds:F1}s");
+            totalGamesDetected += epicCount;
             int epicToProcess = 0, epicBlocked = 0, epicNotSelected = 0;
             foreach (Manifest manifest in epicGames)
             {
@@ -577,9 +583,11 @@ internal sealed partial class SelectForm : CustomForm
             Stopwatch ubiLibTimer = Stopwatch.StartNew();
             List<(string gameId, string name, string gameDirectory)> ubisoftGames = await UbisoftLibrary.GetGames();
             ubiLibTimer.Stop();
-            totalLibraryScanSeconds += ubiLibTimer.Elapsed.TotalSeconds;
-            ProgramData.Log($"[Ubisoft] Scanned library: {ubisoftGames.Count} games in {ubiLibTimer.Elapsed.TotalSeconds:F1}s");
-            totalGamesDetected += ubisoftGames.Count;
+            ubisoftCount = ubisoftGames.Count;
+            ubiSeconds = ubiLibTimer.Elapsed.TotalSeconds;
+            totalLibraryScanSeconds += ubiSeconds;
+            ProgramData.Log($"[Ubisoft] Scanned library: {ubisoftCount} games in {ubiSeconds:F1}s");
+            totalGamesDetected += ubisoftCount;
             int ubiToProcess = 0, ubiBlocked = 0, ubiNotSelected = 0;
             foreach ((string gameId, string name, string gameDirectory) in ubisoftGames)
             {
@@ -648,8 +656,6 @@ internal sealed partial class SelectForm : CustomForm
                 ProgramData.Log($"[Ubisoft] Will process {ubiToProcess} selected game(s) ({ubiBlocked} blocked, {ubiNotSelected} not in current selection)");
         }
 
-        if (!uninstallAll)
-            ProgramData.Log($"[Scan] Total games detected across all libraries: {totalGamesDetected}");
         Stopwatch gameDlcTimer = Stopwatch.StartNew();
         foreach (Task task in appTasks)
         {
@@ -662,7 +668,15 @@ internal sealed partial class SelectForm : CustomForm
         gameQueriesDone.TrySetResult();
 
         scanTimer.Stop();
-        ProgramData.Log($"[Scan] Library scan total: {totalLibraryScanSeconds:F1}s across all platforms");
+        if (!uninstallAll)
+        {
+            if (steamCount > 0)
+                ProgramData.Log($"[Steam] Total games detected: {steamCount} in {(steamSeconds >= 60 ? $"{steamSeconds / 60:F1} minutes" : $"{steamSeconds:F1}s")}");
+            if (epicCount > 0)
+                ProgramData.Log($"[Epic] Total games detected: {epicCount} in {(epicSeconds >= 60 ? $"{epicSeconds / 60:F1} minutes" : $"{epicSeconds:F1}s")}");
+            if (ubisoftCount > 0)
+                ProgramData.Log($"[Ubisoft] Total games detected: {ubisoftCount} in {(ubiSeconds >= 60 ? $"{ubiSeconds / 60:F1} minutes" : $"{ubiSeconds:F1}s")}");
+        }
         ProgramData.Log($"[Scan] Game and DLC data gathering: {gameDlcTimer.Elapsed.TotalSeconds:F1}s");
         ProgramData.Log($"[Scan] Scan completed in {scanTimer.Elapsed.TotalSeconds:F1}s");
     }
@@ -703,6 +717,7 @@ internal sealed partial class SelectForm : CustomForm
         }
         if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices) && !skipScanDialog)
         {
+            Stopwatch selectionTimer = Stopwatch.StartNew();
             List<(Platform platform, string id, string name, bool alreadySelected)> gameChoices = new();
             if (ParadoxLauncher.InstallPath.DirectoryExists())
                 gameChoices.Add((Platform.Paradox, "PL", "Paradox Launcher",
@@ -726,6 +741,8 @@ internal sealed partial class SelectForm : CustomForm
                 gameChoices.Add((Platform.Ubisoft, gameId, name,
                     programsToScan is not null &&
                     programsToScan.Any(p => p.platform is Platform.Ubisoft && p.id == gameId)));
+            selectionTimer.Stop();
+            ProgramData.Log($"[Total] Total time spent detecting games and libraries: {(selectionTimer.Elapsed.TotalSeconds >= 60 ? $"{selectionTimer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{selectionTimer.Elapsed.TotalSeconds:F1}s")}");
             if (gameChoices.Count > 0)
             {
                 using SelectDialogForm form = new(this);
