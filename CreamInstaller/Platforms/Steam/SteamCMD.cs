@@ -137,9 +137,42 @@ internal static partial class SteamCMD
             }
         });
 
+    private static void MigrateLegacyFiles()
+    {
+        string oldFilePath = ProgramData.DirectoryPath + @"\steamcmd.exe";
+        if (!oldFilePath.FileExists())
+            return;
+        DirectoryPath.CreateDirectory();
+        string[] steamCmdFiles =
+        [
+            "steamcmd.exe", "steamcmd.exe.old", "steam.dll", "crashhandler.dll",
+            "tier0_s.dll", "vstdlib_s.dll", "steamclient.dll", "steamclient64.dll",
+            "steamerrorreporter.exe", "steamconsole.dll", "crashhandler64.dll",
+            "vstdlib_s64.dll", "steamconsole64.dll", "tier0_s64.dll", ".crash"
+        ];
+        string[] steamCmdDirs =
+        [
+            "logs", "bin", "public", "siteserverui", "package"
+        ];
+        string oldDirectory = ProgramData.DirectoryPath;
+        foreach (string file in steamCmdFiles)
+        {
+            string source = oldDirectory + @"\" + file;
+            string dest = DirectoryPath + @"\" + file;
+            source.MoveFile(dest);
+        }
+        foreach (string dir in steamCmdDirs)
+        {
+            string source = oldDirectory + @"\" + dir;
+            string dest = DirectoryPath + @"\" + dir;
+            source.MoveDirectory(dest);
+        }
+    }
+
     internal static async Task<bool> Setup(IProgress<int> progress)
     {
         await Cleanup();
+        MigrateLegacyFiles();
         if (!FilePath.FileExists())
         {
             bool retryDownload = true;

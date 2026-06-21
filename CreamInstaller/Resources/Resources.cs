@@ -51,6 +51,7 @@ internal static class Resources
             {
                 using Stream resource = Assembly.GetExecutingAssembly()
                     .GetManifestResourceStream("CreamInstaller.Resources." + resourceIdentifier);
+                Path.GetDirectoryName(filePath)?.CreateDirectory();
                 using FileStream file = new(filePath, FileMode.Create, FileAccess.Write);
                 resource?.CopyTo(file);
                 break;
@@ -68,6 +69,7 @@ internal static class Resources
         while (!Program.Canceled)
             try
             {
+                Path.GetDirectoryName(filePath)?.CreateDirectory();
                 using FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write);
                 fileStream.Write(resource);
                 return true;
