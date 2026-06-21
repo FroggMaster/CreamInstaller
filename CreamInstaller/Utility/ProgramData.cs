@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CreamInstaller;
@@ -81,16 +82,69 @@ internal static event Action<string> OnLogSteam;
 internal static event Action<string> OnLogWarning;
 internal static event Action<string> OnLogError;
 
-    private static readonly object LogLock = new();
+    private static string FormatLogEntry(string message)
+    {
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+        return $"[{timestamp}] {message}{Environment.NewLine}";
+    }
+
+    private static string FormatLogErrorEntry(string message, Exception ex)
+    {
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+        return $"[{timestamp}] [ERROR] {message}{Environment.NewLine}[{timestamp}] [ERROR]   Exception: {ex}{Environment.NewLine}";
+    }
+
+    private readonly record struct LogEntry(string Path, string Text);
+
+    private static readonly Channel<LogEntry> LogChannel = Channel.CreateUnbounded<LogEntry>();
+    private static readonly Task LogConsumer;
+
+    static ProgramData()
+    {
+        LogConsumer = ConsumeLogAsync();
+    }
+
+    private static async Task ConsumeLogAsync()
+    {
+        ChannelReader<LogEntry> reader = LogChannel.Reader;
+        List<LogEntry> batch = new(64);
+        while (await reader.WaitToReadAsync())
+        {
+            batch.Clear();
+            while (reader.TryRead(out LogEntry entry))
+            {
+                batch.Add(entry);
+                if (batch.Count >= 64)
+                    break;
+            }
+            if (batch.Count > 0)
+                FlushLogBatch(batch);
+        }
+    }
+
+    private static void FlushLogBatch(List<LogEntry> entries)
+    {
+        try
+        {
+            foreach (IGrouping<string, LogEntry> group in entries.GroupBy(e => e.Path))
+            {
+                StringBuilder combined = new(group.Sum(e => e.Text.Length));
+                foreach (LogEntry entry in group)
+                    _ = combined.Append(entry.Text);
+                File.AppendAllText(group.Key, combined.ToString(), Encoding.UTF8);
+            }
+        }
+        catch
+        {
+            // ignored; logging must never crash the application
+        }
+    }
 
     internal static void Log(string message)
     {
         try
         {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-            string entry = $"[{timestamp}] {message}{Environment.NewLine}";
-            lock (LogLock)
-                File.AppendAllText(ScanLogPath, entry, Encoding.UTF8);
+            LogChannel.Writer.TryWrite(new LogEntry(ScanLogPath, FormatLogEntry(message)));
         }
         catch
         {
@@ -103,10 +157,7 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-            string entry = $"[{timestamp}] {message}{Environment.NewLine}";
-            lock (LogLock)
-                File.AppendAllText(SteamLogPath, entry, Encoding.UTF8);
+            LogChannel.Writer.TryWrite(new LogEntry(SteamLogPath, FormatLogEntry(message)));
         }
         catch
         {
@@ -119,10 +170,7 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-            string entry = $"[{timestamp}] [WARN] {message}{Environment.NewLine}";
-            lock (LogLock)
-                File.AppendAllText(AppLogPath, entry, Encoding.UTF8);
+            LogChannel.Writer.TryWrite(new LogEntry(AppLogPath, FormatLogEntry($"[WARN] {message}")));
         }
         catch
         {
@@ -135,12 +183,10 @@ internal static event Action<string> OnLogError;
     {
         try
         {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
             string entry = ex is not null
-                ? $"[{timestamp}] [ERROR] {message}{Environment.NewLine}[{timestamp}] [ERROR]   Exception: {ex}{Environment.NewLine}"
-                : $"[{timestamp}] [ERROR] {message}{Environment.NewLine}";
-            lock (LogLock)
-                File.AppendAllText(AppLogPath, entry, Encoding.UTF8);
+                ? FormatLogErrorEntry(message, ex)
+                : FormatLogEntry($"[ERROR] {message}");
+            LogChannel.Writer.TryWrite(new LogEntry(AppLogPath, entry));
         }
         catch
         {
@@ -188,13 +234,25 @@ internal static event Action<string> OnLogError;
                 OldProgramChoicesPath.DeleteFile();
         });
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> CooldownCache = new();
+
     internal static bool CheckCooldown(string identifier, int cooldown)
     {
         DateTime now = DateTime.UtcNow;
-        DateTime lastCheck = GetCooldown(identifier) ?? now;
-        bool cooldownOver = (now - lastCheck).TotalSeconds > cooldown;
-        if (cooldownOver || now == lastCheck)
+
+        if (CooldownCache.TryGetValue(identifier, out DateTime cached) &&
+            (now - cached).TotalSeconds <= cooldown)
+            return false;
+
+        DateTime? lastCheck = GetCooldown(identifier);
+        DateTime effective = lastCheck ?? now;
+        bool cooldownOver = (now - effective).TotalSeconds > cooldown;
+
+        CooldownCache[identifier] = now;
+
+        if (cooldownOver || now == effective)
             SetCooldown(identifier, now);
+
         return cooldownOver;
     }
 

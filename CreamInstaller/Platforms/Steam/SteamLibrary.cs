@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -29,52 +30,57 @@ internal static class SteamLibrary
 
     internal static async Task<List<(string appId, string name, string branch, int buildId, string gameDirectory)>>
         GetGames()
-        => await Task.Run(async () =>
+    {
+        Stopwatch timer = Stopwatch.StartNew();
+        List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
+        HashSet<string> seenAppIds = new();
+        HashSet<string> gameLibraryDirectories = await GetLibraryDirectories();
+        ProgramData.Log($"[Steam] Found {gameLibraryDirectories.Count} library folder(s).");
+        foreach (string libraryDirectory in gameLibraryDirectories)
         {
-            Stopwatch timer = Stopwatch.StartNew();
-            List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
-            HashSet<string> gameLibraryDirectories = await GetLibraryDirectories();
-            ProgramData.Log($"[Steam] Found {gameLibraryDirectories.Count} library folder(s).");
-            foreach (string libraryDirectory in gameLibraryDirectories)
+            if (Program.Canceled)
+                return games;
+            ProgramData.Log($"[Steam] Scanning library: {libraryDirectory}");
+            foreach ((string appId, string name, string branch, int buildId, string gameDirectory) game in
+                     await GetGamesFromLibraryDirectory(libraryDirectory))
             {
-                if (Program.Canceled)
-                    return games;
-                ProgramData.Log($"[Steam] Scanning library: {libraryDirectory}");
-                foreach ((string appId, string name, string branch, int buildId, string gameDirectory) game in (await
-                             GetGamesFromLibraryDirectory(
-                                 libraryDirectory)).Where(game => games.All(_game => _game.appId != game.appId)))
+                if (seenAppIds.Add(game.appId))
                     games.Add(game);
             }
+        }
 
-            foreach ((string appId, string name, string branch, int buildId, string gameDirectory) testGame in
-                     TestGames.Where(t => games.All(g => g.appId != t.appId)))
-                games.Add(testGame);
-            if (TestGames.Count > 0)
-                ProgramData.Log($"[Steam] Injected {TestGames.Count} test game(s).");
-            timer.Stop();
-            ProgramData.Log($"[Steam] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}");
-            return games;
-        });
+        foreach ((string appId, string name, string branch, int buildId, string gameDirectory) testGame in
+                 TestGames.Where(t => !seenAppIds.Contains(t.appId)))
+            games.Add(testGame);
+        if (TestGames.Count > 0)
+            ProgramData.Log($"[Steam] Injected {TestGames.Count} test game(s).");
+        timer.Stop();
+        ProgramData.Log($"[Steam] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}");
+        return games;
+    }
 
     private static async Task<List<(string appId, string name, string branch, int buildId, string gameDirectory)>>
         GetGamesFromLibraryDirectory(string libraryDirectory)
         => await Task.Run(() =>
         {
-            List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
             if (Program.Canceled || !libraryDirectory.DirectoryExists())
             {
                 ProgramData.Log($"[Steam] Skipping library (not found or canceled): {libraryDirectory}");
-                return games;
+                return [];
             }
 
-            foreach (string file in libraryDirectory.EnumerateDirectory("*.acf"))
+            ConcurrentDictionary<string, (string name, string branch, int buildId, string gameDirectory)> gamesDict = new();
+            Parallel.ForEach(libraryDirectory.EnumerateDirectory("*.acf"), (file, state) =>
             {
                 if (Program.Canceled)
-                    return games;
+                {
+                    state.Stop();
+                    return;
+                }
                 if (!ValveDataFile.TryDeserialize(file.ReadFile(), out VProperty result))
                 {
                     ProgramData.Log($"[Steam] Failed to deserialize ACF: {file}");
-                    continue;
+                    return;
                 }
 
                 string appId = result.Value.GetChild("appid")?.ToString();
@@ -82,11 +88,10 @@ internal static class SteamLibrary
                 string name = result.Value.GetChild("name")?.ToString();
                 string buildId = result.Value.GetChild("buildid")?.ToString();
                 if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(installdir) ||
-                    string.IsNullOrWhiteSpace(name)
-                    || string.IsNullOrWhiteSpace(buildId))
+                    string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(buildId))
                 {
                     ProgramData.Log($"[Steam] Skipping ACF with missing fields: {file}");
-                    continue;
+                    return;
                 }
 
                 string rawGameDirectory = libraryDirectory + @"\common\" + installdir;
@@ -94,12 +99,11 @@ internal static class SteamLibrary
                 if (gameDirectory is null)
                 {
                     ProgramData.Log($"[Steam] Game directory not found (drive may be slow or disconnected): {rawGameDirectory} | App: {name} ({appId})");
-                    continue;
+                    return;
                 }
 
-                if (!int.TryParse(appId, out int _) || !int.TryParse(buildId, out int buildIdInt) ||
-                    games.Any(g => g.appId == appId))
-                    continue;
+                if (!int.TryParse(appId, out int _) || !int.TryParse(buildId, out int buildIdInt))
+                    return;
 
                 VToken userConfig = result.Value.GetChild("UserConfig");
                 string branch = userConfig?.GetChild("BetaKey")?.ToString();
@@ -114,10 +118,13 @@ internal static class SteamLibrary
                 if (string.IsNullOrWhiteSpace(branch))
                     branch = "public";
 
-                ProgramData.Log($"[Steam] Detected game: {name} ({appId}) | Branch: {branch} | Dir: {gameDirectory}");
-                games.Add((appId, name, branch, buildIdInt, gameDirectory));
-            }
+                if (gamesDict.TryAdd(appId, (name, branch, buildIdInt, gameDirectory)))
+                    ProgramData.Log($"[Steam] Detected game: {name} ({appId}) | Branch: {branch} | Dir: {gameDirectory}");
+            });
 
+            List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new(gamesDict.Count);
+            foreach (KeyValuePair<string, (string name, string branch, int buildId, string gameDirectory)> kv in gamesDict)
+                games.Add((kv.Key, kv.Value.name, kv.Value.branch, kv.Value.buildId, kv.Value.gameDirectory));
             return games;
         });
 

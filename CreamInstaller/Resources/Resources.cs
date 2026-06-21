@@ -111,19 +111,7 @@ internal static class Resources
                                                              !rootDirectory.IsCommonIncorrectExecutable(path))
                                                          && (validFunc is null || validFunc(path)) &&
                                                          path.TryGetFileBinaryType(out BinaryType binaryType) &&
-                                                         binaryType is BinaryType.BIT64)
-                    executables.Add((path, binaryType));
-            }
-
-            foreach (string path in rootDirectory.EnumerateDirectory("*.exe", true))
-            {
-                if (Program.Canceled)
-                    return null;
-                if (executables.All(e => e.path != path) && (!filterCommon ||
-                                                             !rootDirectory.IsCommonIncorrectExecutable(path))
-                                                         && (validFunc is null || validFunc(path)) &&
-                                                         path.TryGetFileBinaryType(out BinaryType binaryType) &&
-                                                         binaryType is BinaryType.BIT32)
+                                                         binaryType is BinaryType.BIT64 or BinaryType.BIT32)
                     executables.Add((path, binaryType));
             }
 
@@ -202,11 +190,19 @@ internal static class Resources
             return dllDirectories.Count > 0 ? dllDirectories : null;
         });
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> Md5HashCache = new();
+
 #pragma warning disable CA5351
     private static string ComputeMD5(this string filePath)
-        => filePath.FileExists() && filePath.ReadFileBytes(true) is { } bytes
+    {
+        if (Md5HashCache.TryGetValue(filePath, out string cached))
+            return cached;
+        string hash = filePath.FileExists() && filePath.ReadFileBytes(true) is { } bytes
             ? BitConverter.ToString(MD5.HashData(bytes)).Replace("-", "").ToUpperInvariant()
             : null;
+        Md5HashCache[filePath] = hash;
+        return hash;
+    }
 #pragma warning restore CA5351
 
     internal static bool IsResourceFile(this string filePath, ResourceIdentifier identifier)

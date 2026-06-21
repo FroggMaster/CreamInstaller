@@ -657,12 +657,7 @@ internal sealed partial class SelectForm : CustomForm
         }
 
         Stopwatch gameDlcTimer = Stopwatch.StartNew();
-        foreach (Task task in appTasks)
-        {
-            if (Program.Canceled)
-                return;
-            await task;
-        }
+        await Task.WhenAll(appTasks);
         gameDlcTimer.Stop();
 
         gameQueriesDone.TrySetResult();
