@@ -237,6 +237,36 @@ Once you've identified a candidate DLL name via ProcMon, re-run CreamInstaller, 
 </details>
 
 ---
+
+### Steam API DLL Verification / Failed to Load SteamAPI DLL
+
+<details>
+<summary>Click to expand for troubleshooting steps</summary>
+
+If you encounter errors related to `steam_api.dll` or `steam_api64.dll`, such as:
+
+- `Digital signature check failed for Steam_api.dll`
+- `Failed to load SteamAPI`
+- `Failed to initialize SteamAPI`
+- `steam_api.dll or steam_api64.dll is damaged`
+
+These errors indicate that the Steam API DLL in your game's directory has been modified. This is expected when DLC unlockers replace the original Steam API DLL. The solutions below avoid touching the original DLL entirely.
+
+#### Solutions
+
+**Option 1: Use Proxy Mode**
+When running CreamInstaller, enable the **Proxy** option and select a proxy DLL (e.g., `winmm.dll`). This keeps the original `steam_api.dll`/`steam_api64.dll` completely untouched. The unlocker is loaded indirectly through the proxy DLL, so the game still finds a valid, signed Steam API DLL.
+
+**Option 2: Use CreamAPI with Extra Protection**
+If you are using CreamAPI, enable the **Extra Protection** option in CreamInstaller. This configures CreamAPI to wrap the original Steam API DLL and return the original dll where needed, preventing signature verification errors while still unlocking DLCs.
+
+#### Antivirus / False Positives
+
+If your antivirus quarantines the unlocker DLL or interferes with the installation, add exclusions for your game folder and CreamInstaller. See the [False Positives](#false-positive-antivirus-detections) section above for details.
+
+</details>
+
+---
 ##### Bugs/Crashes/Issues:
 For reliable and quick assistance, all bugs, crashes and other issues should be referred to the [GitHub Issues](https://github.com/FroggMaster/CreamInstaller/issues) page!
 
