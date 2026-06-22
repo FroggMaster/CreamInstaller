@@ -1,8 +1,8 @@
 ---
 name: Bug Report
 about: Report a program exception or general bug (not covered in FAQ or existing issues)
-title: '[Bug] - '
-labels: Bug
+title: "[Bug] - "
+labels: ''
 assignees: FroggMaster
 
 ---
@@ -37,4 +37,4 @@ Paste error text here, or drag and drop screenshot below
 
 ## Affected Version
 <!-- Please specify the version of the application you experience the issue with -->
-- **CreamInstaller Version:** [e.g. v5.0.1.7, CI build #21]
+- **CreamInstaller Version:** [e.g. v5.0.1.7]

@@ -2,8 +2,8 @@
 name: Enhancement Request
 about: Request a new program feature or an enhancement to an existing feature.
 title: ''
-labels: Enhancement
-assignees: pointfeev
+labels: ''
+assignees: ''
 
 ---
 
