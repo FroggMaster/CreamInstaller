@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -12,8 +14,8 @@ namespace CreamInstaller;
 
 internal static class Program
 {
-    internal static readonly string Name = Application.CompanyName;
-    private static readonly string Description = Application.ProductName;
+    internal static readonly string Name = Application.CompanyName!;
+    private static readonly string Description = Application.ProductName!;
 
     internal static readonly string Version = Application.ProductVersion[
         ..(Application.ProductVersion.IndexOf('+') is var index && index != -1
@@ -33,7 +35,7 @@ internal static class Program
 #endif
 
     private static readonly Process CurrentProcess = Process.GetCurrentProcess();
-    internal static readonly string CurrentProcessFilePath = CurrentProcess.MainModule?.FileName;
+    internal static readonly string CurrentProcessFilePath = CurrentProcess.MainModule?.FileName ?? "";
     internal static readonly int CurrentProcessId = CurrentProcess.Id;
 
     // Setting is now toggleable. Huzzah! 
@@ -47,10 +49,10 @@ internal static class Program
     // Dark mode enabled by default
     internal static bool DarkModeEnabled = true;
 
-    internal static bool IsGameBlocked(string name, string directory = null)
+    internal static bool IsGameBlocked(string name, string? directory = null)
         => GetGameBlockedReason(name, directory) is not null;
 
-    internal static string? GetGameBlockedReason(string name, string directory = null)
+    internal static string? GetGameBlockedReason(string name, string? directory = null)
     {
         if (!BlockProtectedGames) return null;
         if (ProtectedGames.Contains(name)) return "on protected games list";
@@ -145,7 +147,7 @@ internal static class Program
         });
     }
 
-    private static void OnApplicationExit(object s, EventArgs e)
+    private static void OnApplicationExit(object? s, EventArgs e)
     {
         Canceled = true;
 

@@ -437,7 +437,7 @@ internal static class ThemeManager
     // Themed renderers for menus
     // -----------------------------------------------------------------
 
-    private class DarkContextMenuRenderer : ToolStripProfessionalRenderer
+    private sealed class DarkContextMenuRenderer : ToolStripProfessionalRenderer
     {
         public DarkContextMenuRenderer() : base(new DarkMenuColorTable()) { }
 
@@ -449,7 +449,7 @@ internal static class ThemeManager
         }
     }
 
-    private class DarkDropDownRenderer : ToolStripProfessionalRenderer
+    private sealed class DarkDropDownRenderer : ToolStripProfessionalRenderer
     {
         public DarkDropDownRenderer() : base(new DarkMenuColorTable()) { }
 
@@ -461,7 +461,7 @@ internal static class ThemeManager
         }
     }
 
-    private class DarkMenuColorTable : ProfessionalColorTable
+    private sealed class DarkMenuColorTable : ProfessionalColorTable
     {
         public override Color MenuItemSelected => ColorTranslator.FromHtml("#2A2D2E");
         public override Color MenuItemSelectedGradientBegin => ColorTranslator.FromHtml("#2A2D2E");
