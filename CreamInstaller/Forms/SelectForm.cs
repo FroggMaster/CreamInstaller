@@ -693,9 +693,6 @@ internal sealed partial class SelectForm : CustomForm
             installButton.Enabled = false;
             uninstallButton.Enabled = installButton.Enabled;
             selectionTreeView.Enabled = false;
-            saveButton.Enabled = false;
-            loadButton.Enabled = false;
-            resetButton.Enabled = false;
             progressLabel.Text = "Waiting for user to select which programs/games to scan . . .";
             ShowProgressBar();
             await ProgramData.Setup(this);
@@ -743,35 +740,7 @@ internal sealed partial class SelectForm : CustomForm
                 using SelectDialogForm form = new(this);
                 DialogResult selectResult = form.QueryUser("Choose which programs and/or games to scan:", gameChoices,
                     out List<(Platform platform, string id, string name)> choices);
-                if (selectResult == DialogResult.Abort)
-                {
-                    int maxProgress = 0;
-                    int curProgress = 0;
-                    Progress<int> progress = new();
-                    IProgress<int> iProgress = progress;
-                    progress.ProgressChanged += (_, _progress) =>
-                    {
-                        if (Program.Canceled)
-                            return;
-                        if (_progress < 0 || _progress > maxProgress)
-                            maxProgress = -_progress;
-                        else
-                            curProgress = _progress;
-                        int p = Math.Max(Math.Min((int)((float)curProgress / maxProgress * 100), 100), 0);
-                        progressLabel.Text = $"Quickly gathering games for uninstallation . . . {p}%";
-                        progressBar.Value = p;
-                    };
-                    progressLabel.Text = "Quickly gathering games for uninstallation . . . ";
-                    foreach (Selection selection in Selection.All.Keys)
-                        selection.TreeNode.Remove();
-                    await GetApplicablePrograms(iProgress, true);
-                    if (!Program.Canceled)
-                        OnUninstall(null, null);
-                    Selection.All.Clear();
-                    programsToScan = null;
-                }
-                else
-                    scan = selectResult == DialogResult.OK && choices is not null && choices.Count > 0;
+                scan = selectResult == DialogResult.OK && choices is not null && choices.Count > 0;
 
                 const string retry = "\n\nPress the \"Rescan\" button to re-choose.";
                 if (scan)
@@ -829,7 +798,7 @@ internal sealed partial class SelectForm : CustomForm
             await SteamCMD.Cleanup();
         }
 
-        OnLoadSelections(null, null);
+        LoadSelections();
         await LoadSavedInstalledGames();
         HideProgressBar();
         selectionTreeView.Enabled = !Selection.All.IsEmpty;
@@ -838,9 +807,6 @@ internal sealed partial class SelectForm : CustomForm
         noneFoundLabel.Visible = !selectionTreeView.Enabled;
         installButton.Enabled = Selection.AllEnabled.Any();
         uninstallButton.Enabled = installButton.Enabled;
-        saveButton.Enabled = CanSaveSelections();
-        loadButton.Enabled = CanLoadSelections();
-        resetButton.Enabled = CanResetSelections();
         cancelButton.Enabled = false;
         scanButton.Enabled = true;
         blockedGamesCheckBox.Enabled = true;
@@ -878,10 +844,6 @@ internal sealed partial class SelectForm : CustomForm
         allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
         installButton.Enabled = Selection.AllEnabled.Any();
         uninstallButton.Enabled = installButton.Enabled;
-        if (sender is "OnLoadSelections" or "OnResetSelections")
-            return;
-        saveButton.Enabled = CanSaveSelections();
-        resetButton.Enabled = CanResetSelections();
     }
 
     private static void SyncNodeAncestors(TreeNode node)
@@ -1275,6 +1237,45 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnUninstall(object sender, EventArgs e) => OnAccept(true);
 
+    private async void OnUninstallAll(object sender, EventArgs e)
+    {
+        using DialogForm confirm = new(this);
+        if (confirm.Show(SystemIcons.Warning,
+                "Are you sure you want to uninstall everything?\n\nThis will remove all DLC unlockers, CreamAPI, SmokeAPI, ScreamAPI, and proxy DLLs from all games.",
+                acceptButtonText: "Uninstall All", cancelButtonText: "Cancel", customFormText: "Uninstall All") != DialogResult.OK)
+            return;
+        cancelButton.Enabled = true;
+        scanButton.Enabled = false;
+        installButton.Enabled = false;
+        uninstallButton.Enabled = false;
+        selectionTreeView.Enabled = false;
+        int maxProgress = 0;
+        int curProgress = 0;
+        Progress<int> progress = new();
+        IProgress<int> iProgress = progress;
+        progress.ProgressChanged += (_, _progress) =>
+        {
+            if (Program.Canceled)
+                return;
+            if (_progress < 0 || _progress > maxProgress)
+                maxProgress = -_progress;
+            else
+                curProgress = _progress;
+            int p = Math.Max(Math.Min((int)((float)curProgress / maxProgress * 100), 100), 0);
+            progressLabel.Text = $"Quickly gathering games for uninstallation . . . {p}%";
+            progressBar.Value = p;
+        };
+        ShowProgressBar();
+        progressLabel.Text = "Quickly gathering games for uninstallation . . . ";
+        foreach (Selection selection in Selection.All.Keys)
+            selection.TreeNode.Remove();
+        await GetApplicablePrograms(iProgress, true);
+        if (!Program.Canceled)
+            OnUninstall(null, null);
+        Selection.All.Clear();
+        programsToScan = null;
+    }
+
     private void OnScan(object sender, EventArgs e) => OnLoad(forceProvideChoices: true);
 
     private void OnCancel(object sender, EventArgs e)
@@ -1306,80 +1307,9 @@ internal sealed partial class SelectForm : CustomForm
         proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
         proxyAllCheckBox.Checked = shouldEnable;
         proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
-        resetButton.Enabled = CanResetSelections();
-        saveButton.Enabled = CanSaveSelections();
     }
 
-    private bool AreSelectionsDefault()
-        => EnumerateTreeNodes(selectionTreeView.Nodes).All(node
-            => node.Parent is null || node.Tag is not Platform and not DLCType ||
-               (node.Text == "Unknown" ? !node.Checked : node.Checked));
-
-    private static bool AreProxySelectionsDefault() => Selection.All.Keys.All(selection => !selection.UseProxy);
-
-    private static bool AreExtraProtectionSelectionsDefault() => Selection.All.Keys.All(selection => !selection.UseExtraProtection);
-
-    private bool CanSaveDlc() =>
-        installButton.Enabled && (ProgramData.ReadDlcChoices().Any() || !AreSelectionsDefault());
-
-    private static bool CanSaveProxy() =>
-        ProgramData.ReadProxyChoices().Any() || !AreProxySelectionsDefault();
-
-    private static bool CanSaveExtraProtection() =>
-        ProgramData.ReadExtraProtectionChoices().Any() || !AreExtraProtectionSelectionsDefault();
-
-    private bool CanSaveSelections() => CanSaveDlc() || CanSaveProxy() || CanSaveExtraProtection();
-
-    private void OnSaveSelections(object sender, EventArgs e)
-    {
-        List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
-        foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-        {
-            _ = dlcChoices.RemoveAll(n =>
-                n.platform == dlc.Selection.Platform && n.gameId == dlc.Selection.Id && n.dlcId == dlc.Id);
-            if (dlc.Name == "Unknown" ? dlc.Enabled : !dlc.Enabled)
-                dlcChoices.Add((dlc.Selection.Platform, dlc.Selection.Id, dlc.Id));
-        }
-
-        ProgramData.WriteDlcChoices(dlcChoices);
-
-        List<(Platform platform, string id, string proxy, bool enabled)> proxyChoices =
-            ProgramData.ReadProxyChoices().ToList();
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            _ = proxyChoices.RemoveAll(c => c.platform == selection.Platform && c.id == selection.Id);
-            if (selection.UseProxy)
-                proxyChoices.Add((selection.Platform, selection.Id,
-                    selection.Proxy == Selection.DefaultProxy ? null : selection.Proxy,
-                    selection.UseProxy));
-        }
-
-        ProgramData.WriteProxyChoices(proxyChoices);
-
-        List<(Platform platform, string id)> extraProtectionChoices =
-            ProgramData.ReadExtraProtectionChoices().ToList();
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            _ = extraProtectionChoices.RemoveAll(c => c.platform == selection.Platform && c.id == selection.Id);
-            if (selection.UseExtraProtection)
-                extraProtectionChoices.Add((selection.Platform, selection.Id));
-        }
-
-        ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
-
-        loadButton.Enabled = CanLoadSelections();
-        saveButton.Enabled = CanSaveSelections();
-    }
-
-    private static bool CanLoadDlc() => ProgramData.ReadDlcChoices().Any();
-
-    private static bool CanLoadProxy() => ProgramData.ReadProxyChoices().Any();
-
-    private static bool CanLoadExtraProtection() => ProgramData.ReadExtraProtectionChoices().Any();
-
-    private static bool CanLoadSelections() => CanLoadDlc() || CanLoadProxy() || CanLoadExtraProtection();
-
-    private void OnLoadSelections(object sender, EventArgs e)
+    private void LoadSelections()
     {
         List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
         foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
@@ -1427,7 +1357,6 @@ internal sealed partial class SelectForm : CustomForm
                 c.platform == selection.Platform && c.id == selection.Id);
 
         ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
-        loadButton.Enabled = CanLoadSelections();
 
         // Detect installed unlockers and proxy DLLs from disk for all selections
         foreach (Selection selection in Selection.All.Keys)
@@ -1486,39 +1415,11 @@ internal sealed partial class SelectForm : CustomForm
         OnProxyChanged();
     }
 
-    private bool CanResetDlc() => !AreSelectionsDefault();
-
-    private static bool CanResetProxy() => !AreProxySelectionsDefault();
-
-    private static bool CanResetExtraProtection() => !AreExtraProtectionSelectionsDefault();
-
-    private bool CanResetSelections() => CanResetDlc() || CanResetProxy() || CanResetExtraProtection();
-
-    private void OnResetSelections(object sender, EventArgs e)
-    {
-        foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-        {
-            dlc.Enabled = dlc.Name != "Unknown";
-            OnTreeViewNodeCheckedChanged("OnResetSelections", new(dlc.TreeNode, TreeViewAction.ByMouse));
-        }
-
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            selection.UseProxy = false;
-            selection.Proxy = null;
-            selection.UseExtraProtection = false;
-        }
-
-        OnProxyChanged();
-    }
-
     internal void InvalidateGameList() => selectionTreeView.Invalidate();
 
     internal void OnProxyChanged()
     {
         selectionTreeView.Invalidate();
-        saveButton.Enabled = CanSaveSelections();
-        resetButton.Enabled = CanResetSelections();
         proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
         proxyAllCheckBox.Checked = Selection.All.Keys.Count != 0 && Selection.All.Keys.All(selection => selection.UseProxy);
         proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
@@ -1527,8 +1428,6 @@ internal sealed partial class SelectForm : CustomForm
     internal void OnExtraProtectionChanged()
     {
         selectionTreeView.Invalidate();
-        saveButton.Enabled = CanSaveSelections();
-        resetButton.Enabled = CanResetSelections();
     }
 
     private void OnBlockProtectedGamesCheckBoxChanged(object sender, EventArgs e)
@@ -1566,8 +1465,6 @@ internal sealed partial class SelectForm : CustomForm
     {
         Program.UseSmokeAPI = useSmokeAPICheckBox.Checked;
         selectionTreeView.Invalidate();
-        saveButton.Enabled = CanSaveSelections();
-        resetButton.Enabled = CanResetSelections();
     }
 
     private void OnUseSmokeAPIHelpButtonClicked(object sender, EventArgs e)

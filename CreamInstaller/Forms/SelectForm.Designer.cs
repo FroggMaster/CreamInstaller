@@ -38,13 +38,11 @@ namespace CreamInstaller.Forms
             progressBar = new ProgressBar();
             progressLabel = new Label();
             scanButton = new Button();
+            uninstallAllButton = new Button();
             uninstallButton = new Button();
             progressLabelGames = new Label();
             progressLabelDLCs = new Label();
             sortCheckBox = new CheckBox();
-            saveButton = new Button();
-            loadButton = new Button();
-            resetButton = new Button();
             saveFlowPanel = new FlowLayoutPanel();
             selectionTreeView = new CustomTreeView();
             topOptionsTable = new TableLayoutPanel();
@@ -307,6 +305,20 @@ namespace CreamInstaller.Forms
             scanButton.UseVisualStyleBackColor = true;
             scanButton.Click += OnScan;
             // 
+            // uninstallAllButton
+            // 
+            uninstallAllButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            uninstallAllButton.AutoSize = true;
+            uninstallAllButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            uninstallAllButton.Location = new System.Drawing.Point(327, 376);
+            uninstallAllButton.Name = "uninstallAllButton";
+            uninstallAllButton.Padding = new Padding(3, 0, 3, 0);
+            uninstallAllButton.Size = new System.Drawing.Size(87, 25);
+            uninstallAllButton.TabIndex = 10003;
+            uninstallAllButton.Text = "Uninstall All";
+            uninstallAllButton.UseVisualStyleBackColor = true;
+            uninstallAllButton.Click += OnUninstallAll;
+            // 
             // uninstallButton
             // 
             uninstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
@@ -355,59 +367,11 @@ namespace CreamInstaller.Forms
             sortCheckBox.Text = "Sort By Name";
             sortCheckBox.CheckedChanged += OnSortCheckBoxChanged;
             // 
-            // saveButton
-            // 
-            saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            saveButton.AutoSize = true;
-            saveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            saveButton.Enabled = false;
-            saveButton.Location = new System.Drawing.Point(51, 0);
-            saveButton.Margin = new Padding(6, 0, 6, 0);
-            saveButton.Name = "saveButton";
-            saveButton.Size = new System.Drawing.Size(41, 25);
-            saveButton.TabIndex = 10006;
-            saveButton.Text = "Save";
-            saveButton.UseVisualStyleBackColor = true;
-            saveButton.Click += OnSaveSelections;
-            // 
-            // loadButton
-            // 
-            loadButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            loadButton.AutoSize = true;
-            loadButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            loadButton.Enabled = false;
-            loadButton.Location = new System.Drawing.Point(98, 0);
-            loadButton.Margin = new Padding(0);
-            loadButton.Name = "loadButton";
-            loadButton.Size = new System.Drawing.Size(43, 25);
-            loadButton.TabIndex = 10005;
-            loadButton.Text = "Load";
-            loadButton.UseVisualStyleBackColor = true;
-            loadButton.Click += OnLoadSelections;
-            // 
-            // resetButton
-            // 
-            resetButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            resetButton.AutoSize = true;
-            resetButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            resetButton.Enabled = false;
-            resetButton.Location = new System.Drawing.Point(0, 0);
-            resetButton.Margin = new Padding(0);
-            resetButton.Name = "resetButton";
-            resetButton.Size = new System.Drawing.Size(45, 25);
-            resetButton.TabIndex = 10007;
-            resetButton.Text = "Reset";
-            resetButton.UseVisualStyleBackColor = true;
-            resetButton.Click += OnResetSelections;
-            // 
             // saveFlowPanel
             // 
             saveFlowPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             saveFlowPanel.AutoSize = true;
             saveFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            saveFlowPanel.Controls.Add(resetButton);
-            saveFlowPanel.Controls.Add(saveButton);
-            saveFlowPanel.Controls.Add(loadButton);
             saveFlowPanel.Location = new System.Drawing.Point(263, 376);
             saveFlowPanel.Name = "saveFlowPanel";
             saveFlowPanel.Size = new System.Drawing.Size(141, 25);
@@ -451,6 +415,7 @@ namespace CreamInstaller.Forms
             Controls.Add(sortCheckBox);
             Controls.Add(progressLabelDLCs);
             Controls.Add(progressLabelGames);
+            Controls.Add(uninstallAllButton);
             Controls.Add(uninstallButton);
             Controls.Add(scanButton);
             Controls.Add(programsGroupBox);
@@ -503,14 +468,12 @@ namespace CreamInstaller.Forms
         private FlowLayoutPanel darkModeFlowPanel;
         private FlowLayoutPanel allCheckBoxLayoutPanel;
         private Button uninstallButton;
+        private Button uninstallAllButton;
         private Label progressLabelGames;
         private Label progressLabelDLCs;
         private CheckBox sortCheckBox;
         private FlowLayoutPanel proxyFlowPanel;
         internal CheckBox proxyAllCheckBox;
-        private Button saveButton;
-        private Button loadButton;
-        private Button resetButton;
         private FlowLayoutPanel saveFlowPanel;
         private TableLayoutPanel topOptionsTable;
         private CheckBox darkModeCheckBox;

@@ -31,7 +31,6 @@ namespace CreamInstaller.Forms
             cancelButton = new Button();
             loadButton = new Button();
             saveButton = new Button();
-            uninstallAllButton = new Button();
             selectionTreeView = new CustomTreeView();
             filterTextBox = new System.Windows.Forms.TextBox();
             groupBox.SuspendLayout();
@@ -170,20 +169,6 @@ namespace CreamInstaller.Forms
             saveButton.UseVisualStyleBackColor = true;
             saveButton.Click += OnSave;
             // 
-            // uninstallAllButton
-            // 
-            uninstallAllButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            uninstallAllButton.AutoSize = true;
-            uninstallAllButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            uninstallAllButton.DialogResult = DialogResult.Abort;
-            uninstallAllButton.Location = new System.Drawing.Point(95, 243);
-            uninstallAllButton.Name = "uninstallAllButton";
-            uninstallAllButton.Padding = new Padding(12, 0, 12, 0);
-            uninstallAllButton.Size = new System.Drawing.Size(104, 25);
-            uninstallAllButton.TabIndex = 7;
-            uninstallAllButton.Text = "Uninstall All";
-            uninstallAllButton.UseVisualStyleBackColor = true;
-            // 
             // SelectDialogForm
             // 
             AcceptButton = acceptButton;
@@ -192,7 +177,6 @@ namespace CreamInstaller.Forms
             AutoSize = true;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             ClientSize = new System.Drawing.Size(548, 279);
-            Controls.Add(uninstallAllButton);
             Controls.Add(sortCheckBox);
             Controls.Add(saveButton);
             Controls.Add(loadButton);
@@ -226,7 +210,6 @@ namespace CreamInstaller.Forms
         private Button loadButton;
         private Button saveButton;
         private CheckBox sortCheckBox;
-        private Button uninstallAllButton;
         private System.Windows.Forms.TextBox filterTextBox;
     }
 }

@@ -383,6 +383,20 @@ internal sealed partial class InstallForm : CustomForm
             }
         }
 
+        // Persist DLC checkbox state so it is restored on next scan without requiring a manual Save
+        if (!uninstalling)
+        {
+            List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
+            foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
+            {
+                _ = dlcChoices.RemoveAll(n =>
+                    n.platform == dlc.Selection.Platform && n.gameId == dlc.Selection.Id && n.dlcId == dlc.Id);
+                if (dlc.Name == "Unknown" ? dlc.Enabled : !dlc.Enabled)
+                    dlcChoices.Add((dlc.Selection.Platform, dlc.Selection.Id, dlc.Id));
+            }
+            ProgramData.WriteDlcChoices(dlcChoices);
+        }
+
         SelectForm.Current?.Invoke(() => SelectForm.Current?.InvalidateGameList());
 
         Program.Cleanup();
