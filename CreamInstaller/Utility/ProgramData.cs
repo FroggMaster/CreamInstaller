@@ -64,7 +64,7 @@ internal static class ProgramData
 
     private static readonly Version MinimumAppInfoVersion = Version.Parse("4.7.0.0");
 
-    internal static readonly string CooldownPath = DirectoryPath + @"\cooldown";
+    internal static readonly string CooldownPath = CachePath + @"\cooldown";
 
     private static readonly string OldProgramChoicesPath = DirectoryPath + @"\choices.txt";
     private static readonly string ProgramChoicesPath = DirectoryPath + @"\choices.json";
