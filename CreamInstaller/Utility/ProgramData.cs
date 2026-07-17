@@ -72,9 +72,12 @@ internal static class ProgramData
     internal static readonly string CooldownPath = CachePath + @"\cooldown";
 
     private static readonly string OldProgramChoicesPath = DirectoryPath + @"\choices.txt";
-    private static readonly string ProgramChoicesPath = DirectoryPath + @"\choices.json";
-    private static readonly string KoaloaderProxyChoicesPath = DirectoryPath + @"\proxies.json";
-    private static readonly string ExtraProtectionChoicesPath = DirectoryPath + @"\extraprotection.json";
+    private static readonly string OldProgramChoicesJsonPath = DirectoryPath + @"\choices.json";
+    private static readonly string OldKoaloaderProxyChoicesPath = DirectoryPath + @"\proxies.json";
+    private static readonly string OldExtraProtectionChoicesPath = DirectoryPath + @"\extraprotection.json";
+    private static readonly string ProgramChoicesPath = CachePath + @"\saved-game-choices.json";
+    private static readonly string KoaloaderProxyChoicesPath = CachePath + @"\proxies.json";
+    private static readonly string ExtraProtectionChoicesPath = CachePath + @"\extraprotection.json";
     private static readonly string InstalledGamesPath = CachePath + @"\installed.json";
 
     internal static readonly string ScanLogPath = Path.Combine(DirectoryPath, "game-scan.log");
@@ -234,9 +237,32 @@ internal static event Action<LogEventArgs> OnLog;
             }
 
             CooldownPath.CreateDirectory();
+            CachePath.CreateDirectory();
             if (OldProgramChoicesPath.FileExists())
                 OldProgramChoicesPath.DeleteFile();
+            MigrateOldPath(OldProgramChoicesJsonPath, ProgramChoicesPath);
+            MigrateOldPath(OldKoaloaderProxyChoicesPath, KoaloaderProxyChoicesPath);
+            MigrateOldPath(OldExtraProtectionChoicesPath, ExtraProtectionChoicesPath);
         });
+
+    private static void MigrateOldPath(string oldPath, string newPath)
+    {
+        if (!oldPath.FileExists())
+            return;
+        if (newPath.FileExists())
+            return;
+        try
+        {
+            string content = oldPath.ReadFile();
+            newPath.WriteFile(content);
+            oldPath.DeleteFile();
+            Log.Info($"Migrated {Path.GetFileName(oldPath)} -> {Path.GetFileName(newPath)}");
+        }
+        catch
+        {
+            // ignored; migration failure must not crash the application
+        }
+    }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> CooldownCache = new();
 
