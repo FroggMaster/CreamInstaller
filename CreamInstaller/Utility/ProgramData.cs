@@ -80,10 +80,11 @@ internal static class ProgramData
     private static readonly string ExtraProtectionChoicesPath = CachePath + @"\extraprotection.json";
     private static readonly string InstalledGamesPath = CachePath + @"\installed.json";
 
-    internal static readonly string ScanLogPath = Path.Combine(DirectoryPath, "game-scan.log");
-internal static readonly string SteamLogPath = Path.Combine(DirectoryPath, "cream-steam.log");
-internal static readonly string AppLogPath = Path.Combine(DirectoryPath, "CreamInstaller.log");
-internal static readonly string UnlockerLogPath = Path.Combine(DirectoryPath, "unlocker.log");
+    private static readonly string LogsPath = DirectoryPath + @"\Logs";
+    internal static readonly string ScanLogPath = LogsPath + @"\game-scan.log";
+    internal static readonly string SteamLogPath = LogsPath + @"\cream-steam.log";
+    internal static readonly string AppLogPath = LogsPath + @"\CreamInstaller.log";
+    internal static readonly string UnlockerLogPath = LogsPath + @"\unlocker.log";
 
 internal readonly record struct LogEventArgs(string Message, LogDestination Destination, LogLevel Level, Exception Exception = null);
 
@@ -243,6 +244,11 @@ internal static event Action<LogEventArgs> OnLog;
             MigrateOldPath(OldProgramChoicesJsonPath, ProgramChoicesPath);
             MigrateOldPath(OldKoaloaderProxyChoicesPath, KoaloaderProxyChoicesPath);
             MigrateOldPath(OldExtraProtectionChoicesPath, ExtraProtectionChoicesPath);
+            LogsPath.CreateDirectory();
+            MigrateOldPath(DirectoryPath + @"\game-scan.log", ScanLogPath);
+            MigrateOldPath(DirectoryPath + @"\cream-steam.log", SteamLogPath);
+            MigrateOldPath(DirectoryPath + @"\CreamInstaller.log", AppLogPath);
+            MigrateOldPath(DirectoryPath + @"\unlocker.log", UnlockerLogPath);
         });
 
     private static void MigrateOldPath(string oldPath, string newPath)
