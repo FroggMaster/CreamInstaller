@@ -59,8 +59,8 @@ internal static class SteamStore
                     await HttpClientManager.EnsureGet($"https://store.steampowered.com/api/appdetails?appids={appId}");
                 if (permanentFailure)
                 {
-                    ProgramData.LogSteam(
-                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Permanent failure, aborting retries", parentGameName, parentGameAppId));
+                    ProgramData.Log.Info(
+                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Permanent failure, aborting retries", parentGameName, parentGameAppId), LogDestination.Steam);
                     return null;
                 }
                 if (response is not null)
@@ -81,8 +81,8 @@ internal static class SteamStore
 
                                     if (!storeAppDetails.Success)
                                     {
-                                        ProgramData.LogSteam(
-                                            "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Query unsuccessful", parentGameName, parentGameAppId));
+                                        ProgramData.Log.Info(
+                                            "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Query unsuccessful", parentGameName, parentGameAppId), LogDestination.Steam);
                                         if (data is null)
                                             return null;
                                     }
@@ -95,35 +95,35 @@ internal static class SteamStore
                                         }
                                         catch (Exception e)
                                         {
-                                            ProgramData.LogSteam(
-                                                "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful serialization ({e.Message})", parentGameName, parentGameAppId));
+                                            ProgramData.Log.Info(
+                                                "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful serialization ({e.Message})", parentGameName, parentGameAppId), LogDestination.Steam);
                                         }
                                         return data;
                                     }
-                                    ProgramData.LogSteam(
-                                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Response data null", parentGameName, parentGameAppId));
+                                    ProgramData.Log.Info(
+                                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Response data null", parentGameName, parentGameAppId), LogDestination.Steam);
                                 }
-                                else
+else
+                                    {
+                                        ProgramData.Log.Info(
+                                            "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Response details null", parentGameName, parentGameAppId), LogDestination.Steam);
+                                    }
+                            }
+catch (Exception e)
                                 {
-                                    ProgramData.LogSteam(
-                                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Response details null", parentGameName, parentGameAppId));
+                                    ProgramData.Log.Info(
+                                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful deserialization ({e.Message})", parentGameName, parentGameAppId), LogDestination.Steam);
                                 }
-                            }
-                            catch (Exception e)
+else
                             {
-                                ProgramData.LogSteam(
-                                    "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, $"Unsuccessful deserialization ({e.Message})", parentGameName, parentGameAppId));
+                                ProgramData.Log.Info(
+                                    "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Response deserialization null", parentGameName, parentGameAppId), LogDestination.Steam);
                             }
-                    else
-                    {
-                        ProgramData.LogSteam(
-                            "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Response deserialization null", parentGameName, parentGameAppId));
-                    }
                 }
                 else
                 {
-                    ProgramData.LogSteam(
-                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Null or empty response", parentGameName, parentGameAppId));
+                    ProgramData.Log.Info(
+                        "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Null or empty response", parentGameName, parentGameAppId), LogDestination.Steam);
                 }
             }
 
@@ -141,8 +141,8 @@ internal static class SteamStore
                 break;
             if (attempts > 3)
             {
-                ProgramData.LogSteam(
-                    "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Maximum retry attempts exceeded (3)", parentGameName, parentGameAppId));
+                ProgramData.Log.Info(
+                    "[SteamAPI] " + FormatErrorLog(attempts, appId, gameName, isDlc, "Maximum retry attempts exceeded (3)", parentGameName, parentGameAppId), LogDestination.Steam);
                 break;
             }
 

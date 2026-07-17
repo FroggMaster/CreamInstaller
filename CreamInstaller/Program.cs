@@ -142,7 +142,7 @@ internal static class Program
             }
             catch (Exception ex)
             {
-                ProgramData.LogWarning($"Cleanup failed: {ex.Message}");
+                ProgramData.Log.Warn($"Cleanup failed: {ex.Message}");
             }
         });
     }
@@ -158,12 +158,12 @@ internal static class Program
             // Wait up to 5 seconds for graceful cleanup
             if (!cleanupTask.Wait(TimeSpan.FromSeconds(5)))
             {
-                ProgramData.LogWarning("Cleanup timed out during application exit");
+                ProgramData.Log.Warn("Cleanup timed out during application exit");
             }
         }
         catch (Exception ex)
         {
-            ProgramData.LogWarning($"Cleanup exception during exit: {ex.Message}");
+            ProgramData.Log.Warn($"Cleanup exception during exit: {ex.Message}");
         }
         finally
         {

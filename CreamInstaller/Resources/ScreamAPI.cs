@@ -61,8 +61,7 @@ internal static class ScreamAPI
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
-        /*if (installForm is not null)
-            installForm.UpdateUser("Generating ScreamAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        ProgramData.Log.Info($"[ScreamAPI] Generating configuration with {overrideCatalogItems.Count} locked catalog items, {injectedEntitlements.Count} injected entitlements | Config: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         config.CreateFile(true, installForm)?.Close();
         StreamWriter writer = new(config, true, Encoding.UTF8);
         WriteConfig(writer,
@@ -71,6 +70,7 @@ internal static class ScreamAPI
             installForm);
         writer.Flush();
         writer.Close();
+        ProgramData.Log.Info($"[ScreamAPI] Configuration generated: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
     }
 
     private static void WriteConfig(StreamWriter writer, SortedList<string, SelectionDLC> overrideCatalogItems,
@@ -136,6 +136,7 @@ internal static class ScreamAPI
     internal static async Task Uninstall(string directory, InstallForm installForm = null, bool deleteOthers = true)
         => await Task.Run(() =>
         {
+            ProgramData.Log.Info($"[ScreamAPI] Uninstalling from directory: {directory}", LogDestination.Unlocker);
             directory.GetScreamApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
                 out string old_config, out string config, out string old_log, out string log);
             if (api32_o.FileExists())
@@ -149,6 +150,7 @@ internal static class ScreamAPI
                 api32_o.MoveFile(api32!);
                 installForm?.UpdateUser($"Restored EOS: {Path.GetFileName(api32_o)} -> {Path.GetFileName(api32)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Restored original EOSSDK-Win32-Shipping.dll from backup", LogDestination.Unlocker);
             }
 
             if (api64_o.FileExists())
@@ -162,14 +164,19 @@ internal static class ScreamAPI
                 api64_o.MoveFile(api64!);
                 installForm?.UpdateUser($"Restored EOS: {Path.GetFileName(api64_o)} -> {Path.GetFileName(api64)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Restored original EOSSDK-Win64-Shipping.dll from backup", LogDestination.Unlocker);
             }
 
             if (!deleteOthers)
+            {
+                ProgramData.Log.Info($"[ScreamAPI] Uninstall completed (partial) for directory: {directory}", LogDestination.Unlocker);
                 return;
+            }
             if (config.FileExists())
             {
                 config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Deleted config: {config}", LogDestination.Unlocker);
             }
 
             if (log.FileExists())
@@ -177,12 +184,14 @@ internal static class ScreamAPI
                 log.DeleteFile();
                 installForm?.UpdateUser($"Deleted log: {Path.GetFileName(log)}", LogTextBox.Action, false);
             }
+            ProgramData.Log.Info($"[ScreamAPI] Uninstall completed for directory: {directory}", LogDestination.Unlocker);
         });
 
     internal static async Task Install(string directory, Selection selection, InstallForm installForm = null,
         bool generateConfig = true)
         => await Task.Run(() =>
         {
+            ProgramData.Log.Info($"[ScreamAPI] Installing to directory: {directory} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
             directory.GetScreamApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
                 out _, out _, out _, out _);
             if (api32.FileExists() && !api32_o.FileExists())
@@ -190,12 +199,14 @@ internal static class ScreamAPI
                 api32.MoveFile(api32_o!, true);
                 installForm?.UpdateUser($"Renamed EOS: {Path.GetFileName(api32)} -> {Path.GetFileName(api32_o)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Backed up EOSSDK-Win32-Shipping.dll", LogDestination.Unlocker);
             }
 
             if (api32_o.FileExists())
             {
                 "ScreamAPI.EOSSDK-Win32-Shipping.dll".WriteManifestResource(api32);
                 installForm?.UpdateUser($"Wrote ScreamAPI: {Path.GetFileName(api32)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Wrote 32-bit ScreamAPI DLL", LogDestination.Unlocker);
             }
 
             if (api64.FileExists() && !api64_o.FileExists())
@@ -203,16 +214,23 @@ internal static class ScreamAPI
                 api64.MoveFile(api64_o!, true);
                 installForm?.UpdateUser($"Renamed EOS: {Path.GetFileName(api64)} -> {Path.GetFileName(api64_o)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Backed up EOSSDK-Win64-Shipping.dll", LogDestination.Unlocker);
             }
 
             if (api64_o.FileExists())
             {
                 "ScreamAPI.EOSSDK-Win64-Shipping.dll".WriteManifestResource(api64);
                 installForm?.UpdateUser($"Wrote ScreamAPI: {Path.GetFileName(api64)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[ScreamAPI] Wrote 64-bit ScreamAPI DLL", LogDestination.Unlocker);
             }
 
             if (generateConfig)
+            {
                 CheckConfig(directory, selection, installForm);
+                ProgramData.Log.Info($"[ScreamAPI] Configuration generated | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+            }
+
+            ProgramData.Log.Info($"[ScreamAPI] Install completed for directory: {directory} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         });
 
     internal static readonly Dictionary<ResourceIdentifier, HashSet<string>> ResourceMD5s = new()

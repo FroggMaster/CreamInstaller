@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -42,10 +42,10 @@ internal static class EpicLibrary
                     games.Add(test);
 
             string manifests = EpicManifestsPath;
-            ProgramData.Log($"[Epic] Manifests directory: {manifests ?? "(not found)"}");
+            ProgramData.Log.Info($"[Epic] Manifests directory: {manifests ?? "(not found)"}", LogDestination.Scan);
             if (manifests.DirectoryExists())
             {
-                ProgramData.Log($"[Epic] Scanning manifests: {manifests}");
+                ProgramData.Log.Info($"[Epic] Scanning manifests: {manifests}", LogDestination.Scan);
                 foreach (string item in manifests.EnumerateDirectory("*.item"))
                 {
                     if (Program.Canceled)
@@ -59,7 +59,7 @@ internal static class EpicLibrary
                                                  && games.All(g => g.CatalogNamespace != manifest.CatalogNamespace))
                         {
                             games.Add(manifest);
-                            ProgramData.Log($"[Epic] Detected game: {manifest.DisplayName} ({manifest.CatalogNamespace}) | Dir: {manifest.InstallLocation}");
+                            ProgramData.Log.Info($"[Epic] Detected game: {manifest.DisplayName} ({manifest.CatalogNamespace}) | Dir: {manifest.InstallLocation}", LogDestination.Scan);
                         }
                     }
                     catch
@@ -75,11 +75,11 @@ internal static class EpicLibrary
             await HeroicLibrary.GetGames(games);
             int heroicCount = games.Count - beforeHeroic;
             if (heroicCount > 0)
-                ProgramData.Log($"[Epic] Found {heroicCount} game(s) from Heroic Games Launcher");
+                ProgramData.Log.Info($"[Epic] Found {heroicCount} game(s) from Heroic Games Launcher", LogDestination.Scan);
             if (TestManifests.Count > 0)
-                ProgramData.Log($"[Epic] Injected {TestManifests.Count} test game(s).");
+                ProgramData.Log.Info($"[Epic] Injected {TestManifests.Count} test game(s).", LogDestination.Scan);
             timer.Stop();
-            ProgramData.Log($"[Epic] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}");
+            ProgramData.Log.Info($"[Epic] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}", LogDestination.Scan);
             return games;
         });
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -35,12 +35,12 @@ internal static class SteamLibrary
         List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new();
         HashSet<string> seenAppIds = new();
         HashSet<string> gameLibraryDirectories = await GetLibraryDirectories();
-        ProgramData.Log($"[Steam] Found {gameLibraryDirectories.Count} library folder(s).");
+        ProgramData.Log.Info($"[Steam] Found {gameLibraryDirectories.Count} library folder(s).", LogDestination.Scan);
         foreach (string libraryDirectory in gameLibraryDirectories)
         {
             if (Program.Canceled)
                 return games;
-            ProgramData.Log($"[Steam] Scanning library: {libraryDirectory}");
+            ProgramData.Log.Info($"[Steam] Scanning library: {libraryDirectory}", LogDestination.Scan);
             foreach ((string appId, string name, string branch, int buildId, string gameDirectory) game in
                      await GetGamesFromLibraryDirectory(libraryDirectory))
             {
@@ -53,9 +53,9 @@ internal static class SteamLibrary
                  TestGames.Where(t => !seenAppIds.Contains(t.appId)))
             games.Add(testGame);
         if (TestGames.Count > 0)
-            ProgramData.Log($"[Steam] Injected {TestGames.Count} test game(s).");
+            ProgramData.Log.Info($"[Steam] Injected {TestGames.Count} test game(s).", LogDestination.Scan);
         timer.Stop();
-        ProgramData.Log($"[Steam] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}");
+        ProgramData.Log.Info($"[Steam] Total games detected: {games.Count} in {(timer.Elapsed.TotalSeconds >= 60 ? $"{timer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{timer.Elapsed.TotalSeconds:F1}s")}", LogDestination.Scan);
         return games;
     }
 
@@ -65,7 +65,7 @@ internal static class SteamLibrary
         {
             if (Program.Canceled || !libraryDirectory.DirectoryExists())
             {
-                ProgramData.Log($"[Steam] Skipping library (not found or canceled): {libraryDirectory}");
+                ProgramData.Log.Info($"[Steam] Skipping library (not found or canceled): {libraryDirectory}", LogDestination.Scan);
                 return [];
             }
 
@@ -79,7 +79,7 @@ internal static class SteamLibrary
                 }
                 if (!ValveDataFile.TryDeserialize(file.ReadFile(), out VProperty result))
                 {
-                    ProgramData.Log($"[Steam] Failed to deserialize ACF: {file}");
+                    ProgramData.Log.Info($"[Steam] Failed to deserialize ACF: {file}", LogDestination.Scan);
                     return;
                 }
 
@@ -90,7 +90,7 @@ internal static class SteamLibrary
                 if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(installdir) ||
                     string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(buildId))
                 {
-                    ProgramData.Log($"[Steam] Skipping ACF with missing fields: {file}");
+                    ProgramData.Log.Info($"[Steam] Skipping ACF with missing fields: {file}", LogDestination.Scan);
                     return;
                 }
 
@@ -98,7 +98,7 @@ internal static class SteamLibrary
                 string gameDirectory = rawGameDirectory.ResolvePath();
                 if (gameDirectory is null)
                 {
-                    ProgramData.Log($"[Steam] Game directory not found (drive may be slow or disconnected): {rawGameDirectory} | App: {name} ({appId})");
+                    ProgramData.Log.Info($"[Steam] Game directory not found (drive may be slow or disconnected): {rawGameDirectory} | App: {name} ({appId})", LogDestination.Scan);
                     return;
                 }
 
@@ -119,7 +119,7 @@ internal static class SteamLibrary
                     branch = "public";
 
                 if (gamesDict.TryAdd(appId, (name, branch, buildIdInt, gameDirectory)))
-                    ProgramData.Log($"[Steam] Detected game: {name} ({appId}) | Branch: {branch} | Dir: {gameDirectory}");
+                    ProgramData.Log.Info($"[Steam] Detected game: {name} ({appId}) | Branch: {branch} | Dir: {gameDirectory}", LogDestination.Scan);
             });
 
             List<(string appId, string name, string branch, int buildId, string gameDirectory)> games = new(gamesDict.Count);
@@ -137,25 +137,25 @@ internal static class SteamLibrary
             string steamInstallPath = InstallPath;
             if (steamInstallPath == null || !steamInstallPath.DirectoryExists())
             {
-                ProgramData.Log($"[Steam] Steam install path not found or inaccessible: {steamInstallPath ?? "(null)"}");
+                ProgramData.Log.Info($"[Steam] Steam install path not found or inaccessible: {steamInstallPath ?? "(null)"}", LogDestination.Scan);
                 return libraryDirectories;
             }
 
             string libraryFolder = steamInstallPath + @"\steamapps";
             if (!libraryFolder.DirectoryExists())
             {
-                ProgramData.Log($"[Steam] Default steamapps folder not found: {libraryFolder}");
+                ProgramData.Log.Info($"[Steam] Default steamapps folder not found: {libraryFolder}", LogDestination.Scan);
                 return libraryDirectories;
             }
 
             _ = libraryDirectories.Add(libraryFolder);
-            ProgramData.Log($"[Steam] Default library folder: {libraryFolder}");
+            ProgramData.Log.Info($"[Steam] Default library folder: {libraryFolder}", LogDestination.Scan);
 
             string libraryFolders = libraryFolder + @"\libraryfolders.vdf";
             if (!libraryFolders.FileExists() ||
                 !ValveDataFile.TryDeserialize(libraryFolders.ReadFile(), out VProperty result))
             {
-                ProgramData.Log($"[Steam] libraryfolders.vdf not found or failed to parse: {libraryFolders}");
+                ProgramData.Log.Info($"[Steam] libraryfolders.vdf not found or failed to parse: {libraryFolders}", LogDestination.Scan);
                 return libraryDirectories;
             }
 
@@ -174,12 +174,12 @@ internal static class SteamLibrary
 
                 if (resolvedPath is null)
                 {
-                    ProgramData.Log($"[Steam] External library not accessible (drive may be disconnected or letter changed): {steamappsPath}");
+                    ProgramData.Log.Info($"[Steam] External library not accessible (drive may be disconnected or letter changed): {steamappsPath}", LogDestination.Scan);
                     continue;
                 }
 
                 if (libraryDirectories.Add(resolvedPath))
-                    ProgramData.Log($"[Steam] Additional library folder found: {resolvedPath}");
+                    ProgramData.Log.Info($"[Steam] Additional library folder found: {resolvedPath}", LogDestination.Scan);
             }
 
             return libraryDirectories;

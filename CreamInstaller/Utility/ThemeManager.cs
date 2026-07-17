@@ -365,7 +365,7 @@ internal static class ThemeManager
             int useDark = IsDark ? 1 : 0;
             NativeMethods.EnableDarkTitleBar(form.Handle, useDark);
         }
-        catch (Exception ex) { ProgramData.LogWarning($"[Theme] Title bar theming failed: {ex.Message}"); }
+        catch (Exception ex) { ProgramData.Log.Warn($"[Theme] Title bar theming failed: {ex.Message}"); }
     }
 
     private static void TryApplyScrollbarTheme(Control control, bool dark)
@@ -375,7 +375,7 @@ internal static class ThemeManager
             string theme = dark ? "DarkMode_Explorer" : null;
             NativeImports.SetWindowTheme(control.Handle, theme, null);
         }
-        catch (Exception ex) { ProgramData.LogWarning($"[Theme] Scrollbar theming failed: {ex.Message}"); }
+        catch (Exception ex) { ProgramData.Log.Warn($"[Theme] Scrollbar theming failed: {ex.Message}"); }
     }
 
     // -----------------------------------------------------------------

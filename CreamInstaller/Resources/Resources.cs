@@ -46,6 +46,7 @@ internal static class Resources
 
     internal static void WriteManifestResource(this string resourceIdentifier, string filePath)
     {
+        ProgramData.Log.Info($"[Resources] Writing manifest resource: {resourceIdentifier} -> {filePath}", LogDestination.Scan);
         while (!Program.Canceled)
             try
             {
@@ -58,6 +59,7 @@ internal static class Resources
             }
             catch (Exception e)
             {
+                ProgramData.Log.Error($"[Resources] Failed to write manifest resource: {resourceIdentifier} -> {filePath}", e);
                 if (filePath.IOWarn("Failed to write a crucial manifest resource (" + resourceIdentifier + ")", e) is
                     not DialogResult.OK)
                     break;
@@ -66,6 +68,7 @@ internal static class Resources
 
     internal static bool WriteResource(this byte[] resource, string filePath)
     {
+        ProgramData.Log.Info($"[Resources] Writing resource ({resource.Length} bytes) -> {filePath}", LogDestination.Scan);
         while (!Program.Canceled)
             try
             {
@@ -76,6 +79,7 @@ internal static class Resources
             }
             catch (Exception e)
             {
+                ProgramData.Log.Error($"[Resources] Failed to write resource -> {filePath}", e);
                 if (filePath.IOWarn("Failed to write a crucial resource", e) is not DialogResult.OK)
                     break;
             }

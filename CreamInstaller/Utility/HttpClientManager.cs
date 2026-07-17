@@ -89,25 +89,25 @@ internal static class HttpClientManager
                 bool permanent = code is >= 400 and < 500 and not 429;
                 string label = permanent ? "Permanent failure" : code == 429 ? "Too many requests" : "Get request failed";
                 string statusInfo = $" (HTTP {code}{(permanent ? " - Permanent" : code == 429 ? " - Rate Limited" : "")})";
-                ProgramData.LogSteam($"[SteamAPI] {label} to {url}{statusInfo}: {e.Message}");
+                ProgramData.Log.Info($"[SteamAPI] {label} to {url}{statusInfo}: {e.Message}", LogDestination.Steam);
                 return (null, permanent);
             }
-            ProgramData.LogSteam($"[SteamAPI] Get request failed to {url}: {e.Message}");
+            ProgramData.Log.Info($"[SteamAPI] Get request failed to {url}: {e.Message}", LogDestination.Steam);
             return (null, false);
         }
         catch (TaskCanceledException)
         {
-            ProgramData.LogSteam("[SteamAPI] Get request timed out for " + url);
+            ProgramData.Log.Info("[SteamAPI] Get request timed out for " + url, LogDestination.Steam);
             return (null, false);
         }
         catch (OperationCanceledException)
         {
-            ProgramData.LogSteam("[SteamAPI] Get request was cancelled for " + url);
+            ProgramData.Log.Info("[SteamAPI] Get request was cancelled for " + url, LogDestination.Steam);
             return (null, false);
         }
         catch (Exception e)
         {
-            ProgramData.LogSteam("[SteamAPI] Get request failed to " + url + ": " + e.Message);
+            ProgramData.Log.Info("[SteamAPI] Get request failed to " + url + ": " + e.Message, LogDestination.Steam);
             return (null, false);
         }
     }

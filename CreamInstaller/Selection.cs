@@ -154,11 +154,15 @@ internal sealed class Selection : IEquatable<Selection>
                 directory.GetSmokeApiComponents(out _, out _, out _, out _, out string smokeOldConfig,
                     out string smokeConfig, out _, out _, out _);
                 if (smokeConfig.FileExists() || smokeOldConfig.FileExists())
+                {
+                    ProgramData.Log.Info($"[Unlocker] SmokeAPI detected | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.SmokeAPI;
+                }
 
                 directory.GetCreamApiComponents(out _, out _, out _, out _, out string creamConfig);
                 if (creamConfig.FileExists())
                 {
+                    ProgramData.Log.Info($"[Unlocker] CreamAPI detected | Game: {Name} ({Id})", LogDestination.Scan);
                     ReadCreamApiConfig(creamConfig);
                     return InstalledUnlocker.CreamAPI;
                 }
@@ -170,7 +174,11 @@ internal sealed class Selection : IEquatable<Selection>
                 {
                     if ((smokeApi32.FileExists() && smokeApi32.IsResourceFile(ResourceIdentifier.Steamworks32))
                         || (smokeApi64.FileExists() && smokeApi64.IsResourceFile(ResourceIdentifier.Steamworks64)))
+                    {
+                        ProgramData.Log.Info($"[Unlocker] SmokeAPI detected (via _o files) | Game: {Name} ({Id})", LogDestination.Scan);
                         return InstalledUnlocker.SmokeAPI;
+                    }
+                    ProgramData.Log.Info($"[Unlocker] CreamAPI detected (via _o files) | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.CreamAPI;
                 }
             }
@@ -180,7 +188,10 @@ internal sealed class Selection : IEquatable<Selection>
                 directory.GetScreamApiComponents(out _, out string api32_o, out _, out string api64_o,
                     out _, out string config, out _, out _);
                 if (config.FileExists() || api32_o.FileExists() || api64_o.FileExists())
+                {
+                    ProgramData.Log.Info($"[Unlocker] ScreamAPI detected | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.ScreamAPI;
+                }
             }
 
             if (Platform is Platform.Ubisoft)
@@ -188,11 +199,17 @@ internal sealed class Selection : IEquatable<Selection>
                 directory.GetUplayR1Components(out _, out string api32_o, out _, out string api64_o,
                     out string config, out _);
                 if (config.FileExists() || api32_o.FileExists() || api64_o.FileExists())
+                {
+                    ProgramData.Log.Info($"[Unlocker] UplayR1 detected | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.UplayR1;
+                }
                 directory.GetUplayR2Components(out _, out _, out _, out api32_o, out _, out api64_o,
                     out config, out _);
                 if (config.FileExists() || api32_o.FileExists() || api64_o.FileExists())
+                {
+                    ProgramData.Log.Info($"[Unlocker] UplayR2 detected | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.UplayR2;
+                }
             }
         }
 
@@ -202,27 +219,43 @@ internal sealed class Selection : IEquatable<Selection>
             if (directory.GetKoaloaderProxies().Any(proxy =>
                     proxy.FileExists() && proxy.IsResourceFile(ResourceIdentifier.Koaloader))
                 || config.FileExists())
+            {
+                ProgramData.Log.Info($"[Unlocker] Koaloader detected | Game: {Name} ({Id})", LogDestination.Scan);
                 return InstalledUnlocker.Koaloader;
+            }
 
             if (Platform is Platform.Steam or Platform.Paradox)
             {
                 directory.GetSmokeApiComponents(out _, out _, out _, out _, out _, out string smokeConfig, out _, out _, out _);
                 if (smokeConfig.FileExists())
+                {
+                    ProgramData.Log.Info($"[Unlocker] SmokeAPI detected (proxy) | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.SmokeAPI;
+                }
                 directory.GetCreamApiComponents(out _, out _, out _, out _, out string creamConfig);
                 if (creamConfig.FileExists())
+                {
+                    ProgramData.Log.Info($"[Unlocker] CreamAPI detected (proxy) | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.CreamAPI;
+                }
                 if (directory.GetSmokeApiProxies().Any(proxy =>
                         proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
                                                proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                {
+                    ProgramData.Log.Info($"[Unlocker] SmokeAPI proxy DLL detected | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.SmokeAPI;
+                }
                 if (directory.GetCreamApiProxies().Any(proxy =>
                         proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
                                                proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                {
+                    ProgramData.Log.Info($"[Unlocker] CreamAPI proxy DLL detected | Game: {Name} ({Id})", LogDestination.Scan);
                     return InstalledUnlocker.CreamAPI;
+                }
             }
         }
 
+        ProgramData.Log.Info($"[Unlocker] No installed unlocker found | Game: {Name} ({Id})", LogDestination.Scan);
         return InstalledUnlocker.None;
     }
 
@@ -244,8 +277,12 @@ internal sealed class Selection : IEquatable<Selection>
         try
         {
             if (!configPath.FileExists())
+            {
+                ProgramData.Log.Info($"[Unlocker] Config not found: {configPath} | Game: {Name} ({Id})", LogDestination.Scan);
                 return;
+            }
 
+            ProgramData.Log.Info($"[Unlocker] Reading config: {configPath} | Game: {Name} ({Id})", LogDestination.Scan);
             string[] lines = File.ReadAllLines(configPath);
             foreach (string line in lines)
             {
@@ -257,14 +294,15 @@ internal sealed class Selection : IEquatable<Selection>
                     {
                         string value = parts[1].Trim();
                         UseExtraProtection = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        ProgramData.Log.Info($"[Unlocker] ExtraProtection = {UseExtraProtection} | Game: {Name} ({Id})", LogDestination.Scan);
                     }
                     break;
                 }
             }
         }
-        catch
+        catch (Exception e)
         {
-            // If we can't read the config, leave UseExtraProtection at its default value
+            ProgramData.Log.Error($"[Unlocker] Error reading config: {configPath} | Game: {Name} ({Id})", e);
         }
     }
 

@@ -33,7 +33,7 @@ internal static class EpicStore
             response = await QueryGraphQL(categoryNamespace);
             if (response is null)
             {
-                ProgramData.LogWarning("Epic QueryGraphQL returned null for " + categoryNamespace);
+                ProgramData.Log.Warn("Epic QueryGraphQL returned null for " + categoryNamespace);
             }
             try
             {
@@ -187,7 +187,7 @@ internal static class EpicStore
             HttpClient client = HttpClientManager.HttpClient;
             if (client is null)
             {
-                ProgramData.LogWarning("Epic GraphQL client returned null");
+                ProgramData.Log.Warn("Epic GraphQL client returned null");
                 return null;
             }
             HttpResponseMessage httpResponse =

@@ -12,7 +12,7 @@ internal static partial class SteamCMD
     private const int CooldownGame = 600;
     private const int CooldownDlc = 1200;
 
-    private static async Task<CmdAppData> QueryWebAPI(string appId, bool isDlc = false, int attempts = 0)
+    internal static async Task<CmdAppData> QueryWebAPI(string appId, bool isDlc = false, int attempts = 0)
     {
         while (!Program.Canceled)
         {
@@ -23,11 +23,11 @@ internal static partial class SteamCMD
             {
                 (string response, bool permanentFailure) =
                     await HttpClientManager.EnsureGet($"https://api.steamcmd.net/v1/info/{appId}");
-                if (permanentFailure)
+if (permanentFailure)
                 {
-                    ProgramData.LogSteam("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " +
-                                            appId + (isDlc ? " (DLC)" : "") +
-                                            ": Permanent failure, aborting retries");
+                    ProgramData.Log.Info("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " +
+                                        appId + (isDlc ? " (DLC)" : "") +
+                                        ": Permanent failure, aborting retries", LogDestination.Steam);
                     return null;
                 }
                 if (response is not null)
@@ -44,38 +44,38 @@ internal static partial class SteamCMD
                                 {
                                     cacheFile.WriteFile(JsonConvert.SerializeObject(data, Formatting.Indented));
                                 }
-                                catch (Exception e)
+catch (Exception e)
                                 {
-                                    ProgramData.LogSteam("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts +
-                                                            " for " + appId + (isDlc ? " (DLC)" : "")
-                                                            + ": Unsuccessful serialization (" + e.Message + ")");
+                                    ProgramData.Log.Info("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts +
+                                                        " for " + appId + (isDlc ? " (DLC)" : "")
+                                                        + ": Unsuccessful serialization (" + e.Message + ")", LogDestination.Steam);
                                 }
                                 return data;
                             }
                             else
-                                ProgramData.LogSteam(
+                                ProgramData.Log.Info(
                                     "[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " + appId +
                                     (isDlc ? " (DLC)" : "")
-                                    + ": No data");
+                                    + ": No data", LogDestination.Steam);
                         }
                         else
-                            ProgramData.LogSteam(
+                            ProgramData.Log.Info(
                                 "[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " + appId +
                                 (isDlc ? " (DLC)" : "")
-                                + ": Status not success (" + appDetails?.Status + ")");
+                                + ": Status not success (" + appDetails?.Status + ")", LogDestination.Steam);
                     }
-                    catch (Exception e)
+catch (Exception e)
                     {
-                        ProgramData.LogSteam("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " +
-                                               appId + (isDlc ? " (DLC)" : "")
-                                               + ": Unsuccessful deserialization (" + e.Message + ")");
+                        ProgramData.Log.Info("[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " +
+                                            appId + (isDlc ? " (DLC)" : "")
+                                            + ": Unsuccessful deserialization (" + e.Message + ")", LogDestination.Steam);
                     }
                 }
                 else
-                    ProgramData.LogSteam(
+                    ProgramData.Log.Info(
                         "[SteamAPI] SteamCMD web API query failed on attempt #" + attempts + " for " + appId +
                         (isDlc ? " (DLC)" : "") +
-                        ": Response null");
+                        ": Response null", LogDestination.Steam);
             }
 
             if (cachedExists)
@@ -92,7 +92,7 @@ internal static partial class SteamCMD
                 break;
             if (attempts > 3)
             {
-                ProgramData.LogSteam("[SteamAPI] Failed to query SteamCMD web API after 3 tries: " + appId);
+                ProgramData.Log.Info("[SteamAPI] Failed to query SteamCMD web API after 3 tries: " + appId, LogDestination.Steam);
                 break;
             }
 

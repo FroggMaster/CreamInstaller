@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using CreamInstaller.Components;
 using CreamInstaller.Forms;
 using CreamInstaller.Utility;
+using Newtonsoft.Json.Linq;
 using static CreamInstaller.Resources.Resources;
 
 namespace CreamInstaller.Resources;
@@ -30,6 +32,41 @@ internal static class SmokeAPI
         old_log = directory + @"\SmokeAPI.log";
         log = directory + @"\SmokeAPI.log.log";
         cache = directory + @"\SmokeAPI.cache.json";
+    }
+
+    internal static (HashSet<string> enabledDlcIds, HashSet<string> disabledDlcIds) ReadConfigDlcIds(string directory)
+    {
+        directory.GetSmokeApiComponents(out _, out _, out _, out _, out _, out string config, out _, out _, out _);
+        if (!config.FileExists())
+            return (null, null);
+
+        try
+        {
+            string json = File.ReadAllText(config, Encoding.UTF8);
+            JObject obj = JObject.Parse(json);
+
+            HashSet<string> enabled = [];
+            HashSet<string> disabled = [];
+
+            if (obj["override_dlc_status"] is JObject overrideStatus)
+                foreach (JProperty prop in overrideStatus.Properties())
+                    if (prop.Value.ToString() == "locked")
+                        disabled.Add(prop.Name);
+
+            if (obj["extra_dlcs"] is JObject extraDlcs)
+                foreach (JProperty appProp in extraDlcs.Properties())
+                    if (appProp.Value["dlcs"] is JObject dlcs)
+                        foreach (JProperty dlcProp in dlcs.Properties())
+                            enabled.Add(dlcProp.Name);
+
+            ProgramData.Log.Info($"[SmokeAPI] Read config: {config} — {enabled.Count} enabled, {disabled.Count} disabled DLC", LogDestination.Unlocker);
+            return (enabled, disabled);
+        }
+        catch (Exception e)
+        {
+            ProgramData.Log.Error($"[SmokeAPI] Error reading config: {config}", e);
+            return (null, null);
+        }
     }
 
     internal static void CheckConfig(string directory, Selection selection, InstallForm installForm = null)
@@ -62,6 +99,7 @@ internal static class SmokeAPI
             old_config.DeleteFile();
             installForm?.UpdateUser($"Deleted old configuration: {Path.GetFileName(old_config)}", LogTextBox.Action,
                 false);
+            ProgramData.Log.Info($"[SmokeAPI] Deleted old config: {old_config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         }
 
         if (config.FileExists())
@@ -70,8 +108,7 @@ internal static class SmokeAPI
             installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action,
                 false);
         }
-        /*if (installForm is not null)
-            installForm.UpdateUser("Generating SmokeAPI configuration for " + selection.Name + $" in directory \"{directory}\" . . . ", LogTextBox.Operation);*/
+        ProgramData.Log.Info($"[SmokeAPI] Generating configuration with {overrideDlc.Count} locked DLCs, {injectDlc.Count} injected DLCs | Config: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         config.CreateFile(true, installForm)?.Close();
         StreamWriter writer = new(config, true, Encoding.UTF8);
         WriteConfig(writer, selection.Id,
@@ -81,6 +118,7 @@ internal static class SmokeAPI
             new(injectDlc.ToDictionary(dlc => dlc.Id, dlc => dlc), PlatformIdComparer.String), installForm);
         writer.Flush();
         writer.Close();
+        ProgramData.Log.Info($"[SmokeAPI] Configuration generated: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
     }
 
     private static void WriteConfig(StreamWriter writer, string appId,
@@ -173,6 +211,7 @@ internal static class SmokeAPI
             writer.WriteLine("  \"extra_dlcs\": {}");
 
         writer.WriteLine("}");
+        ProgramData.Log.Info($"[SmokeAPI] Wrote config with {overrideDlc.Count} locked DLCs, {injectDlc.Count} injected DLCs, {extraApps.Count} extra apps | AppId: {appId}", LogDestination.Unlocker);
     }
 
     private static void DeleteCreamApiComponents(string directory, InstallForm installForm = null)
@@ -189,6 +228,7 @@ internal static class SmokeAPI
     internal static async Task Uninstall(string directory, InstallForm installForm = null, bool deleteOthers = true)
         => await Task.Run(async () =>
         {
+            ProgramData.Log.Info($"[SmokeAPI] Uninstalling from directory: {directory}", LogDestination.Unlocker);
             DeleteCreamApiComponents(directory, installForm);
 
             directory.GetSmokeApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
@@ -205,6 +245,7 @@ internal static class SmokeAPI
                 installForm?.UpdateUser(
                     $"Restored Steamworks: {Path.GetFileName(api32_o)} -> {Path.GetFileName(api32)}", LogTextBox.Action,
                     false);
+                ProgramData.Log.Info($"[SmokeAPI] Restored original steam_api.dll from backup", LogDestination.Unlocker);
             }
 
             if (api64_o.FileExists())
@@ -219,28 +260,35 @@ internal static class SmokeAPI
                 installForm?.UpdateUser(
                     $"Restored Steamworks: {Path.GetFileName(api64_o)} -> {Path.GetFileName(api64)}", LogTextBox.Action,
                     false);
+                ProgramData.Log.Info($"[SmokeAPI] Restored original steam_api64.dll from backup", LogDestination.Unlocker);
             }
 
             if (!deleteOthers)
+            {
+                ProgramData.Log.Info($"[SmokeAPI] Uninstall completed (partial) for directory: {directory}", LogDestination.Unlocker);
                 return;
+            }
 
             if (old_config.FileExists())
             {
                 old_config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(old_config)}", LogTextBox.Action,
                     false);
+                ProgramData.Log.Info($"[SmokeAPI] Deleted old config: {old_config}", LogDestination.Unlocker);
             }
 
             if (config.FileExists())
             {
                 config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Deleted config: {config}", LogDestination.Unlocker);
             }
 
             if (cache.FileExists())
             {
                 cache.DeleteFile();
                 installForm?.UpdateUser($"Deleted cache: {Path.GetFileName(cache)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Deleted cache: {cache}", LogDestination.Unlocker);
             }
 
             if (old_log.FileExists())
@@ -256,12 +304,14 @@ internal static class SmokeAPI
             }
 
             await CreamAPI.Uninstall(directory, installForm, false);
+            ProgramData.Log.Info($"[SmokeAPI] Uninstall completed for directory: {directory}", LogDestination.Unlocker);
         });
 
     internal static async Task Install(string directory, Selection selection, InstallForm installForm = null,
         bool generateConfig = true)
         => await Task.Run(() =>
         {
+            ProgramData.Log.Info($"[SmokeAPI] Installing to directory: {directory} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
             DeleteCreamApiComponents(directory, installForm);
 
             directory.GetSmokeApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
@@ -271,12 +321,14 @@ internal static class SmokeAPI
                 api32.MoveFile(api32_o!, true);
                 installForm?.UpdateUser($"Renamed Steamworks: {Path.GetFileName(api32)} -> {Path.GetFileName(api32_o)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Backed up steam_api.dll -> steam_api_o.dll", LogDestination.Unlocker);
             }
 
             if (api32_o.FileExists())
             {
                 "SmokeAPI.steam_api.dll".WriteManifestResource(api32);
                 installForm?.UpdateUser($"Wrote SmokeAPI: {Path.GetFileName(api32)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Wrote 32-bit SmokeAPI DLL", LogDestination.Unlocker);
             }
 
             if (api64.FileExists() && !api64_o.FileExists())
@@ -284,55 +336,71 @@ internal static class SmokeAPI
                 api64.MoveFile(api64_o!, true);
                 installForm?.UpdateUser($"Renamed Steamworks: {Path.GetFileName(api64)} -> {Path.GetFileName(api64_o)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Backed up steam_api64.dll -> steam_api64_o.dll", LogDestination.Unlocker);
             }
 
             if (api64_o.FileExists())
             {
                 "SmokeAPI.steam_api64.dll".WriteManifestResource(api64);
                 installForm?.UpdateUser($"Wrote SmokeAPI: {Path.GetFileName(api64)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Wrote 64-bit SmokeAPI DLL", LogDestination.Unlocker);
             }
 
             if (generateConfig)
+            {
                 CheckConfig(directory, selection, installForm);
+                ProgramData.Log.Info($"[SmokeAPI] Configuration generated | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+            }
+
+            ProgramData.Log.Info($"[SmokeAPI] Install completed for directory: {directory} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         });
 
     internal static async Task ProxyUninstall(string directory, InstallForm installForm = null,
         bool deleteOthers = true)
         => await Task.Run(() =>
         {
+            ProgramData.Log.Info($"[SmokeAPI] Proxy uninstall from directory: {directory}", LogDestination.Unlocker);
             foreach (string proxy in directory.GetSmokeApiProxies().Where(proxy =>
                          proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
                                                 proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
             {
                 proxy.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted SmokeAPI: {Path.GetFileName(proxy)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Deleted proxy DLL: {proxy}", LogDestination.Unlocker);
             }
 
             if (!deleteOthers)
+            {
+                ProgramData.Log.Info($"[SmokeAPI] Proxy uninstall completed (partial) for directory: {directory}", LogDestination.Unlocker);
                 return;
+            }
             directory.GetSmokeApiComponents(out _, out _, out _, out _, out string old_config, out string config, out _,
             out _, out _);
             if (config.FileExists())
             {
                 config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Deleted config: {config}", LogDestination.Unlocker);
             }
+            ProgramData.Log.Info($"[SmokeAPI] Proxy uninstall completed for directory: {directory}", LogDestination.Unlocker);
         });
 
     internal static async Task ProxyInstall(string directory, BinaryType binaryType, Selection selection,
         InstallForm installForm = null, bool generateConfig = true)
         => await Task.Run(async () =>
         {
+            ProgramData.Log.Info($"[SmokeAPI] Proxy install to directory: {directory} | Proxy: {selection.Proxy ?? Selection.DefaultProxy} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
             await Koaloader.Uninstall(directory, selection.RootDirectory, installForm);
 
             string proxy = selection.Proxy ?? Selection.DefaultProxy;
             string path = directory + @"\" + proxy + ".dll";
             foreach (string _path in directory.GetSmokeApiProxies().Where(p =>
                          p != path && p.FileExists() && (p.IsResourceFile(ResourceIdentifier.Steamworks32) ||
-                                                         p.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                                                        p.IsResourceFile(ResourceIdentifier.Steamworks64))))
             {
                 _path.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted SmokeAPI: {Path.GetFileName(_path)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[SmokeAPI] Deleted old proxy DLL: {_path}", LogDestination.Unlocker);
             }
 
             if (path.FileExists() && !path.IsResourceFile(ResourceIdentifier.Steamworks32) &&
@@ -343,11 +411,16 @@ internal static class SmokeAPI
                 .WriteManifestResource(path);
             installForm?.UpdateUser(
                 $"Wrote {(binaryType == BinaryType.BIT32 ? "32-bit" : "64-bit")} SmokeAPI: {Path.GetFileName(path)}",
-                LogTextBox.Action,
-                false);
+                LogTextBox.Action, false);
+            ProgramData.Log.Info($"[SmokeAPI] Wrote proxy DLL: {path}", LogDestination.Unlocker);
 
             if (generateConfig)
+            {
                 CheckConfig(directory, selection, installForm);
+                ProgramData.Log.Info($"[SmokeAPI] Configuration generated for proxy install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+            }
+
+            ProgramData.Log.Info($"[SmokeAPI] Proxy install completed for directory: {directory} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         });
 
     internal static readonly Dictionary<ResourceIdentifier, HashSet<string>> ResourceMD5s = new()

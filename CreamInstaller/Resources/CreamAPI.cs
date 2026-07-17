@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,45 @@ internal static class CreamAPI
         config = directory + @"\cream_api.ini";
     }
 
+    internal static HashSet<string> ReadConfigDlcIds(string directory)
+    {
+        directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
+        if (!config.FileExists())
+            return null;
+
+        try
+        {
+            HashSet<string> dlcIds = [];
+            string[] lines = File.ReadAllLines(config, Encoding.Default);
+            bool inDlcSection = false;
+            foreach (string line in lines)
+            {
+                string trimmed = line.Trim();
+                if (trimmed.StartsWith("[dlc]", StringComparison.OrdinalIgnoreCase))
+                {
+                    inDlcSection = true;
+                    continue;
+                }
+                if (inDlcSection && trimmed.StartsWith("["))
+                    break;
+                if (inDlcSection && trimmed.Contains('='))
+                {
+                    string id = trimmed.Split('=')[0].Trim();
+                    if (!string.IsNullOrEmpty(id))
+                        dlcIds.Add(id);
+                }
+            }
+
+            ProgramData.Log.Info($"[CreamAPI] Read config: {config} — {dlcIds.Count} DLC", LogDestination.Unlocker);
+            return dlcIds;
+        }
+        catch (Exception e)
+        {
+            ProgramData.Log.Error($"[CreamAPI] Error reading config: {config}", e);
+            return null;
+        }
+    }
+
     private static void CheckConfig(string directory, Selection selection, InstallForm installForm = null)
     {
         directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
@@ -36,6 +76,7 @@ internal static class CreamAPI
                      .SelectMany(extraDlc => extraDlc))
             _ = dlc.Add(extraDlc);
 
+        ProgramData.Log.Info($"[CreamAPI] Generating configuration with {dlc.Count} DLCs | Config: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         config.DeleteFile();
         installForm?.UpdateUser($"Deleted unnecessary configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
         config.CreateFile(true, installForm)?.Close();
@@ -45,6 +86,7 @@ internal static class CreamAPI
             selection.UseExtraProtection, installForm);
         writer.Flush();
         writer.Close();
+        ProgramData.Log.Info($"[CreamAPI] Configuration generated successfully: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         return;
     }
 
@@ -72,6 +114,7 @@ internal static class CreamAPI
             installForm?.UpdateUser($"Added DLC to cream_api.ini with appid {dlcId} ({dlcName})",
                 LogTextBox.Action, false);
         }
+        ProgramData.Log.Info($"[CreamAPI] Wrote {dlc.Count} DLC entries to cream_api.ini | AppId: {appId} ({name})", LogDestination.Unlocker);
     }
 
     private static void DeleteSmokeApiComponents(string directory, InstallForm installForm = null)
@@ -117,6 +160,7 @@ internal static class CreamAPI
     internal static async Task Uninstall(string directory, InstallForm installForm = null, bool deleteOthers = true)
         => await Task.Run(async () =>
         {
+            ProgramData.Log.Info($"[CreamAPI] Uninstalling from directory: {directory}", LogDestination.Unlocker);
             DeleteSmokeApiComponents(directory, installForm);
 
             directory.GetCreamApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
@@ -133,6 +177,7 @@ internal static class CreamAPI
                 installForm?.UpdateUser(
                     $"Restored Steamworks: {Path.GetFileName(api32_o)} -> {Path.GetFileName(api32)}", LogTextBox.Action,
                     false);
+                ProgramData.Log.Info($"[CreamAPI] Restored original steam_api.dll from backup", LogDestination.Unlocker);
             }
 
             if (api64_o.FileExists())
@@ -147,24 +192,31 @@ internal static class CreamAPI
                 installForm?.UpdateUser(
                     $"Restored Steamworks: {Path.GetFileName(api64_o)} -> {Path.GetFileName(api64)}", LogTextBox.Action,
                     false);
+                ProgramData.Log.Info($"[CreamAPI] Restored original steam_api64.dll from backup", LogDestination.Unlocker);
             }
 
             if (!deleteOthers)
+            {
+                ProgramData.Log.Info($"[CreamAPI] Uninstall completed (partial) for directory: {directory}", LogDestination.Unlocker);
                 return;
+            }
 
             if (config.FileExists())
             {
                 config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[CreamAPI] Deleted configuration: {config}", LogDestination.Unlocker);
             }
 
             await SmokeAPI.Uninstall(directory, installForm, false);
+            ProgramData.Log.Info($"[CreamAPI] Uninstall completed for directory: {directory}", LogDestination.Unlocker);
         });
 
     internal static async Task Install(string directory, Selection selection, InstallForm installForm = null,
         bool generateConfig = true)
         => await Task.Run(() =>
         {
+            ProgramData.Log.Info($"[CreamAPI] Installing to directory: {directory} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
             DeleteSmokeApiComponents(directory, installForm);
 
             directory.GetCreamApiComponents(out string api32, out string api32_o, out string api64, out string api64_o,
@@ -174,6 +226,7 @@ internal static class CreamAPI
                 api32.MoveFile(api32_o!, true);
                 installForm?.UpdateUser($"Renamed Steamworks: {Path.GetFileName(api32)} -> {Path.GetFileName(api32_o)}",
                     LogTextBox.Action, false);
+                ProgramData.Log.Info($"[CreamAPI] Backed up steam_api.dll -> steam_api_o.dll", LogDestination.Unlocker);
             }
 
             if (api32_o.FileExists())
@@ -193,48 +246,63 @@ internal static class CreamAPI
             {
                 "CreamAPI.steam_api64.dll".WriteManifestResource(api64);
                 installForm?.UpdateUser($"Wrote CreamAPI: {Path.GetFileName(api64)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[CreamAPI] Wrote 64-bit CreamAPI DLL to: {api64}", LogDestination.Unlocker);
             }
 
             if (generateConfig)
+            {
                 CheckConfig(directory, selection, installForm);
+                ProgramData.Log.Info($"[CreamAPI] Configuration generated | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+            }
+
+            ProgramData.Log.Info($"[CreamAPI] Install completed for directory: {directory} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         });
 
     internal static async Task ProxyUninstall(string directory, InstallForm installForm = null,
         bool deleteOthers = true)
         => await Task.Run(() =>
         {
+            ProgramData.Log.Info($"[CreamAPI] Proxy uninstall from directory: {directory}", LogDestination.Unlocker);
             foreach (string proxy in directory.GetCreamApiProxies().Where(proxy =>
                          proxy.FileExists() && (proxy.IsResourceFile(ResourceIdentifier.Steamworks32) ||
                                                 proxy.IsResourceFile(ResourceIdentifier.Steamworks64))))
             {
                 proxy.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted CreamAPI: {Path.GetFileName(proxy)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[CreamAPI] Deleted proxy DLL: {proxy}", LogDestination.Unlocker);
             }
 
             if (!deleteOthers)
+            {
+                ProgramData.Log.Info($"[CreamAPI] Proxy uninstall completed (partial) for directory: {directory}", LogDestination.Unlocker);
                 return;
+            }
             directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
             if (config.FileExists())
             {
                 config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[CreamAPI] Deleted configuration: {config}", LogDestination.Unlocker);
             }
+            ProgramData.Log.Info($"[CreamAPI] Proxy uninstall completed for directory: {directory}", LogDestination.Unlocker);
         });
 
     internal static async Task ProxyInstall(string directory, BinaryType binaryType, Selection selection,
         InstallForm installForm = null, bool generateConfig = true)
         => await Task.Run(async () =>
         {
+            ProgramData.Log.Info($"[CreamAPI] Proxy install to directory: {directory} | Proxy: {selection.Proxy ?? Selection.DefaultProxy} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
             await Koaloader.Uninstall(directory, selection.RootDirectory, installForm);
 
             string proxy = selection.Proxy ?? Selection.DefaultProxy;
             string path = directory + @"\" + proxy + ".dll";
             foreach (string _path in directory.GetCreamApiProxies().Where(p =>
                          p != path && p.FileExists() && (p.IsResourceFile(ResourceIdentifier.Steamworks32) ||
-                                                         p.IsResourceFile(ResourceIdentifier.Steamworks64))))
+                                                        p.IsResourceFile(ResourceIdentifier.Steamworks64))))
             {
                 _path.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted CreamAPI: {Path.GetFileName(_path)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[CreamAPI] Deleted old proxy DLL: {_path}", LogDestination.Unlocker);
             }
 
             if (path.FileExists() && !path.IsResourceFile(ResourceIdentifier.Steamworks32) &&
@@ -247,9 +315,15 @@ internal static class CreamAPI
                 $"Wrote {(binaryType == BinaryType.BIT32 ? "32-bit" : "64-bit")} CreamAPI: {Path.GetFileName(path)}",
                 LogTextBox.Action,
                 false);
+            ProgramData.Log.Info($"[CreamAPI] Wrote proxy DLL: {path}", LogDestination.Unlocker);
 
             if (generateConfig)
+            {
                 CheckConfig(directory, selection, installForm);
+                ProgramData.Log.Info($"[CreamAPI] Configuration generated for proxy install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+            }
+
+            ProgramData.Log.Info($"[CreamAPI] Proxy install completed for directory: {directory} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         });
 
     internal static readonly Dictionary<ResourceIdentifier, HashSet<string>> ResourceMD5s = new()

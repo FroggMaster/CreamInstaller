@@ -108,7 +108,7 @@ internal sealed partial class TestGameForm : CustomForm
                 if (!string.IsNullOrWhiteSpace(title))
                     return title;
             }
-            catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Store name lookup failed for AppID {appId}: {ex.Message}"); /* fall through to SteamCMD */ }
+            catch (Exception ex) { ProgramData.Log.Warn($"[TestGame] Store name lookup failed for AppID {appId}: {ex.Message}"); /* fall through to SteamCMD */ }
 
             CmdAppData cmdData = await SteamCMD.GetAppInfo(appId);
             return cmdData?.Common?.Name;
@@ -288,7 +288,7 @@ internal sealed partial class TestGameForm : CustomForm
 
             CreatedDirectories.Add(gameDir);
             SteamLibrary.TestGames.Add((appId, gameName, "public", 1, gameDir));
-            ProgramData.Log($"[TestGame] Steam: {gameName} ({appId}) at {gameDir}");
+            ProgramData.Log.Info($"[TestGame] Steam: {gameName} ({appId}) at {gameDir}", LogDestination.Scan);
             SetStatus($"✓ Steam test game '{gameName}' ({appId}) generated. Press Rescan.");
         }
         catch (Exception ex)
@@ -343,7 +343,7 @@ internal sealed partial class TestGameForm : CustomForm
                 InstallLocation = gameDir
             });
 
-            ProgramData.Log($"[TestGame] Epic: {gameName} ({catalogNamespace}) at {gameDir}");
+            ProgramData.Log.Info($"[TestGame] Epic: {gameName} ({catalogNamespace}) at {gameDir}", LogDestination.Scan);
             SetStatus($"✓ Epic test game '{gameName}' generated. Press Rescan.");
         }
         catch (Exception ex)
@@ -393,7 +393,7 @@ internal sealed partial class TestGameForm : CustomForm
 
             CreatedDirectories.Add(gameDir);
             UbisoftLibrary.TestGames.Add((gameId, gameName, gameDir));
-            ProgramData.Log($"[TestGame] Ubisoft: {gameName} ({gameId}) at {gameDir}");
+            ProgramData.Log.Info($"[TestGame] Ubisoft: {gameName} ({gameId}) at {gameDir}", LogDestination.Scan);
             SetStatus($"✓ Ubisoft test game '{gameName}' ({gameId}) generated. Press Rescan.");
         }
         catch (Exception ex)
@@ -410,17 +410,17 @@ internal sealed partial class TestGameForm : CustomForm
         EpicLibrary.TestManifests.Clear();
         UbisoftLibrary.TestGames.Clear();
         foreach (string dir in CreatedDirectories)
-            try { Directory.Delete(dir, true); } catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Cleanup deletion failed for {dir}: {ex.Message}"); }
+            try { Directory.Delete(dir, true); } catch (Exception ex) { ProgramData.Log.Warn($"[TestGame] Cleanup deletion failed for {dir}: {ex.Message}"); }
         CreatedDirectories.Clear();
         if (Directory.Exists(TestGamesRoot))
-            try { Directory.Delete(TestGamesRoot, true); } catch (Exception ex) { ProgramData.LogWarning($"[TestGame] Cleanup failed to delete TestGames root: {ex.Message}"); }
+            try { Directory.Delete(TestGamesRoot, true); } catch (Exception ex) { ProgramData.Log.Warn($"[TestGame] Cleanup failed to delete TestGames root: {ex.Message}"); }
         // Remove any installed.json records for test games (e.g. if an unlocker was installed to a test game)
         List<InstalledGameRecord> installedRecords = ProgramData.ReadInstalledGames();
         int removed = installedRecords.RemoveAll(r => r.RootDirectory?.StartsWith(TestGamesRoot, StringComparison.OrdinalIgnoreCase) == true);
         if (removed > 0)
         {
             ProgramData.WriteInstalledGames(installedRecords);
-            ProgramData.Log($"[TestGame] Removed {removed} stale installed-game record(s) from test games.");
+            ProgramData.Log.Info($"[TestGame] Removed {removed} stale installed-game record(s) from test games.", LogDestination.Scan);
         }
         // Remove any Selection entries under the TestGames root so the main game list updates immediately
         foreach (Selection selection in Selection.All.Keys.ToHashSet().Where(s =>

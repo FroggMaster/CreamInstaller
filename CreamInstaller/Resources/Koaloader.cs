@@ -152,33 +152,42 @@ internal static class Koaloader
         bool deleteConfig = true)
         => await Task.Run(async () =>
         {
+            ProgramData.Log.Info($"[Koaloader] Uninstalling from directory: {directory}", LogDestination.Unlocker);
             directory.GetKoaloaderComponents(out string old_config, out string config, out string log);
+            int proxyCount = 0;
             foreach (string proxyPath in directory.GetKoaloaderProxies().Where(proxyPath
                          => proxyPath.FileExists() && proxyPath.IsResourceFile(ResourceIdentifier.Koaloader)))
             {
                 proxyPath.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted Koaloader: {Path.GetFileName(proxyPath)}", LogTextBox.Action, false);
+                proxyCount++;
             }
 
+            int autoLoadCount = 0;
             foreach ((string unlocker, string path) in AutoLoadDLLs
                          .Select(pair => (pair.unlocker, path: directory + @"\" + pair.dll))
                          .Where(pair => pair.path.FileExists() && pair.path.IsResourceFile()))
             {
                 path.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted {unlocker}: {Path.GetFileName(path)}", LogTextBox.Action, false);
+                autoLoadCount++;
             }
+            if (proxyCount > 0 || autoLoadCount > 0)
+                ProgramData.Log.Info($"[Koaloader] Deleted {proxyCount} proxies, {autoLoadCount} auto-load DLLs | Directory: {directory}", LogDestination.Unlocker);
 
             if (deleteConfig && old_config.FileExists())
             {
                 old_config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(old_config)}", LogTextBox.Action,
                     false);
+                ProgramData.Log.Info($"[Koaloader] Deleted old config: {old_config}", LogDestination.Unlocker);
             }
 
             if (deleteConfig && config.FileExists())
             {
                 config.DeleteFile();
                 installForm?.UpdateUser($"Deleted configuration: {Path.GetFileName(config)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[Koaloader] Deleted config: {config}", LogDestination.Unlocker);
             }
 
             await SmokeAPI.Uninstall(directory, installForm, deleteConfig);
@@ -187,6 +196,7 @@ internal static class Koaloader
             await UplayR2.Uninstall(directory, installForm, deleteConfig);
             if (rootDirectory is not null && directory != rootDirectory)
                 await Uninstall(rootDirectory, null, installForm, deleteConfig);
+            ProgramData.Log.Info($"[Koaloader] Uninstall completed for directory: {directory}", LogDestination.Unlocker);
         });
 
     internal static async Task Install(string directory, BinaryType binaryType, Selection selection,
@@ -194,6 +204,7 @@ internal static class Koaloader
         InstallForm installForm = null, bool generateConfig = true)
         => await Task.Run(async () =>
         {
+            ProgramData.Log.Info($"[Koaloader] Installing to directory: {directory} | Proxy: {selection.Proxy ?? Selection.DefaultProxy} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
             await CreamAPI.ProxyUninstall(directory, installForm);
 
             string proxy = selection.Proxy ?? Selection.DefaultProxy;
@@ -203,6 +214,7 @@ internal static class Koaloader
             {
                 _path.DeleteFile(true);
                 installForm?.UpdateUser($"Deleted Koaloader: {Path.GetFileName(_path)}", LogTextBox.Action, false);
+                ProgramData.Log.Info($"[Koaloader] Deleted old proxy: {_path}", LogDestination.Unlocker);
             }
 
             if (path.FileExists() && !path.IsResourceFile(ResourceIdentifier.Koaloader))
@@ -213,6 +225,7 @@ internal static class Koaloader
                 $"Wrote {(binaryType == BinaryType.BIT32 ? "32-bit" : "64-bit")} Koaloader: {Path.GetFileName(path)}",
                 LogTextBox.Action,
                 false);
+            ProgramData.Log.Info($"[Koaloader] Wrote proxy DLL: {path}", LogDestination.Unlocker);
             bool bit32 = false, bit64 = false;
             foreach (string executable in directory.EnumerateDirectory("*.exe"))
                 if (executable.TryGetFileBinaryType(out BinaryType binaryType))
@@ -277,6 +290,7 @@ internal static class Koaloader
                         LogTextBox.Action, false);
                 }
 
+                ProgramData.Log.Info($"[Koaloader] Calling SmokeAPI.CheckConfig | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                 SmokeAPI.CheckConfig(rootDirectory ?? directory, selection, installForm);
             }
 
@@ -328,6 +342,7 @@ internal static class Koaloader
                             LogTextBox.Action, false);
                     }
 
+                    ProgramData.Log.Info($"[Koaloader] Calling ScreamAPI.CheckConfig | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                     ScreamAPI.CheckConfig(rootDirectory ?? directory, selection, installForm);
                     break;
                 }
@@ -379,6 +394,7 @@ internal static class Koaloader
                             LogTextBox.Action, false);
                     }
 
+                    ProgramData.Log.Info($"[Koaloader] Calling UplayR1.CheckConfig | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                     UplayR1.CheckConfig(rootDirectory ?? directory, selection, installForm);
                     if (bit32)
                     {
@@ -426,13 +442,20 @@ internal static class Koaloader
                             LogTextBox.Action, false);
                     }
 
+                    ProgramData.Log.Info($"[Koaloader] Calling UplayR2.CheckConfig | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                     UplayR2.CheckConfig(rootDirectory ?? directory, selection, installForm);
                     break;
                 }
             }
 
             if (generateConfig)
+            {
+                ProgramData.Log.Info($"[Koaloader] Calling Koaloader.CheckConfig | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                 CheckConfig(directory, installForm);
+                ProgramData.Log.Info($"[Koaloader] Configuration generated | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+            }
+
+            ProgramData.Log.Info($"[Koaloader] Install completed for directory: {directory} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
         });
 
     internal static readonly Dictionary<ResourceIdentifier, HashSet<string>> ResourceMD5s = new()

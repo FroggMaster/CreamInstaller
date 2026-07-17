@@ -254,7 +254,7 @@ internal static partial class SteamCMD
             attempts++;
             if (attempts > 10)
             {
-                ProgramData.LogSteam("[SteamCMD] Failed to query SteamCMD after 10 tries: " + appId + " (" + branch + ")");
+                ProgramData.Log.Info("[SteamCMD] Failed to query SteamCMD after 10 tries: " + appId + " (" + branch + ")", LogDestination.Steam);
                 break;
             }
 
@@ -273,9 +273,9 @@ internal static partial class SteamCMD
                 }
                 else
                 {
-                    ProgramData.LogSteam(
+                    ProgramData.Log.Info(
                         "[SteamCMD] SteamCMD query failed on attempt #" + attempts + " for " + appId + " (" + branch +
-                        "): Bad output");
+                        "): Bad output", LogDestination.Steam);
                     continue;
                 }
             }
@@ -283,9 +283,9 @@ internal static partial class SteamCMD
             if (!ValveDataFile.TryDeserialize(output, out VProperty appInfo) || appInfo.Value is VValue)
             {
                 appUpdateFile.DeleteFile();
-                ProgramData.LogSteam(
+                ProgramData.Log.Info(
                     "[SteamCMD] SteamCMD query failed on attempt #" + attempts + " for " + appId + " (" + branch +
-                    "): Deserialization failed");
+                    "): Deserialization failed", LogDestination.Steam);
                 continue;
             }
 
@@ -295,9 +295,9 @@ internal static partial class SteamCMD
                 if (appInfo.ToJson().Value.ToObject<CmdAppData>() is not { } cmdAppData)
                 {
                     appUpdateFile.DeleteFile();
-                    ProgramData.LogSteam(
+                    ProgramData.Log.Info(
                         "[SteamCMD] SteamCMD query failed on attempt #" + attempts + " for " + appId + " (" + branch +
-                        "): VDF-JSON conversion failed");
+                        "): VDF-JSON conversion failed", LogDestination.Steam);
                     continue;
                 }
 
@@ -306,9 +306,9 @@ internal static partial class SteamCMD
             catch (Exception e)
             {
                 appUpdateFile.DeleteFile();
-                ProgramData.LogSteam(
+                ProgramData.Log.Info(
                     "[SteamCMD] SteamCMD query failed on attempt #" + attempts + " for " + appId + " (" + branch +
-                    "): VDF-JSON conversion failed (" + e.Message + ")");
+                    "): VDF-JSON conversion failed (" + e.Message + ")", LogDestination.Steam);
                 continue;
             }
 
@@ -326,9 +326,9 @@ internal static partial class SteamCMD
             foreach (string dlcAppUpdateFile in dlcAppIds.Select(id => $@"{AppInfoPath}\{id}.vdf"))
                 dlcAppUpdateFile.DeleteFile();
             appUpdateFile.DeleteFile();
-            ProgramData.LogSteam(
+            ProgramData.Log.Info(
                 "[SteamCMD] SteamCMD query skipped on attempt #" + attempts + " for " + appId + " (" + branch +
-                "): Outdated cache");
+                "): Outdated cache", LogDestination.Steam);
         }
 
         return null;

@@ -330,39 +330,47 @@ internal sealed partial class InstallForm : CustomForm
     {
         operationsCount = activeSelections.Count;
         completeOperationsCount = 0;
+        ProgramData.Log.Info($"[InstallForm] Starting {(uninstalling ? "uninstall" : "install")} for {operationsCount} program(s)", LogDestination.Unlocker);
         foreach (Selection selection in activeSelections)
         {
             if (Program.Canceled)
                 throw new CustomMessageException("The operation was canceled.");
             try
             {
+                ProgramData.Log.Info($"[InstallForm] {(uninstalling ? "Uninstalling" : "Installing")} | Game: {selection.Name} ({selection.Id}) | Platform: {selection.Platform}", LogDestination.Unlocker);
                 await OperateFor(selection);
                 if (Program.Canceled)
                     throw new CustomMessageException("The operation was canceled.");
                 UpdateUser($"Operation succeeded for {selection.Name}.", LogTextBox.Success);
+                ProgramData.Log.Info($"[InstallForm] Operation succeeded | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                 _ = activeSelections.Remove(selection);
             }
             catch (Exception exception)
             {
                 UpdateUser($"Operation failed for {selection.Name}: " + exception, LogTextBox.Error);
+                ProgramData.Log.Info($"[InstallForm] Operation failed: {exception.Message} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
             }
 
             ++completeOperationsCount;
         }
 
         // Persist install/uninstall results
+        ProgramData.Log.Info($"[InstallForm] Persisting install/uninstall results to installed.json", LogDestination.Unlocker);
         foreach (Selection selection in Selection.AllEnabled)
         {
             if (uninstalling)
             {
                 selection.InstalledUnlocker = InstalledUnlocker.None;
                 ProgramData.RemoveInstalledGame(selection.Platform, selection.Id);
+                ProgramData.Log.Info($"[InstallForm] Removed from installed.json | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
             }
             else
             {
                 InstalledUnlocker unlocker = selection.DetectInstalledUnlocker();
                 selection.InstalledUnlocker = unlocker;
                 if (unlocker != InstalledUnlocker.None)
+                {
+                    int dlcCount = selection.DLC.Count();
                     ProgramData.UpsertInstalledGame(new InstalledGameRecord
                     {
                         Platform = selection.Platform,
@@ -377,35 +385,29 @@ internal sealed partial class InstallForm : CustomForm
                         {
                             DlcType = dlc.Type.ToString(),
                             Id = dlc.Id,
-                            Name = dlc.Name
+                            Name = dlc.Name,
+                            Enabled = dlc.Enabled
                         }).ToList()
                     });
+                    ProgramData.Log.Info($"[InstallForm] Saved to installed.json: {unlocker} with {dlcCount} DLCs | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+                }
+                else
+                    ProgramData.Log.Info($"[InstallForm] No unlocker detected after install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
             }
         }
-
-        // Persist DLC checkbox state so it is restored on next scan without requiring a manual Save
-        if (!uninstalling)
-        {
-            List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
-            foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-            {
-                _ = dlcChoices.RemoveAll(n =>
-                    n.platform == dlc.Selection.Platform && n.gameId == dlc.Selection.Id && n.dlcId == dlc.Id);
-                if (dlc.Name == "Unknown" ? dlc.Enabled : !dlc.Enabled)
-                    dlcChoices.Add((dlc.Selection.Platform, dlc.Selection.Id, dlc.Id));
-            }
-            ProgramData.WriteDlcChoices(dlcChoices);
-        }
-
         SelectForm.Current?.Invoke(() => SelectForm.Current?.InvalidateGameList());
 
         Program.Cleanup();
         int activeCount = activeSelections.Count;
         if (activeCount > 0)
+        {
+            ProgramData.Log.Info($"[InstallForm] Operation completed with {activeCount} failure(s)", LogDestination.Unlocker);
             if (activeCount == 1)
                 throw new CustomMessageException($"Operation failed for {activeSelections.First().Name}.");
             else
                 throw new CustomMessageException($"Operation failed for {activeCount} programs.");
+        }
+        ProgramData.Log.Info($"[InstallForm] All operations completed successfully", LogDestination.Unlocker);
     }
 
     private async void Start()
@@ -423,12 +425,14 @@ internal sealed partial class InstallForm : CustomForm
                 $"DLC unlocker(s) successfully {(uninstalling ? "uninstalled" : "installed and generated")} for " +
                 selectionCount + " program(s).",
                 LogTextBox.Success);
+            ProgramData.Log.Info($"[InstallForm] Successfully {(uninstalling ? "uninstalled" : "installed and generated")} for {selectionCount} program(s)", LogDestination.Unlocker);
         }
         catch (Exception exception)
         {
             UpdateUser(
                 $"DLC unlocker {(uninstalling ? "uninstallation" : "installation and/or generation")} failed: " +
                 exception, LogTextBox.Error);
+            ProgramData.Log.Info($"[InstallForm] Operation failed: {exception.Message}", LogDestination.Unlocker);
             retryButton.Enabled = true;
         }
 

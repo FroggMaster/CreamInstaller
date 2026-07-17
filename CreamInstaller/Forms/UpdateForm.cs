@@ -106,7 +106,7 @@ internal sealed partial class UpdateForm : CustomForm
         }
         catch (Exception ex)
         {
-            ProgramData.LogError("UpdateForm OnLoad failed", ex);
+            ProgramData.Log.Error("UpdateForm OnLoad failed", ex);
 #if DEBUG
             ex.HandleFatalException();
 #else
@@ -260,7 +260,7 @@ internal sealed partial class UpdateForm : CustomForm
         }
         catch (Exception ex)
         {
-            ProgramData.LogError("UpdateForm OnUpdate failed", ex);
+            ProgramData.Log.Error("UpdateForm OnUpdate failed", ex);
             // Show error to user
             ex.HandleException(this, Program.Name + " encountered an unexpected error during update");
             StartProgram();

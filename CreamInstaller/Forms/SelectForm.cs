@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -156,7 +156,7 @@ internal sealed partial class SelectForm : CustomForm
         if (!uninstallAll && programsToScan is { Count: > 0 })
         {
             string platforms = string.Join(", ", programsToScan.Select(p => p.platform.ToString()).Distinct());
-            ProgramData.Log($"[Scan] User selected {programsToScan.Count} game(s) for scanning on {platforms}");
+            ProgramData.Log.Info($"[Scan] User selected {programsToScan.Count} game(s) for scanning on {platforms}", LogDestination.Scan);
         }
         List<Task> appTasks = new();
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Paradox))
@@ -189,7 +189,7 @@ internal sealed partial class SelectForm : CustomForm
             steamCount = steamGames.Count;
             steamSeconds = steamLibTimer.Elapsed.TotalSeconds;
             totalLibraryScanSeconds += steamSeconds;
-            ProgramData.Log($"[Steam] Scanned library: {steamCount} games in {steamSeconds:F1}s");
+            ProgramData.Log.Info($"[Steam] Scanned library: {steamCount} games in {steamSeconds:F1}s", LogDestination.Scan);
             totalGamesDetected += steamCount;
             int steamToProcess = 0, steamBlocked = 0, steamNotSelected = 0;
             steamGamesToCheck = steamGames.Count;
@@ -203,7 +203,7 @@ internal sealed partial class SelectForm : CustomForm
                     if (blockReason is not null)
                     {
                         steamBlocked++;
-                        ProgramData.Log($"[Steam] Skipping blocked game: {name} ({appId}) — {blockReason}");
+                        ProgramData.Log.Info($"[Steam] Skipping blocked game: {name} ({appId}) — {blockReason}", LogDestination.Scan);
                         _ = Interlocked.Decrement(ref steamGamesToCheck);
                         continue;
                     }
@@ -226,7 +226,7 @@ internal sealed partial class SelectForm : CustomForm
                     if (steamApiDllMissing)
                     {
                         dllDirectories = [];
-                        ProgramData.Log($"[Steam] {name} ({appId}): no steam_api.dll or steam_api64.dll found — forced proxying will be used");
+                        ProgramData.Log.Info($"[Steam] {name} ({appId}): no steam_api.dll or steam_api64.dll found — forced proxying will be used", LogDestination.Scan);
                         if (uninstallAll)
                         {
                             _ = Interlocked.Decrement(ref steamGamesToCheck);
@@ -254,7 +254,7 @@ internal sealed partial class SelectForm : CustomForm
                     CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 16000);
                     if (storeAppData is null && cmdAppData is null)
                     {
-                        ProgramData.Log($"[Steam] Skipping {name} ({appId}): no store data from Steam Store or SteamCMD — unable to determine DLCs");
+                        ProgramData.Log.Info($"[Steam] Skipping {name} ({appId}): no store data from Steam Store or SteamCMD — unable to determine DLCs", LogDestination.Scan);
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -370,7 +370,7 @@ internal sealed partial class SelectForm : CustomForm
                         }
                     else
                     {
-                        ProgramData.Log($"[Steam] Skipping {name} ({appId}): no DLC entries found in store data");
+                        ProgramData.Log.Info($"[Steam] Skipping {name} ({appId}): no DLC entries found in store data", LogDestination.Scan);
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -387,7 +387,7 @@ internal sealed partial class SelectForm : CustomForm
                     gameQueriesDone.TrySetResult();
                     if (dlc.IsEmpty)
                     {
-                        ProgramData.Log($"[Steam] Skipping {name} ({appId}): no DLCs remained after processing");
+                        ProgramData.Log.Info($"[Steam] Skipping {name} ({appId}): no DLCs remained after processing", LogDestination.Scan);
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -437,7 +437,7 @@ internal sealed partial class SelectForm : CustomForm
                 appTasks.Add(task);
             }
             if (!uninstallAll)
-                ProgramData.Log($"[Steam] Will process {steamToProcess} selected game(s) for DLC scan ({steamBlocked} blocked, {steamNotSelected} not in current selection)");
+                ProgramData.Log.Info($"[Steam] Will process {steamToProcess} selected game(s) for DLC scan ({steamBlocked} blocked, {steamNotSelected} not in current selection)", LogDestination.Scan);
         }
 
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Epic))
@@ -448,7 +448,7 @@ internal sealed partial class SelectForm : CustomForm
             epicCount = epicGames.Count;
             epicSeconds = epicLibTimer.Elapsed.TotalSeconds;
             totalLibraryScanSeconds += epicSeconds;
-            ProgramData.Log($"[Epic] Scanned library: {epicCount} games in {epicSeconds:F1}s");
+            ProgramData.Log.Info($"[Epic] Scanned library: {epicCount} games in {epicSeconds:F1}s", LogDestination.Scan);
             totalGamesDetected += epicCount;
             int epicToProcess = 0, epicBlocked = 0, epicNotSelected = 0;
             foreach (Manifest manifest in epicGames)
@@ -464,7 +464,7 @@ internal sealed partial class SelectForm : CustomForm
                     if (blockReason is not null)
                     {
                         epicBlocked++;
-                        ProgramData.Log($"[Epic] Skipping blocked game: {name} ({@namespace}) — {blockReason}");
+                        ProgramData.Log.Info($"[Epic] Skipping blocked game: {name} ({@namespace}) — {blockReason}", LogDestination.Scan);
                         continue;
                     }
                     if (!programsToScan.Any(c => c.platform is Platform.Epic && c.id == @namespace))
@@ -482,7 +482,7 @@ internal sealed partial class SelectForm : CustomForm
                     HashSet<string> dllDirectories = await directory.GetDllDirectoriesFromGameDirectory(Platform.Epic);
                     if (dllDirectories is null)
                     {
-                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no EOSSDK-Win32-Shipping.dll or EOSSDK-Win64-Shipping.dll found. Game directory may be incomplete");
+                        ProgramData.Log.Info($"[Epic] Skipping {name} ({@namespace}): no EOSSDK-Win32-Shipping.dll or EOSSDK-Win64-Shipping.dll found. Game directory may be incomplete", LogDestination.Scan);
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -534,7 +534,7 @@ internal sealed partial class SelectForm : CustomForm
 
                     if (catalogItems.IsEmpty)
                     {
-                        ProgramData.Log($"[Epic] Skipping {name} ({@namespace}): no catalog/DLC entries found");
+                        ProgramData.Log.Info($"[Epic] Skipping {name} ({@namespace}): no catalog/DLC entries found", LogDestination.Scan);
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -575,7 +575,7 @@ internal sealed partial class SelectForm : CustomForm
                 appTasks.Add(task);
             }
             if (!uninstallAll)
-                ProgramData.Log($"[Epic] Will process {epicToProcess} selected game(s) for DLC scan ({epicBlocked} blocked, {epicNotSelected} not in current selection)");
+                ProgramData.Log.Info($"[Epic] Will process {epicToProcess} selected game(s) for DLC scan ({epicBlocked} blocked, {epicNotSelected} not in current selection)", LogDestination.Scan);
         }
 
         if (uninstallAll || programsToScan.Any(c => c.platform is Platform.Ubisoft))
@@ -586,7 +586,7 @@ internal sealed partial class SelectForm : CustomForm
             ubisoftCount = ubisoftGames.Count;
             ubiSeconds = ubiLibTimer.Elapsed.TotalSeconds;
             totalLibraryScanSeconds += ubiSeconds;
-            ProgramData.Log($"[Ubisoft] Scanned library: {ubisoftCount} games in {ubiSeconds:F1}s");
+            ProgramData.Log.Info($"[Ubisoft] Scanned library: {ubisoftCount} games in {ubiSeconds:F1}s", LogDestination.Scan);
             totalGamesDetected += ubisoftCount;
             int ubiToProcess = 0, ubiBlocked = 0, ubiNotSelected = 0;
             foreach ((string gameId, string name, string gameDirectory) in ubisoftGames)
@@ -599,7 +599,7 @@ internal sealed partial class SelectForm : CustomForm
                     if (blockReason is not null)
                     {
                         ubiBlocked++;
-                        ProgramData.Log($"[Ubisoft] Skipping blocked game: {name} ({gameId}) — {blockReason}");
+                        ProgramData.Log.Info($"[Ubisoft] Skipping blocked game: {name} ({gameId}) — {blockReason}", LogDestination.Scan);
                         continue;
                     }
                     if (!programsToScan.Any(c => c.platform is Platform.Ubisoft && c.id == gameId))
@@ -618,7 +618,7 @@ internal sealed partial class SelectForm : CustomForm
                         await gameDirectory.GetDllDirectoriesFromGameDirectory(Platform.Ubisoft);
                     if (dllDirectories is null)
                     {
-                        ProgramData.Log($"[Ubisoft] Skipping {name} ({gameId}): no uplay_r1_loader.dll or uplay_r1_loader64.dll found");
+                        ProgramData.Log.Info($"[Ubisoft] Skipping {name} ({gameId}): no uplay_r1_loader.dll or uplay_r1_loader64.dll found", LogDestination.Scan);
                         RemoveFromRemainingGames(name);
                         return;
                     }
@@ -653,7 +653,7 @@ internal sealed partial class SelectForm : CustomForm
                 appTasks.Add(task);
             }
             if (!uninstallAll)
-                ProgramData.Log($"[Ubisoft] Will process {ubiToProcess} selected game(s) ({ubiBlocked} blocked, {ubiNotSelected} not in current selection)");
+                ProgramData.Log.Info($"[Ubisoft] Will process {ubiToProcess} selected game(s) ({ubiBlocked} blocked, {ubiNotSelected} not in current selection)", LogDestination.Scan);
         }
 
         Stopwatch gameDlcTimer = Stopwatch.StartNew();
@@ -666,14 +666,14 @@ internal sealed partial class SelectForm : CustomForm
         if (!uninstallAll)
         {
             if (steamCount > 0)
-                ProgramData.Log($"[Steam] Total games detected: {steamCount} in {(steamSeconds >= 60 ? $"{steamSeconds / 60:F1} minutes" : $"{steamSeconds:F1}s")}");
+                ProgramData.Log.Info($"[Steam] Total games detected: {steamCount} in {(steamSeconds >= 60 ? $"{steamSeconds / 60:F1} minutes" : $"{steamSeconds:F1}s")}", LogDestination.Scan);
             if (epicCount > 0)
-                ProgramData.Log($"[Epic] Total games detected: {epicCount} in {(epicSeconds >= 60 ? $"{epicSeconds / 60:F1} minutes" : $"{epicSeconds:F1}s")}");
+                ProgramData.Log.Info($"[Epic] Total games detected: {epicCount} in {(epicSeconds >= 60 ? $"{epicSeconds / 60:F1} minutes" : $"{epicSeconds:F1}s")}", LogDestination.Scan);
             if (ubisoftCount > 0)
-                ProgramData.Log($"[Ubisoft] Total games detected: {ubisoftCount} in {(ubiSeconds >= 60 ? $"{ubiSeconds / 60:F1} minutes" : $"{ubiSeconds:F1}s")}");
+                ProgramData.Log.Info($"[Ubisoft] Total games detected: {ubisoftCount} in {(ubiSeconds >= 60 ? $"{ubiSeconds / 60:F1} minutes" : $"{ubiSeconds:F1}s")}", LogDestination.Scan);
         }
-        ProgramData.Log($"[Scan] Game and DLC data gathering: {gameDlcTimer.Elapsed.TotalSeconds:F1}s");
-        ProgramData.Log($"[Scan] Scan completed in {scanTimer.Elapsed.TotalSeconds:F1}s");
+        ProgramData.Log.Info($"[Scan] Game and DLC data gathering: {gameDlcTimer.Elapsed.TotalSeconds:F1}s", LogDestination.Scan);
+        ProgramData.Log.Info($"[Scan] Scan completed in {scanTimer.Elapsed.TotalSeconds:F1}s", LogDestination.Scan);
     }
 
     private async void OnLoad(bool forceScan = false, bool forceProvideChoices = false)
@@ -697,14 +697,14 @@ internal sealed partial class SelectForm : CustomForm
             ShowProgressBar();
             await ProgramData.Setup(this);
             ProgramData.ClearLog();
-            ProgramData.Log($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            ProgramData.Log.Info($"[Scan] CreamInstaller {Program.Version} — scan started at {DateTime.Now:yyyy-MM-dd HH:mm:ss}", LogDestination.Scan);
         bool scan = forceScan;
         // On initial launch, if the user has games with installed DLC unlockers, don't re-display the scan window.
         bool skipScanDialog = initialLoad && programsToScan is null && ProgramData.ReadInstalledGames() is { Count: > 0 };
         initialLoad = false;
         if (skipScanDialog)
         {
-            ProgramData.Log("[Scan] Found previously installed DLC unlockers; skipping scan window on initial launch");
+            ProgramData.Log.Info("[Scan] Found previously installed DLC unlockers; skipping scan window on initial launch", LogDestination.Scan);
             progressLabel.Text = "Loading previously installed DLC unlockers from last session...";
         }
         if (!scan && (programsToScan is null || programsToScan.Count < 1 || forceProvideChoices) && !skipScanDialog)
@@ -734,7 +734,7 @@ internal sealed partial class SelectForm : CustomForm
                     programsToScan is not null &&
                     programsToScan.Any(p => p.platform is Platform.Ubisoft && p.id == gameId)));
             selectionTimer.Stop();
-            ProgramData.Log($"[Total] Total time spent detecting games and libraries: {(selectionTimer.Elapsed.TotalSeconds >= 60 ? $"{selectionTimer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{selectionTimer.Elapsed.TotalSeconds:F1}s")}");
+            ProgramData.Log.Info($"[Total] Total time spent detecting games and libraries: {(selectionTimer.Elapsed.TotalSeconds >= 60 ? $"{selectionTimer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{selectionTimer.Elapsed.TotalSeconds:F1}s")}", LogDestination.Scan);
             if (gameChoices.Count > 0)
             {
                 using SelectDialogForm form = new(this);
@@ -816,7 +816,7 @@ internal sealed partial class SelectForm : CustomForm
         }
         catch (Exception ex)
         {
-            ProgramData.LogError("SelectForm OnLoad failed", ex);
+            ProgramData.Log.Error("SelectForm OnLoad failed", ex);
             // Show error and clean up
             ex.HandleException(this);
             HideProgressBar();
@@ -1171,6 +1171,7 @@ internal sealed partial class SelectForm : CustomForm
                             continue;
                         SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, record.Id, dlcRecord.Id, dlcRecord.Name);
                         dlc.Selection = selection;
+                        dlc.Enabled = dlcRecord.Enabled;
                     }
                 }
             });
@@ -1311,16 +1312,6 @@ internal sealed partial class SelectForm : CustomForm
 
     private void LoadSelections()
     {
-        List<(Platform platform, string gameId, string dlcId)> dlcChoices = ProgramData.ReadDlcChoices().ToList();
-        foreach (SelectionDLC dlc in SelectionDLC.All.Keys)
-        {
-            dlc.Enabled = dlcChoices.Any(c =>
-                c.platform == dlc.Selection?.Platform && c.gameId == dlc.Selection?.Id && c.dlcId == dlc.Id)
-                ? dlc.Name == "Unknown"
-                : dlc.Name != "Unknown";
-            OnTreeViewNodeCheckedChanged("OnLoadSelections", new(dlc.TreeNode, TreeViewAction.ByMouse));
-        }
-
         List<(Platform platform, string id, string proxy, bool enabled)> proxyChoices =
             ProgramData.ReadProxyChoices().ToList();
         foreach (Selection selection in Selection.All.Keys)
@@ -1373,6 +1364,44 @@ internal sealed partial class SelectForm : CustomForm
             }
         }
 
+        // Read config files for detected unlockers and adjust DLC enabled state accordingly
+        foreach (Selection selection in Selection.All.Keys)
+        {
+            if (selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI)
+            {
+                foreach (string directory in selection.DllDirectories)
+                {
+                    var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory);
+                    if (enabledIds is not null) // config was found and read
+                    {
+                        foreach (SelectionDLC dlc in selection.DLC)
+                        {
+                            if (enabledIds.Contains(dlc.Id))
+                                dlc.Enabled = true;
+                            else if (disabledIds.Contains(dlc.Id))
+                                dlc.Enabled = false;
+                            else
+                                dlc.Enabled = false; // not in config at all
+                        }
+                        break;
+                    }
+                }
+            }
+            else if (selection.InstalledUnlocker == InstalledUnlocker.CreamAPI)
+            {
+                foreach (string directory in selection.DllDirectories)
+                {
+                    HashSet<string> enabledIds = CreamAPI.ReadConfigDlcIds(directory);
+                    if (enabledIds is not null)
+                    {
+                        foreach (SelectionDLC dlc in selection.DLC)
+                            dlc.Enabled = enabledIds.Contains(dlc.Id);
+                        break;
+                    }
+                }
+            }
+        }
+
         // Merge with persisted installed game records for any saved games not yet having a detected unlocker
         List<InstalledGameRecord> installedRecords = ProgramData.ReadInstalledGames();
         foreach (InstalledGameRecord record in installedRecords)
@@ -1406,7 +1435,8 @@ internal sealed partial class SelectForm : CustomForm
                     {
                         DlcType = dlc.Type.ToString(),
                         Id = dlc.Id,
-                        Name = dlc.Name
+                        Name = dlc.Name,
+                        Enabled = dlc.Enabled
                     }).ToList()
                 });
             }
