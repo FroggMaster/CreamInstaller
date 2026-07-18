@@ -34,7 +34,7 @@ internal static class SmokeAPI
         cache = directory + @"\SmokeAPI.cache.json";
     }
 
-    internal static (HashSet<string> enabledDlcIds, HashSet<string> disabledDlcIds) ReadConfigDlcIds(string directory)
+    internal static (HashSet<string> enabledDlcIds, HashSet<string> disabledDlcIds) ReadConfigDlcIds(string directory, HashSet<string> allDlcIds = null)
     {
         directory.GetSmokeApiComponents(out _, out _, out _, out _, out _, out string config, out _, out _, out _);
         if (!config.FileExists())
@@ -47,19 +47,45 @@ internal static class SmokeAPI
 
             HashSet<string> enabled = [];
             HashSet<string> disabled = [];
+            int overrideLocked = 0, overrideUnlocked = 0, overrideOriginal = 0;
+            HashSet<string> allOverriddenIds = [];
 
             if (obj["override_dlc_status"] is JObject overrideStatus)
                 foreach (JProperty prop in overrideStatus.Properties())
-                    if (prop.Value.ToString() == "locked")
-                        disabled.Add(prop.Name);
+                {
+                    _ = allOverriddenIds.Add(prop.Name);
+                    switch (prop.Value.ToString())
+                    {
+                        case "locked":
+                            disabled.Add(prop.Name);
+                            overrideLocked++;
+                            break;
+                        case "unlocked":
+                            enabled.Add(prop.Name);
+                            overrideUnlocked++;
+                            break;
+                        case "original":
+                            overrideOriginal++;
+                            break;
+                    }
+                }
 
+            int extraDlcEntries = 0;
             if (obj["extra_dlcs"] is JObject extraDlcs)
                 foreach (JProperty appProp in extraDlcs.Properties())
                     if (appProp.Value["dlcs"] is JObject dlcs)
                         foreach (JProperty dlcProp in dlcs.Properties())
+                        {
                             enabled.Add(dlcProp.Name);
+                            extraDlcEntries++;
+                        }
 
-            ProgramData.Log.Info($"[SmokeAPI] Read config: {config} — {enabled.Count} enabled, {disabled.Count} disabled DLC", LogDestination.Unlocker);
+            int notPresent = allDlcIds?.Count(id => !allOverriddenIds.Contains(id)) ?? 0;
+
+            string logMessage = $"[SmokeAPI] Read config: {config} — override_dlc_status: {overrideLocked} locked, {overrideUnlocked} unlocked, {overrideOriginal} original | extra_dlcs: {extraDlcEntries} entries";
+            if (notPresent > 0)
+                logMessage += $" | {notPresent} game DLCs not present in config — SmokeAPI will attempt to unlock automatically";
+            ProgramData.Log.Info(logMessage, LogDestination.Unlocker);
             return (enabled, disabled);
         }
         catch (Exception e)

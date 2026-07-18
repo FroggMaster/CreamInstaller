@@ -1476,7 +1476,8 @@ internal sealed partial class SelectForm : CustomForm
                 {
                     foreach (string directory in selection.DllDirectories)
                     {
-                        var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory);
+                        HashSet<string> allDlcIds = selection.DLC.Select(d => d.Id).ToHashSet();
+                        var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory, allDlcIds);
                         if (enabledIds is not null) // config was found and read
                         {
                             foreach (SelectionDLC dlc in selection.DLC)
