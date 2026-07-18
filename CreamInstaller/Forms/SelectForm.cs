@@ -1460,7 +1460,7 @@ internal sealed partial class SelectForm : CustomForm
 
         ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
 
-        // Detect installed unlockers and proxy DLLs from disk for all selections
+        // Detect installed unlockers, proxy DLLs, and read config files — grouped per-game
         foreach (Selection selection in Selection.All.Keys)
         {
             selection.InstalledUnlocker = selection.DetectInstalledUnlocker();
@@ -1472,42 +1472,37 @@ internal sealed partial class SelectForm : CustomForm
                     selection.UseProxy = true;
                     selection.Proxy = detectedProxy;
                 }
-            }
-        }
-
-        // Read config files for detected unlockers and adjust DLC enabled state accordingly
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            if (selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI)
-            {
-                foreach (string directory in selection.DllDirectories)
+                if (selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI)
                 {
-                    var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory);
-                    if (enabledIds is not null) // config was found and read
+                    foreach (string directory in selection.DllDirectories)
                     {
-                        foreach (SelectionDLC dlc in selection.DLC)
+                        var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory);
+                        if (enabledIds is not null) // config was found and read
                         {
-                            if (enabledIds.Contains(dlc.Id))
-                                dlc.Enabled = true;
-                            else if (disabledIds.Contains(dlc.Id))
-                                dlc.Enabled = false;
-                            else
-                                dlc.Enabled = false; // not in config at all
+                            foreach (SelectionDLC dlc in selection.DLC)
+                            {
+                                if (enabledIds.Contains(dlc.Id))
+                                    dlc.Enabled = true;
+                                else if (disabledIds.Contains(dlc.Id))
+                                    dlc.Enabled = false;
+                                else
+                                    dlc.Enabled = false; // not in config at all
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
-            else if (selection.InstalledUnlocker == InstalledUnlocker.CreamAPI)
-            {
-                foreach (string directory in selection.DllDirectories)
+                else if (selection.InstalledUnlocker == InstalledUnlocker.CreamAPI)
                 {
-                    HashSet<string> enabledIds = CreamAPI.ReadConfigDlcIds(directory);
-                    if (enabledIds is not null)
+                    foreach (string directory in selection.DllDirectories)
                     {
-                        foreach (SelectionDLC dlc in selection.DLC)
-                            dlc.Enabled = enabledIds.Contains(dlc.Id);
-                        break;
+                        HashSet<string> enabledIds = CreamAPI.ReadConfigDlcIds(directory);
+                        if (enabledIds is not null)
+                        {
+                            foreach (SelectionDLC dlc in selection.DLC)
+                                dlc.Enabled = enabledIds.Contains(dlc.Id);
+                            break;
+                        }
                     }
                 }
             }
