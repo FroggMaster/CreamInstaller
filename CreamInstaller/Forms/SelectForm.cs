@@ -189,7 +189,7 @@ internal sealed partial class SelectForm : CustomForm
             steamCount = steamGames.Count;
             steamSeconds = steamLibTimer.Elapsed.TotalSeconds;
             totalLibraryScanSeconds += steamSeconds;
-            ProgramData.Log.Info($"[Steam] Scanned library: {steamCount} games in {steamSeconds:F1}s", LogDestination.Scan);
+            ProgramData.Log.Info($"[Steam] Scanned library: {steamCount} games in {steamSeconds:F3}s", LogDestination.Scan);
             totalGamesDetected += steamCount;
             int steamToProcess = 0, steamBlocked = 0, steamNotSelected = 0;
             steamGamesToCheck = steamGames.Count;
@@ -448,7 +448,7 @@ internal sealed partial class SelectForm : CustomForm
             epicCount = epicGames.Count;
             epicSeconds = epicLibTimer.Elapsed.TotalSeconds;
             totalLibraryScanSeconds += epicSeconds;
-            ProgramData.Log.Info($"[Epic] Scanned library: {epicCount} games in {epicSeconds:F1}s", LogDestination.Scan);
+            ProgramData.Log.Info($"[Epic] Scanned library: {epicCount} games in {epicSeconds:F3}s", LogDestination.Scan);
             totalGamesDetected += epicCount;
             int epicToProcess = 0, epicBlocked = 0, epicNotSelected = 0;
             foreach (Manifest manifest in epicGames)
@@ -586,7 +586,7 @@ internal sealed partial class SelectForm : CustomForm
             ubisoftCount = ubisoftGames.Count;
             ubiSeconds = ubiLibTimer.Elapsed.TotalSeconds;
             totalLibraryScanSeconds += ubiSeconds;
-            ProgramData.Log.Info($"[Ubisoft] Scanned library: {ubisoftCount} games in {ubiSeconds:F1}s", LogDestination.Scan);
+            ProgramData.Log.Info($"[Ubisoft] Scanned library: {ubisoftCount} games in {ubiSeconds:F3}s", LogDestination.Scan);
             totalGamesDetected += ubisoftCount;
             int ubiToProcess = 0, ubiBlocked = 0, ubiNotSelected = 0;
             foreach ((string gameId, string name, string gameDirectory) in ubisoftGames)
@@ -666,14 +666,14 @@ internal sealed partial class SelectForm : CustomForm
         if (!uninstallAll)
         {
             if (steamCount > 0)
-                ProgramData.Log.Info($"[Steam] Total games detected: {steamCount} in {(steamSeconds >= 60 ? $"{steamSeconds / 60:F1} minutes" : $"{steamSeconds:F1}s")}", LogDestination.Scan);
+                ProgramData.Log.Info($"[Steam] Total games detected: {steamCount} in {(steamSeconds >= 60 ? $"{steamSeconds / 60:F1} minutes" : $"{steamSeconds:F3}s")}", LogDestination.Scan);
             if (epicCount > 0)
-                ProgramData.Log.Info($"[Epic] Total games detected: {epicCount} in {(epicSeconds >= 60 ? $"{epicSeconds / 60:F1} minutes" : $"{epicSeconds:F1}s")}", LogDestination.Scan);
+                ProgramData.Log.Info($"[Epic] Total games detected: {epicCount} in {(epicSeconds >= 60 ? $"{epicSeconds / 60:F1} minutes" : $"{epicSeconds:F3}s")}", LogDestination.Scan);
             if (ubisoftCount > 0)
-                ProgramData.Log.Info($"[Ubisoft] Total games detected: {ubisoftCount} in {(ubiSeconds >= 60 ? $"{ubiSeconds / 60:F1} minutes" : $"{ubiSeconds:F1}s")}", LogDestination.Scan);
+                ProgramData.Log.Info($"[Ubisoft] Total games detected: {ubisoftCount} in {(ubiSeconds >= 60 ? $"{ubiSeconds / 60:F1} minutes" : $"{ubiSeconds:F3}s")}", LogDestination.Scan);
         }
-        ProgramData.Log.Info($"[Scan] Game and DLC data gathering: {gameDlcTimer.Elapsed.TotalSeconds:F1}s", LogDestination.Scan);
-        ProgramData.Log.Info($"[Scan] Scan completed in {scanTimer.Elapsed.TotalSeconds:F1}s", LogDestination.Scan);
+        ProgramData.Log.Info($"[Scan] Game and DLC data gathering: {gameDlcTimer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+        ProgramData.Log.Info($"[Scan] Scan completed in {scanTimer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
     }
 
     private async void OnLoad(bool forceScan = false, bool forceProvideChoices = false)
@@ -734,7 +734,7 @@ internal sealed partial class SelectForm : CustomForm
                     programsToScan is not null &&
                     programsToScan.Any(p => p.platform is Platform.Ubisoft && p.id == gameId)));
             selectionTimer.Stop();
-            ProgramData.Log.Info($"[Total] Total time spent detecting games and libraries: {(selectionTimer.Elapsed.TotalSeconds >= 60 ? $"{selectionTimer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{selectionTimer.Elapsed.TotalSeconds:F1}s")}", LogDestination.Scan);
+            ProgramData.Log.Info($"[Total] Total time spent detecting games and libraries: {(selectionTimer.Elapsed.TotalSeconds >= 60 ? $"{selectionTimer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{selectionTimer.Elapsed.TotalSeconds:F3}s")}", LogDestination.Scan);
             if (gameChoices.Count > 0)
             {
                 using SelectDialogForm form = new(this);
@@ -800,6 +800,8 @@ internal sealed partial class SelectForm : CustomForm
 
         LoadSelections();
         await LoadSavedInstalledGames();
+        if (!scan && Selection.All.Keys.Any(s => s.InstalledUnlocker != InstalledUnlocker.None))
+            RefreshNewDLCsForInstalledGames();
         HideProgressBar();
         selectionTreeView.Enabled = !Selection.All.IsEmpty;
         allCheckBox.Enabled = selectionTreeView.Enabled;
@@ -1183,6 +1185,115 @@ internal sealed partial class SelectForm : CustomForm
             List<InstalledGameRecord> updated = saved.Except(toRemove).ToList();
             ProgramData.WriteInstalledGames(updated);
         }
+    }
+
+    /// <summary>Fires background tasks per installed game to check for new DLCs from store APIs that were released since the last install or scan. Any newly discovered DLCs are added to the tree in a disabled (unchecked) state, since they are not yet configured in the unlocker config files.</summary>
+    private static void RefreshNewDLCsForInstalledGames()
+    {
+        _ = Task.Run(async () =>
+        {
+            List<Task> refreshTasks = [];
+            foreach (Selection selection in Selection.All.Keys)
+            {
+                if (Program.Canceled)
+                    return;
+                if (selection.InstalledUnlocker == InstalledUnlocker.None)
+                    continue;
+
+                HashSet<string> savedDlcIds = selection.DLC.Select(d => d.Id).ToHashSet();
+                Task task = Task.Run(async () =>
+                {
+                    Stopwatch timer = Stopwatch.StartNew();
+                    try
+                    {
+                        ProgramData.Log.Info($"[DLCRefresh] Checking for new DLCs on {selection.Platform} game \"{selection.Name}\" ({selection.Id}) ...", LogDestination.Scan);
+                        HashSet<string> currentDlcIds = [];
+                        List<(string id, string name)> newDlcList = [];
+
+                        if (selection.Platform == Platform.Steam)
+                        {
+                            StoreAppData storeAppData = await SteamStore.QueryStoreAPI(selection.Id);
+                            if (storeAppData is not null)
+                                foreach (string dlcId in await SteamStore.ParseDlcAppIds(storeAppData))
+                                    _ = currentDlcIds.Add(dlcId);
+
+                            CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(selection.Id), 16000);
+                            if (cmdAppData is not null)
+                                foreach (string dlcId in await SteamCMD.ParseDlcAppIds(cmdAppData))
+                                    _ = currentDlcIds.Add(dlcId);
+
+                            foreach (string dlcId in currentDlcIds)
+                            {
+                                if (savedDlcIds.Contains(dlcId))
+                                    continue;
+                                string dlcName = "Unknown";
+                                StoreAppData dlcStore = await SteamStore.QueryStoreAPI(dlcId, true, 0, selection.Name, selection.Id);
+                                if (dlcStore is not null)
+                                    dlcName = dlcStore.Name;
+                                else
+                                {
+                                    CmdAppData dlcCmd = await WithTimeout(SteamCMD.GetAppInfo(dlcId), 16000);
+                                    if (dlcCmd?.Common?.Name is not null)
+                                        dlcName = dlcCmd.Common.Name;
+                                }
+                                newDlcList.Add((dlcId, dlcName));
+                                ProgramData.Log.Info($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{dlcName}\" ({dlcId})", LogDestination.Scan);
+                            }
+                        }
+                        else if (selection.Platform == Platform.Epic)
+                        {
+                            List<(string id, string name, string product, string icon, string developer)> catalog =
+                                await EpicStore.QueryCatalog(selection.Id);
+                            foreach (var (id, name, _, _, _) in catalog)
+                            {
+                                _ = currentDlcIds.Add(id);
+                                if (!savedDlcIds.Contains(id))
+                                {
+                                    newDlcList.Add((id, name ?? "Unknown"));
+                                    ProgramData.Log.Info($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{name ?? "Unknown"}\" ({id})", LogDestination.Scan);
+                                }
+                            }
+                        }
+
+                        if (newDlcList.Count > 0)
+                        {
+                            SelectForm form = SelectForm.Current;
+                            if (form is null || form.Disposing || form.IsDisposed)
+                                return;
+                            form.Invoke(delegate
+                            {
+                                if (Program.Canceled)
+                                    return;
+                                foreach ((string id, string name) in newDlcList)
+                                {
+                                    DLCType dlcType = selection.Platform switch
+                                    {
+                                        Platform.Steam => DLCType.Steam,
+                                        Platform.Epic => DLCType.Epic,
+                                        _ => DLCType.None
+                                    };
+                                    SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, selection.Id, id, name);
+                                    dlc.Selection = selection;
+                                    dlc.Enabled = false;
+                                }
+                            });
+                            ProgramData.Log.Info($"[DLCRefresh] Added {newDlcList.Count} new disabled DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+                        }
+                        else
+                            ProgramData.Log.Info($"[DLCRefresh] No new DLCs found for \"{selection.Name}\" ({selection.Id}) — {currentDlcIds.Count} total DLCs known in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+                    }
+                    catch (Exception e)
+                    {
+                        ProgramData.Log.Info($"[DLCRefresh] Failed to refresh DLCs for \"{selection.Name}\" ({selection.Id}) after {timer.Elapsed.TotalSeconds:F3}s: {e.Message}", LogDestination.Scan);
+                    }
+                });
+                refreshTasks.Add(task);
+            }
+            Stopwatch timer = Stopwatch.StartNew();
+            await Task.WhenAll(refreshTasks);
+            timer.Stop();
+            ProgramData.Log.Info($"[DLCRefresh] Background DLC refresh completed for {refreshTasks.Count} installed game(s) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+        });
     }
 
     private void OnLoad(object sender, EventArgs _)
