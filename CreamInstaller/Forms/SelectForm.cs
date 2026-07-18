@@ -346,7 +346,7 @@ internal sealed partial class SelectForm : CustomForm
 
                                     if (Program.Canceled)
                                         return;
-                                    if (!string.IsNullOrWhiteSpace(fullGameName))
+                                    if (!string.IsNullOrWhiteSpace(fullGameName) && fullGameAppId != dlcAppId && !SelectionDLC.All.Keys.Any(d => d.GameId == appId && d.Id == fullGameAppId))
                                     {
                                         SelectionDLC fullGameDlc = SelectionDLC.GetOrCreate(
                                             fullGameOnSteamStore ? DLCType.Steam : DLCType.SteamHidden, appId,
@@ -1487,7 +1487,7 @@ internal sealed partial class SelectForm : CustomForm
                                 else if (disabledIds.Contains(dlc.Id))
                                     dlc.Enabled = false;
                                 else
-                                    dlc.Enabled = false; // not in config at all
+                                    dlc.Enabled = true; // not in config — SmokeAPI auto-unlocks by default
                             }
                             break;
                         }
