@@ -22,7 +22,14 @@ partial class SettingsForm
         sortByNameCheckBox = new CheckBox();
         saveButton = new Button();
         cancelButton = new Button();
+        settingsToolTip = new ToolTip();
         SuspendLayout();
+        // 
+        // settingsToolTip
+        // 
+        settingsToolTip.AutoPopDelay = 8000;
+        settingsToolTip.InitialDelay = 500;
+        settingsToolTip.ReshowDelay = 100;
         // 
         // darkModeCheckBox
         // 
@@ -33,6 +40,7 @@ partial class SettingsForm
         darkModeCheckBox.TabIndex = 0;
         darkModeCheckBox.Text = "Enable Dark Mode";
         darkModeCheckBox.UseVisualStyleBackColor = true;
+        settingsToolTip.SetToolTip(darkModeCheckBox, "Switches the application between light and dark color themes. Changes apply immediately.");
         // 
         // blockedGamesCheckBox
         // 
@@ -43,6 +51,7 @@ partial class SettingsForm
         blockedGamesCheckBox.TabIndex = 1;
         blockedGamesCheckBox.Text = "Block Protected Games";
         blockedGamesCheckBox.UseVisualStyleBackColor = true;
+        settingsToolTip.SetToolTip(blockedGamesCheckBox, "Prevents the program from displaying or modifying games protected by anti-cheat software (e.g. Easy Anti-Cheat, BattlEye). Disable at your own risk.");
         // 
         // sortByNameCheckBox
         // 
@@ -53,6 +62,7 @@ partial class SettingsForm
         sortByNameCheckBox.TabIndex = 2;
         sortByNameCheckBox.Text = "Sort game list by name";
         sortByNameCheckBox.UseVisualStyleBackColor = true;
+        settingsToolTip.SetToolTip(sortByNameCheckBox, "When enabled, games in the main list are sorted alphabetically by name. When disabled, games appear in their default platform order.");
         // 
         // saveButton
         // 
@@ -102,4 +112,5 @@ partial class SettingsForm
     private CheckBox sortByNameCheckBox;
     private Button saveButton;
     private Button cancelButton;
+    private ToolTip settingsToolTip;
 }

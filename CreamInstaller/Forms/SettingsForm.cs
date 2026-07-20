@@ -9,6 +9,7 @@ namespace CreamInstaller.Forms;
 internal sealed partial class SettingsForm : CustomForm
 {
     private bool wasDarkModeEnabled;
+    private bool wasSortByName;
 
     private SettingsForm()
     {
@@ -31,6 +32,7 @@ internal sealed partial class SettingsForm : CustomForm
         blockedGamesCheckBox.Checked = Program.BlockProtectedGames;
         sortByNameCheckBox.Checked = Program.SortByName;
         wasDarkModeEnabled = Program.DarkModeEnabled;
+        wasSortByName = Program.SortByName;
     }
 
     private void OnSaveClick(object sender, EventArgs e)
@@ -43,6 +45,9 @@ internal sealed partial class SettingsForm : CustomForm
 
         if (wasDarkModeEnabled != darkModeCheckBox.Checked)
             ThemeManager.ApplyToAllOpenForms();
+
+        if (wasSortByName != sortByNameCheckBox.Checked)
+            MainForm.Current?.UpdateSortOrder(sortByNameCheckBox.Checked);
 
         DialogResult = DialogResult.OK;
         Close();

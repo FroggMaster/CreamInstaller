@@ -39,6 +39,10 @@ namespace CreamInstaller.Forms
             settingsButton = new Button();
             selectionTreeView = new CustomTreeView();
             topOptionsTable = new TableLayoutPanel();
+            mainToolTip = new ToolTip();
+            mainToolTip.AutoPopDelay = 8000;
+            mainToolTip.InitialDelay = 500;
+            mainToolTip.ReshowDelay = 100;
             programsGroupBox.SuspendLayout();
             useSmokeAPILayoutPanel.SuspendLayout();
             allCheckBoxLayoutPanel.SuspendLayout();
@@ -59,6 +63,7 @@ namespace CreamInstaller.Forms
             installButton.Text = "Generate and Install";
             installButton.UseVisualStyleBackColor = true;
             installButton.Click += OnInstall;
+            mainToolTip.SetToolTip(installButton, "Generate DLC unlocker configurations and install them into the selected games.");
             // 
             // programsGroupBox
             // 
@@ -127,6 +132,8 @@ namespace CreamInstaller.Forms
             useSmokeAPIHelpButton.Text = "?";
             useSmokeAPIHelpButton.UseVisualStyleBackColor = true;
             useSmokeAPIHelpButton.Click += OnUseSmokeAPIHelpButtonClicked;
+            mainToolTip.SetToolTip(useSmokeAPIHelpButton, "Learn more about the SmokeAPI and CreamAPI unlocker engines.");
+            mainToolTip.SetToolTip(useSmokeApiToggle, "Switch between SmokeAPI (on) and CreamAPI (off) unlocker engines for Steam and Paradox games.");
             // 
             // allCheckBoxLayoutPanel
             // 
@@ -199,6 +206,7 @@ namespace CreamInstaller.Forms
             scanButton.Text = "Rescan";
             scanButton.UseVisualStyleBackColor = true;
             scanButton.Click += OnScan;
+            mainToolTip.SetToolTip(scanButton, "Re-scan for installed games and refresh the DLC list from cache.");
             // 
             // uninstallAllButton
             // 
@@ -214,6 +222,7 @@ namespace CreamInstaller.Forms
             uninstallAllButton.Text = "Uninstall All";
             uninstallAllButton.UseVisualStyleBackColor = true;
             uninstallAllButton.Click += OnUninstallAll;
+            mainToolTip.SetToolTip(uninstallAllButton, "Remove all installed DLC unlockers from every game.");
             // 
             // uninstallButton
             // 
@@ -229,6 +238,7 @@ namespace CreamInstaller.Forms
             uninstallButton.Text = "Uninstall Selected";
             uninstallButton.UseVisualStyleBackColor = true;
             uninstallButton.Click += OnUninstall;
+            mainToolTip.SetToolTip(uninstallButton, "Remove DLC unlockers from the selected games only.");
             // 
             // progressLabelGames
             // 
@@ -270,6 +280,7 @@ namespace CreamInstaller.Forms
             settingsButton.Text = "Settings";
             settingsButton.UseVisualStyleBackColor = true;
             settingsButton.Click += OnSettingsButtonClick;
+            mainToolTip.SetToolTip(settingsButton, "Open application settings.");
             // 
             // topOptionsTable
             // 
@@ -354,5 +365,6 @@ namespace CreamInstaller.Forms
         private FlowLayoutPanel saveFlowPanel;
         private Button settingsButton;
         private TableLayoutPanel topOptionsTable;
+        private ToolTip mainToolTip;
     }
 }

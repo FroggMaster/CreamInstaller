@@ -43,6 +43,11 @@ internal sealed partial class MainForm : CustomForm
         Text = Program.ApplicationName;
     }
 
+    internal void UpdateSortOrder(bool sortByName)
+        => selectionTreeView.TreeViewNodeSorter = sortByName
+            ? PlatformIdComparer.NodeText
+            : PlatformIdComparer.NodeName;
+
     internal static MainForm Current
     {
         get
