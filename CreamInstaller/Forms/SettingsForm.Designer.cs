@@ -41,7 +41,7 @@ partial class SettingsForm
         darkModeCheckBox.Text = "Enable Dark Mode";
         darkModeCheckBox.FlatStyle = FlatStyle.System;
         darkModeCheckBox.UseVisualStyleBackColor = true;
-        settingsToolTip.SetToolTip(darkModeCheckBox, "Switches the application between light and dark color themes. Changes apply immediately.");
+        settingsToolTip.SetToolTip(darkModeCheckBox, "Switches the application between light and dark color themes.");
         // 
         // blockedGamesCheckBox
         // 
