@@ -34,37 +34,37 @@ partial class SettingsForm
         // darkModeCheckBox
         // 
         darkModeCheckBox.AutoSize = false;
-            darkModeCheckBox.Location = new Point(36, 20);
-            darkModeCheckBox.Name = "darkModeCheckBox";
-            darkModeCheckBox.Size = new Size(160, 22);
-            darkModeCheckBox.TabIndex = 0;
+        darkModeCheckBox.Location = new Point(36, 20);
+        darkModeCheckBox.Name = "darkModeCheckBox";
+        darkModeCheckBox.Size = new Size(160, 22);
+        darkModeCheckBox.TabIndex = 0;
         darkModeCheckBox.Text = "Enable Dark Mode";
         darkModeCheckBox.FlatStyle = FlatStyle.System;
-            darkModeCheckBox.UseVisualStyleBackColor = true;
+        darkModeCheckBox.UseVisualStyleBackColor = true;
         settingsToolTip.SetToolTip(darkModeCheckBox, "Switches the application between light and dark color themes. Changes apply immediately.");
         // 
         // blockedGamesCheckBox
         // 
         blockedGamesCheckBox.AutoSize = false;
-            blockedGamesCheckBox.Location = new Point(36, 50);
-            blockedGamesCheckBox.Name = "blockedGamesCheckBox";
-            blockedGamesCheckBox.Size = new Size(190, 22);
-            blockedGamesCheckBox.TabIndex = 1;
+        blockedGamesCheckBox.Location = new Point(36, 50);
+        blockedGamesCheckBox.Name = "blockedGamesCheckBox";
+        blockedGamesCheckBox.Size = new Size(190, 22);
+        blockedGamesCheckBox.TabIndex = 1;
         blockedGamesCheckBox.Text = "Block Protected Games";
         blockedGamesCheckBox.FlatStyle = FlatStyle.System;
-            blockedGamesCheckBox.UseVisualStyleBackColor = true;
+        blockedGamesCheckBox.UseVisualStyleBackColor = true;
         settingsToolTip.SetToolTip(blockedGamesCheckBox, "Prevents the program from displaying or modifying games protected by anti-cheat software (e.g. Easy Anti-Cheat, BattlEye). Disable at your own risk.");
         // 
         // sortByNameCheckBox
         // 
         sortByNameCheckBox.AutoSize = false;
-            sortByNameCheckBox.Location = new Point(36, 80);
-            sortByNameCheckBox.Name = "sortByNameCheckBox";
-            sortByNameCheckBox.Size = new Size(200, 22);
-            sortByNameCheckBox.TabIndex = 2;
+        sortByNameCheckBox.Location = new Point(36, 80);
+        sortByNameCheckBox.Name = "sortByNameCheckBox";
+        sortByNameCheckBox.Size = new Size(200, 22);
+        sortByNameCheckBox.TabIndex = 2;
         sortByNameCheckBox.Text = "Sort game list by name";
         sortByNameCheckBox.FlatStyle = FlatStyle.System;
-            sortByNameCheckBox.UseVisualStyleBackColor = true;
+        sortByNameCheckBox.UseVisualStyleBackColor = true;
         settingsToolTip.SetToolTip(sortByNameCheckBox, "When enabled, games in the main list are sorted alphabetically by name. When disabled, games appear in their default platform order.");
         // 
         // saveButton
