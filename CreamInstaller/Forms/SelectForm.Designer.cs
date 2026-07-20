@@ -20,19 +20,12 @@ namespace CreamInstaller.Forms
         private void InitializeComponent()
         {
             installButton = new Button();
-            cancelButton = new Button();
             programsGroupBox = new GroupBox();
-            proxyFlowPanel = new FlowLayoutPanel();
-            proxyAllCheckBox = new CheckBox();
             noneFoundLabel = new Label();
-            blockedGamesFlowPanel = new FlowLayoutPanel();
-            blockedGamesCheckBox = new CheckBox();
-            blockProtectedHelpButton = new Button();
             useSmokeAPILayoutPanel = new FlowLayoutPanel();
-            useSmokeAPICheckBox = new CheckBox();
+            useSmokeApiToggle = new ToggleSwitch();
+            useSmokeApiLabel = new Label();
             useSmokeAPIHelpButton = new Button();
-            darkModeFlowPanel = new FlowLayoutPanel();
-            darkModeCheckBox = new CheckBox();
             allCheckBoxLayoutPanel = new FlowLayoutPanel();
             allCheckBox = new CheckBox();
             progressBar = new ProgressBar();
@@ -42,15 +35,12 @@ namespace CreamInstaller.Forms
             uninstallButton = new Button();
             progressLabelGames = new Label();
             progressLabelDLCs = new Label();
-            sortCheckBox = new CheckBox();
             saveFlowPanel = new FlowLayoutPanel();
+            settingsButton = new Button();
             selectionTreeView = new CustomTreeView();
             topOptionsTable = new TableLayoutPanel();
             programsGroupBox.SuspendLayout();
-            proxyFlowPanel.SuspendLayout();
-            blockedGamesFlowPanel.SuspendLayout();
             useSmokeAPILayoutPanel.SuspendLayout();
-            darkModeFlowPanel.SuspendLayout();
             allCheckBoxLayoutPanel.SuspendLayout();
             saveFlowPanel.SuspendLayout();
             SuspendLayout();
@@ -61,7 +51,7 @@ namespace CreamInstaller.Forms
             installButton.AutoSize = true;
             installButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             installButton.Enabled = false;
-            installButton.Location = new System.Drawing.Point(495, 376);
+            installButton.Location = new System.Drawing.Point(541, 382);
             installButton.Name = "installButton";
             installButton.Padding = new Padding(3, 0, 3, 0);
             installButton.Size = new System.Drawing.Size(127, 25);
@@ -70,169 +60,73 @@ namespace CreamInstaller.Forms
             installButton.UseVisualStyleBackColor = true;
             installButton.Click += OnInstall;
             // 
-            // cancelButton
-            // 
-            cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            cancelButton.AutoSize = true;
-            cancelButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            cancelButton.Location = new System.Drawing.Point(12, 376);
-            cancelButton.Name = "cancelButton";
-            cancelButton.Padding = new Padding(3, 0, 3, 0);
-            cancelButton.Size = new System.Drawing.Size(59, 25);
-            cancelButton.TabIndex = 10004;
-            cancelButton.Text = "Cancel";
-            cancelButton.UseVisualStyleBackColor = true;
-            cancelButton.Click += OnCancel;
-            // 
             // programsGroupBox
             // 
             programsGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            programsGroupBox.Controls.Add(noneFoundLabel);
             programsGroupBox.Controls.Add(selectionTreeView);
-            programsGroupBox.Location = new System.Drawing.Point(12, 47);
+            programsGroupBox.Location = new System.Drawing.Point(12, 43);
             programsGroupBox.Name = "programsGroupBox";
-            programsGroupBox.Size = new System.Drawing.Size(610, 252);
-            programsGroupBox.TabIndex = 8;
+            programsGroupBox.Size = new System.Drawing.Size(656, 252);
+            programsGroupBox.TabIndex = 1000;
             programsGroupBox.TabStop = false;
-            programsGroupBox.Text = "Programs / Games";
-            // 
-            // proxyFlowPanel
-            // 
-            proxyFlowPanel.AutoSize = true;
-            proxyFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            proxyFlowPanel.Controls.Add(proxyAllCheckBox);
-            proxyFlowPanel.Margin = new Padding(0);
-            proxyFlowPanel.Name = "proxyFlowPanel";
-            proxyFlowPanel.Size = new System.Drawing.Size(75, 19);
-            proxyFlowPanel.TabIndex = 10005;
-            proxyFlowPanel.WrapContents = false;
-            // 
-            // proxyAllCheckBox
-            // 
-            proxyAllCheckBox.AutoSize = true;
-            proxyAllCheckBox.Enabled = false;
-            proxyAllCheckBox.Location = new System.Drawing.Point(2, 0);
-            proxyAllCheckBox.Margin = new Padding(2, 0, 0, 0);
-            proxyAllCheckBox.Name = "proxyAllCheckBox";
-            proxyAllCheckBox.Size = new System.Drawing.Size(73, 19);
-            proxyAllCheckBox.TabIndex = 4;
-            proxyAllCheckBox.Text = "Proxy All";
-            proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
+            programsGroupBox.Text = "Programs && Games";
+            programsGroupBox.Enter += programsGroupBox_Enter;
             // 
             // noneFoundLabel
             // 
-            noneFoundLabel.Dock = DockStyle.Fill;
-            noneFoundLabel.Location = new System.Drawing.Point(3, 19);
+            noneFoundLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            noneFoundLabel.Location = new System.Drawing.Point(12, 321);
             noneFoundLabel.Name = "noneFoundLabel";
-            noneFoundLabel.Size = new System.Drawing.Size(604, 230);
-            noneFoundLabel.TabIndex = 1002;
-            noneFoundLabel.Text = "No applicable programs nor games were found on your computer!";
+            noneFoundLabel.Size = new System.Drawing.Size(656, 18);
+            noneFoundLabel.TabIndex = 1003;
+            noneFoundLabel.Text = "No applicable programs and/or games found.";
             noneFoundLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             noneFoundLabel.Visible = false;
-            // 
-            // blockedGamesFlowPanel
-            // 
-            blockedGamesFlowPanel.AutoSize = true;
-            blockedGamesFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            blockedGamesFlowPanel.Controls.Add(blockedGamesCheckBox);
-            blockedGamesFlowPanel.Controls.Add(blockProtectedHelpButton);
-            blockedGamesFlowPanel.Margin = new Padding(0);
-            blockedGamesFlowPanel.Name = "blockedGamesFlowPanel";
-            blockedGamesFlowPanel.Size = new System.Drawing.Size(170, 19);
-            blockedGamesFlowPanel.TabIndex = 1005;
-            blockedGamesFlowPanel.WrapContents = false;
-            // 
-            // blockedGamesCheckBox
-            // 
-            blockedGamesCheckBox.AutoSize = true;
-            blockedGamesCheckBox.Checked = true;
-            blockedGamesCheckBox.CheckState = CheckState.Checked;
-            blockedGamesCheckBox.Enabled = false;
-            blockedGamesCheckBox.Location = new System.Drawing.Point(2, 0);
-            blockedGamesCheckBox.Margin = new Padding(2, 0, 0, 0);
-            blockedGamesCheckBox.Name = "blockedGamesCheckBox";
-            blockedGamesCheckBox.Size = new System.Drawing.Size(148, 19);
-            blockedGamesCheckBox.TabIndex = 1;
-            blockedGamesCheckBox.Text = "Block Protected Games";
-            blockedGamesCheckBox.UseVisualStyleBackColor = true;
-            blockedGamesCheckBox.CheckedChanged += OnBlockProtectedGamesCheckBoxChanged;
-            // 
-            // blockProtectedHelpButton
-            // 
-            blockProtectedHelpButton.Enabled = false;
-            blockProtectedHelpButton.Font = new System.Drawing.Font("Segoe UI", 7F);
-            blockProtectedHelpButton.Location = new System.Drawing.Point(150, 0);
-            blockProtectedHelpButton.Margin = new Padding(0, 0, 1, 0);
-            blockProtectedHelpButton.Name = "blockProtectedHelpButton";
-            blockProtectedHelpButton.Size = new System.Drawing.Size(19, 19);
-            blockProtectedHelpButton.TabIndex = 2;
-            blockProtectedHelpButton.Text = "?";
-            blockProtectedHelpButton.UseVisualStyleBackColor = true;
-            blockProtectedHelpButton.Click += OnBlockProtectedGamesHelpButtonClicked;
             // 
             // useSmokeAPILayoutPanel
             // 
             useSmokeAPILayoutPanel.AutoSize = true;
             useSmokeAPILayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            useSmokeAPILayoutPanel.Controls.Add(useSmokeAPICheckBox);
+            useSmokeAPILayoutPanel.Controls.Add(useSmokeApiToggle);
+            useSmokeAPILayoutPanel.Controls.Add(useSmokeApiLabel);
             useSmokeAPILayoutPanel.Controls.Add(useSmokeAPIHelpButton);
-            useSmokeAPILayoutPanel.Margin = new Padding(12, 0, 0, 0);
+            useSmokeAPILayoutPanel.Margin = new Padding(0);
             useSmokeAPILayoutPanel.Name = "useSmokeAPILayoutPanel";
-            useSmokeAPILayoutPanel.Size = new System.Drawing.Size(124, 19);
+            useSmokeAPILayoutPanel.Size = new System.Drawing.Size(150, 22);
             useSmokeAPILayoutPanel.TabIndex = 1006;
             useSmokeAPILayoutPanel.WrapContents = false;
             // 
-            // useSmokeAPICheckBox
+            // useSmokeApiToggle
             // 
-            useSmokeAPICheckBox.AutoSize = true;
-            useSmokeAPICheckBox.Checked = true;
-            useSmokeAPICheckBox.CheckState = CheckState.Checked;
-            useSmokeAPICheckBox.Enabled = false;
-            useSmokeAPICheckBox.Location = new System.Drawing.Point(2, 0);
-            useSmokeAPICheckBox.Margin = new Padding(2, 0, 0, 0);
-            useSmokeAPICheckBox.Name = "useSmokeAPICheckBox";
-            useSmokeAPICheckBox.Size = new System.Drawing.Size(102, 19);
-            useSmokeAPICheckBox.TabIndex = 1;
-            useSmokeAPICheckBox.Text = "Use SmokeAPI";
-            useSmokeAPICheckBox.UseVisualStyleBackColor = true;
-            useSmokeAPICheckBox.CheckedChanged += OnUseSmokeAPICheckBoxChanged;
+            useSmokeApiToggle.Location = new System.Drawing.Point(0, 0);
+            useSmokeApiToggle.Name = "useSmokeApiToggle";
+            useSmokeApiToggle.Size = new System.Drawing.Size(44, 22);
+            useSmokeApiToggle.TabIndex = 1;
+            useSmokeApiToggle.CheckedChanged += OnUseSmokeApiToggleChanged;
+            // 
+            // useSmokeApiLabel
+            // 
+            useSmokeApiLabel.AutoSize = true;
+            useSmokeApiLabel.Location = new System.Drawing.Point(47, 2);
+            useSmokeApiLabel.Margin = new Padding(3, 2, 0, 0);
+            useSmokeApiLabel.Name = "useSmokeApiLabel";
+            useSmokeApiLabel.Size = new System.Drawing.Size(70, 15);
+            useSmokeApiLabel.TabIndex = 3;
+            useSmokeApiLabel.Text = "SmokeAPI";
+            useSmokeApiLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // useSmokeAPIHelpButton
             // 
             useSmokeAPIHelpButton.Enabled = false;
             useSmokeAPIHelpButton.Font = new System.Drawing.Font("Segoe UI", 7F);
-            useSmokeAPIHelpButton.Location = new System.Drawing.Point(104, 0);
-            useSmokeAPIHelpButton.Margin = new Padding(0, 0, 1, 0);
+            useSmokeAPIHelpButton.Location = new System.Drawing.Point(120, 0);
+            useSmokeAPIHelpButton.Margin = new Padding(2, 0, 1, 0);
             useSmokeAPIHelpButton.Name = "useSmokeAPIHelpButton";
             useSmokeAPIHelpButton.Size = new System.Drawing.Size(19, 19);
             useSmokeAPIHelpButton.TabIndex = 2;
             useSmokeAPIHelpButton.Text = "?";
             useSmokeAPIHelpButton.UseVisualStyleBackColor = true;
             useSmokeAPIHelpButton.Click += OnUseSmokeAPIHelpButtonClicked;
-            // 
-            // darkModeFlowPanel
-            // 
-            darkModeFlowPanel.AutoSize = true;
-            darkModeFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            darkModeFlowPanel.Margin = new Padding(12, 0, 0, 0);
-            darkModeFlowPanel.Name = "darkModeFlowPanel";
-            darkModeFlowPanel.Size = new System.Drawing.Size(98, 19);
-            darkModeFlowPanel.TabIndex = 10011;
-            darkModeFlowPanel.WrapContents = false;
-            // 
-            // darkModeCheckBox
-            // 
-            darkModeCheckBox.AutoSize = true;
-            darkModeCheckBox.Enabled = true;
-            darkModeCheckBox.Location = new System.Drawing.Point(2, 0);
-            darkModeCheckBox.Margin = new Padding(2, 0, 0, 0);
-            darkModeCheckBox.Name = "darkModeCheckBox";
-            darkModeCheckBox.Size = new System.Drawing.Size(96, 19);
-            darkModeCheckBox.TabIndex = 1;
-            darkModeCheckBox.Text = "Enable Dark Mode";
-            darkModeCheckBox.UseVisualStyleBackColor = true;
-            darkModeCheckBox.CheckedChanged += OnDarkModeCheckBoxChanged;
-            darkModeFlowPanel.Controls.Add(darkModeCheckBox);
             // 
             // allCheckBoxLayoutPanel
             // 
@@ -278,7 +172,7 @@ namespace CreamInstaller.Forms
             progressBar.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             progressBar.Location = new System.Drawing.Point(12, 352);
             progressBar.Name = "progressBar";
-            progressBar.Size = new System.Drawing.Size(610, 23);
+            progressBar.Size = new System.Drawing.Size(656, 23);
             progressBar.TabIndex = 9;
             // 
             // progressLabel
@@ -286,108 +180,105 @@ namespace CreamInstaller.Forms
             progressLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             progressLabel.Location = new System.Drawing.Point(12, 302);
             progressLabel.Name = "progressLabel";
-            progressLabel.Size = new System.Drawing.Size(610, 23);
+            progressLabel.Size = new System.Drawing.Size(656, 23);
             progressLabel.TabIndex = 10;
-            progressLabel.Text = "Gathering and caching your applicable games and their DLCs . . . 0%";
+            progressLabel.Text = "Gathering and caching programs . . .";
+            progressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            progressLabel.Visible = false;
             // 
             // scanButton
             // 
-            scanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            scanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             scanButton.AutoSize = true;
             scanButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            scanButton.Enabled = false;
-            scanButton.Location = new System.Drawing.Point(186, 376);
+            scanButton.Location = new System.Drawing.Point(450, 382);
             scanButton.Name = "scanButton";
             scanButton.Padding = new Padding(3, 0, 3, 0);
-            scanButton.Size = new System.Drawing.Size(60, 25);
-            scanButton.TabIndex = 10002;
+            scanButton.Size = new System.Drawing.Size(85, 25);
+            scanButton.TabIndex = 10004;
             scanButton.Text = "Rescan";
             scanButton.UseVisualStyleBackColor = true;
             scanButton.Click += OnScan;
             // 
             // uninstallAllButton
             // 
-            uninstallAllButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            uninstallAllButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             uninstallAllButton.AutoSize = true;
             uninstallAllButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            uninstallAllButton.Location = new System.Drawing.Point(327, 376);
+            uninstallAllButton.Enabled = false;
+            uninstallAllButton.Location = new System.Drawing.Point(12, 382);
             uninstallAllButton.Name = "uninstallAllButton";
             uninstallAllButton.Padding = new Padding(3, 0, 3, 0);
-            uninstallAllButton.Size = new System.Drawing.Size(87, 25);
-            uninstallAllButton.TabIndex = 10003;
+            uninstallAllButton.Size = new System.Drawing.Size(85, 25);
+            uninstallAllButton.TabIndex = 10006;
             uninstallAllButton.Text = "Uninstall All";
             uninstallAllButton.UseVisualStyleBackColor = true;
             uninstallAllButton.Click += OnUninstallAll;
             // 
             // uninstallButton
             // 
-            uninstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            uninstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             uninstallButton.AutoSize = true;
             uninstallButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             uninstallButton.Enabled = false;
-            uninstallButton.Location = new System.Drawing.Point(420, 376);
+            uninstallButton.Location = new System.Drawing.Point(100, 382);
             uninstallButton.Name = "uninstallButton";
             uninstallButton.Padding = new Padding(3, 0, 3, 0);
-            uninstallButton.Size = new System.Drawing.Size(69, 25);
-            uninstallButton.TabIndex = 10001;
-            uninstallButton.Text = "Uninstall";
+            uninstallButton.Size = new System.Drawing.Size(174, 25);
+            uninstallButton.TabIndex = 10005;
+            uninstallButton.Text = "Uninstall Selected";
             uninstallButton.UseVisualStyleBackColor = true;
             uninstallButton.Click += OnUninstall;
             // 
             // progressLabelGames
             // 
-            progressLabelGames.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            progressLabelGames.Font = new System.Drawing.Font("Segoe UI", 7F);
-            progressLabelGames.Location = new System.Drawing.Point(12, 325);
+            progressLabelGames.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            progressLabelGames.Location = new System.Drawing.Point(12, 328);
             progressLabelGames.Name = "progressLabelGames";
-            progressLabelGames.Size = new System.Drawing.Size(610, 12);
-            progressLabelGames.TabIndex = 11;
-            progressLabelGames.Text = "Remaining games (2): Game 1, Game 2";
+            progressLabelGames.Size = new System.Drawing.Size(375, 18);
+            progressLabelGames.TabIndex = 10007;
+            progressLabelGames.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // progressLabelDLCs
             // 
-            progressLabelDLCs.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            progressLabelDLCs.Font = new System.Drawing.Font("Segoe UI", 7F);
-            progressLabelDLCs.Location = new System.Drawing.Point(12, 337);
+            progressLabelDLCs.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            progressLabelDLCs.Location = new System.Drawing.Point(393, 328);
             progressLabelDLCs.Name = "progressLabelDLCs";
-            progressLabelDLCs.Size = new System.Drawing.Size(610, 12);
-            progressLabelDLCs.TabIndex = 12;
-            progressLabelDLCs.Text = "Remaining DLC (2): 123456, 654321";
-            // 
-            // sortCheckBox
-            // 
-            sortCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            sortCheckBox.AutoSize = true;
-            sortCheckBox.Checked = true; // Enable Sort By Name by default
-            sortCheckBox.Location = new System.Drawing.Point(84, 380);
-            sortCheckBox.Margin = new Padding(3, 0, 0, 0);
-            sortCheckBox.Name = "sortCheckBox";
-            sortCheckBox.Size = new System.Drawing.Size(98, 19);
-            sortCheckBox.TabIndex = 10003;
-            sortCheckBox.Text = "Sort By Name";
-            sortCheckBox.CheckedChanged += OnSortCheckBoxChanged;
+            progressLabelDLCs.Size = new System.Drawing.Size(329, 18);
+            progressLabelDLCs.TabIndex = 10008;
+            progressLabelDLCs.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // saveFlowPanel
             // 
             saveFlowPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             saveFlowPanel.AutoSize = true;
             saveFlowPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            saveFlowPanel.Location = new System.Drawing.Point(263, 376);
+            saveFlowPanel.Location = new System.Drawing.Point(380, 382);
             saveFlowPanel.Name = "saveFlowPanel";
             saveFlowPanel.Size = new System.Drawing.Size(141, 25);
-            saveFlowPanel.TabIndex = 10008;
+            saveFlowPanel.TabIndex = 10009;
             saveFlowPanel.WrapContents = false;
+            // 
+            // settingsButton
+            // 
+            settingsButton.AutoSize = true;
+            settingsButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            settingsButton.Location = new System.Drawing.Point(0, 0);
+            settingsButton.Name = "settingsButton";
+            settingsButton.Size = new System.Drawing.Size(60, 25);
+            settingsButton.TabIndex = 10010;
+            settingsButton.Text = "Settings";
+            settingsButton.UseVisualStyleBackColor = true;
+            settingsButton.Click += OnSettingsButtonClick;
             // 
             // topOptionsTable
             // 
             topOptionsTable.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             topOptionsTable.AutoSize = true;
             topOptionsTable.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            topOptionsTable.ColumnCount = 6;
+            topOptionsTable.ColumnCount = 4;
             topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // spacer
+            topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topOptionsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topOptionsTable.Location = new System.Drawing.Point(12, 12);
@@ -395,36 +286,35 @@ namespace CreamInstaller.Forms
             topOptionsTable.Name = "topOptionsTable";
             topOptionsTable.RowCount = 1;
             topOptionsTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            topOptionsTable.Size = new System.Drawing.Size(610, 25);
+            topOptionsTable.Size = new System.Drawing.Size(656, 25);
             topOptionsTable.TabIndex = 10009;
             topOptionsTable.Controls.Clear();
-            topOptionsTable.Controls.Add(blockedGamesFlowPanel, 0, 0);
-            topOptionsTable.Controls.Add(useSmokeAPILayoutPanel, 1, 0);
-            topOptionsTable.Controls.Add(darkModeFlowPanel, 2, 0);
-            topOptionsTable.Controls.Add(proxyFlowPanel, 4, 0);
-            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 5, 0);
+            topOptionsTable.Controls.Add(useSmokeAPILayoutPanel, 0, 0);
+            topOptionsTable.Controls.Add(settingsButton, 2, 0);
+            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 3, 0);
             // 
             // SelectForm
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            ClientSize = new System.Drawing.Size(634, 411);
+            ClientSize = new System.Drawing.Size(680, 417);
             Controls.Add(topOptionsTable);
             Controls.Add(saveFlowPanel);
-            Controls.Add(sortCheckBox);
             Controls.Add(progressLabelDLCs);
             Controls.Add(progressLabelGames);
+            Controls.Add(progressLabel);
+            Controls.Add(progressBar);
+            Controls.Add(noneFoundLabel);
+            Controls.Add(programsGroupBox);
             Controls.Add(uninstallAllButton);
             Controls.Add(uninstallButton);
             Controls.Add(scanButton);
-            Controls.Add(programsGroupBox);
-            Controls.Add(progressBar);
-            Controls.Add(cancelButton);
             Controls.Add(installButton);
-            Controls.Add(progressLabel);
-            DoubleBuffered = true;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            HelpButton = true;
+            Icon = Properties.Resources.Icon;
+            Margin = new Padding(4, 3, 4, 3);
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "SelectForm";
@@ -432,14 +322,8 @@ namespace CreamInstaller.Forms
             Text = "SelectForm";
             Load += OnLoad;
             programsGroupBox.ResumeLayout(false);
-            proxyFlowPanel.ResumeLayout(false);
-            proxyFlowPanel.PerformLayout();
-            blockedGamesFlowPanel.ResumeLayout(false);
-            blockedGamesFlowPanel.PerformLayout();
             useSmokeAPILayoutPanel.ResumeLayout(false);
             useSmokeAPILayoutPanel.PerformLayout();
-            darkModeFlowPanel.ResumeLayout(false);
-            darkModeFlowPanel.PerformLayout();
             allCheckBoxLayoutPanel.ResumeLayout(false);
             allCheckBoxLayoutPanel.PerformLayout();
             saveFlowPanel.ResumeLayout(false);
@@ -451,7 +335,6 @@ namespace CreamInstaller.Forms
         #endregion
 
         private Button installButton;
-        private Button cancelButton;
         private GroupBox programsGroupBox;
         private ProgressBar progressBar;
         private Label progressLabel;
@@ -459,24 +342,17 @@ namespace CreamInstaller.Forms
         private Button scanButton;
         private Label noneFoundLabel;
         private CustomTreeView selectionTreeView;
-        private CheckBox blockedGamesCheckBox;
-        private Button blockProtectedHelpButton;
-        private CheckBox useSmokeAPICheckBox;
+        private ToggleSwitch useSmokeApiToggle;
+        private Label useSmokeApiLabel;
         private Button useSmokeAPIHelpButton;
-        private FlowLayoutPanel blockedGamesFlowPanel;
         private FlowLayoutPanel useSmokeAPILayoutPanel;
-        private FlowLayoutPanel darkModeFlowPanel;
         private FlowLayoutPanel allCheckBoxLayoutPanel;
         private Button uninstallButton;
         private Button uninstallAllButton;
         private Label progressLabelGames;
         private Label progressLabelDLCs;
-        private CheckBox sortCheckBox;
-        private FlowLayoutPanel proxyFlowPanel;
-        internal CheckBox proxyAllCheckBox;
         private FlowLayoutPanel saveFlowPanel;
+        private Button settingsButton;
         private TableLayoutPanel topOptionsTable;
-        private CheckBox darkModeCheckBox;
     }
 }
-

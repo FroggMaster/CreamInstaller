@@ -75,7 +75,7 @@ internal sealed class Selection : IEquatable<Selection>
         if (selectForm is null)
             return;
         Enabled = selectForm.allCheckBox.Checked;
-        UseProxy = selectForm.proxyAllCheckBox.Checked;
+        UseProxy = false;
     }
 
     internal static IEnumerable<Selection> AllEnabled => All.Keys.Where(s => s.Enabled);

@@ -39,7 +39,7 @@ internal sealed partial class SelectForm : CustomForm
     private SelectForm()
     {
         InitializeComponent();
-        selectionTreeView.TreeViewNodeSorter = sortCheckBox.Checked ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
+        selectionTreeView.TreeViewNodeSorter = Program.SortByName ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
         Text = Program.ApplicationName;
     }
 
@@ -681,15 +681,11 @@ internal sealed partial class SelectForm : CustomForm
         try
         {
             Program.Canceled = false;
-            blockedGamesCheckBox.Enabled = false;
-            blockProtectedHelpButton.Enabled = false;
-            useSmokeAPICheckBox.Enabled = false;
+            useSmokeApiToggle.Enabled = false;
             useSmokeAPIHelpButton.Enabled = false;
-            cancelButton.Enabled = true;
             scanButton.Enabled = false;
             noneFoundLabel.Visible = false;
             allCheckBox.Enabled = false;
-            proxyAllCheckBox.Enabled = false;
             installButton.Enabled = false;
             uninstallButton.Enabled = installButton.Enabled;
             selectionTreeView.Enabled = false;
@@ -803,18 +799,14 @@ internal sealed partial class SelectForm : CustomForm
         if (!scan && Selection.All.Keys.Any(s => s.InstalledUnlocker != InstalledUnlocker.None))
             RefreshNewDLCsForInstalledGames();
         HideProgressBar();
-        selectionTreeView.Enabled = !Selection.All.IsEmpty;
-        allCheckBox.Enabled = selectionTreeView.Enabled;
-        proxyAllCheckBox.Enabled = selectionTreeView.Enabled;
-        noneFoundLabel.Visible = !selectionTreeView.Enabled;
-        installButton.Enabled = Selection.AllEnabled.Any();
-        uninstallButton.Enabled = installButton.Enabled;
-        cancelButton.Enabled = false;
-        scanButton.Enabled = true;
-        blockedGamesCheckBox.Enabled = true;
-        blockProtectedHelpButton.Enabled = true;
-        useSmokeAPICheckBox.Enabled = true;
-        useSmokeAPIHelpButton.Enabled = true;
+            selectionTreeView.Enabled = !Selection.All.IsEmpty;
+            allCheckBox.Enabled = selectionTreeView.Enabled;
+            noneFoundLabel.Visible = !selectionTreeView.Enabled;
+            installButton.Enabled = Selection.AllEnabled.Any();
+            uninstallButton.Enabled = installButton.Enabled;
+            scanButton.Enabled = true;
+            useSmokeApiToggle.Enabled = true;
+            useSmokeAPIHelpButton.Enabled = true;
         }
         catch (Exception ex)
         {
@@ -822,11 +814,8 @@ internal sealed partial class SelectForm : CustomForm
             // Show error and clean up
             ex.HandleException(this);
             HideProgressBar();
-            cancelButton.Enabled = false;
             scanButton.Enabled = true;
-            blockedGamesCheckBox.Enabled = true;
-            blockProtectedHelpButton.Enabled = true;
-            useSmokeAPICheckBox.Enabled = true;
+            useSmokeApiToggle.Enabled = true;
             useSmokeAPIHelpButton.Enabled = true;
         }
     }
@@ -1356,7 +1345,6 @@ internal sealed partial class SelectForm : CustomForm
                 "Are you sure you want to uninstall everything?\n\nThis will remove all DLC unlockers, CreamAPI, SmokeAPI, ScreamAPI, and proxy DLLs from all games.",
                 acceptButtonText: "Uninstall All", cancelButtonText: "Cancel", customFormText: "Uninstall All") != DialogResult.OK)
             return;
-        cancelButton.Enabled = true;
         scanButton.Enabled = false;
         installButton.Enabled = false;
         uninstallButton.Enabled = false;
@@ -1390,12 +1378,6 @@ internal sealed partial class SelectForm : CustomForm
 
     private void OnScan(object sender, EventArgs e) => OnLoad(forceProvideChoices: true);
 
-    private void OnCancel(object sender, EventArgs e)
-    {
-        progressLabel.Text = "Cancelling . . . ";
-        Program.Cleanup();
-    }
-
     private void OnAllCheckBoxChanged(object sender, EventArgs e)
     {
         bool shouldEnable = Selection.All.Keys.Any(s => !s.Enabled);
@@ -1408,17 +1390,6 @@ internal sealed partial class SelectForm : CustomForm
         allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
         allCheckBox.Checked = shouldEnable;
         allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
-    }
-
-    private void OnProxyAllCheckBoxChanged(object sender, EventArgs e)
-    {
-        bool shouldEnable = Selection.All.Keys.Any(selection => !selection.UseProxy);
-        foreach (Selection selection in Selection.All.Keys)
-            selection.UseProxy = shouldEnable;
-        selectionTreeView.Invalidate();
-        proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
-        proxyAllCheckBox.Checked = shouldEnable;
-        proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
     }
 
     private void LoadSelections()
@@ -1557,9 +1528,6 @@ internal sealed partial class SelectForm : CustomForm
     internal void OnProxyChanged()
     {
         selectionTreeView.Invalidate();
-        proxyAllCheckBox.CheckedChanged -= OnProxyAllCheckBoxChanged;
-        proxyAllCheckBox.Checked = Selection.All.Keys.Count != 0 && Selection.All.Keys.All(selection => selection.UseProxy);
-        proxyAllCheckBox.CheckedChanged += OnProxyAllCheckBoxChanged;
     }
 
     internal void OnExtraProtectionChanged()
@@ -1567,40 +1535,10 @@ internal sealed partial class SelectForm : CustomForm
         selectionTreeView.Invalidate();
     }
 
-    private void OnBlockProtectedGamesCheckBoxChanged(object sender, EventArgs e)
+    private void OnUseSmokeApiToggleChanged(object sender, EventArgs e)
     {
-        Program.BlockProtectedGames = blockedGamesCheckBox.Checked;
-        OnLoad(forceProvideChoices: true);
-    }
-
-    private void OnBlockProtectedGamesHelpButtonClicked(object sender, EventArgs e)
-    {
-        StringBuilder blockedGames = new();
-        foreach (string name in Program.ProtectedGames)
-            _ = blockedGames.Append(HelpButtonListPrefix + name);
-        StringBuilder blockedDirectories = new();
-        foreach (string path in Program.ProtectedGameDirectories)
-            _ = blockedDirectories.Append(HelpButtonListPrefix + path);
-        StringBuilder blockedDirectoryExceptions = new();
-        foreach (string name in Program.ProtectedGameDirectoryExceptions)
-            _ = blockedDirectoryExceptions.Append(HelpButtonListPrefix + name);
-        using DialogForm form = new(this);
-        _ = form.Show(SystemIcons.Information,
-            "Blocks the program from caching and displaying games protected by anti-cheats."
-            + "\nYou disable this option and install DLC unlockers to protected games at your own risk!" +
-            "\n\nBlocked games: "
-            + (string.IsNullOrWhiteSpace(blockedGames.ToString()) ? "(none)" : blockedGames) +
-            "\n\nBlocked game sub-directories: "
-            + (string.IsNullOrWhiteSpace(blockedDirectories.ToString()) ? "(none)" : blockedDirectories) +
-            "\n\nBlocked game sub-directory exceptions: "
-            + (string.IsNullOrWhiteSpace(blockedDirectoryExceptions.ToString())
-                ? "(none)"
-                : blockedDirectoryExceptions),
-            customFormText: "Block Protected Games");
-    }
-    private void OnUseSmokeAPICheckBoxChanged(object sender, EventArgs e)
-    {
-        Program.UseSmokeAPI = useSmokeAPICheckBox.Checked;
+        Program.UseSmokeAPI = useSmokeApiToggle.Checked;
+        useSmokeApiLabel.Text = useSmokeApiToggle.Checked ? "SmokeAPI" : "CreamAPI";
         selectionTreeView.Invalidate();
     }
 
@@ -1614,26 +1552,19 @@ internal sealed partial class SelectForm : CustomForm
             customFormText: "Use SmokeAPI");
     }
 
-    private void OnSortCheckBoxChanged(object sender, EventArgs e)
-        => selectionTreeView.TreeViewNodeSorter =
-            sortCheckBox.Checked ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
+    private void programsGroupBox_Enter(object sender, EventArgs e) { }
 
-    private void programsGroupBox_Enter(object sender, EventArgs e)
-    {
-
-    }
-
-    private void OnDarkModeCheckBoxChanged(object sender, EventArgs e)
-    {
-        Program.DarkModeEnabled = darkModeCheckBox.Checked;
-        ThemeManager.ApplyToAllOpenForms();
-    }
+    private void OnSettingsButtonClick(object sender, EventArgs e)
+        => SettingsForm.Show(this);
 
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
         ThemeManager.Apply(this);
-        if (darkModeCheckBox is not null)
-            darkModeCheckBox.Checked = Program.DarkModeEnabled;
+        if (useSmokeApiToggle is not null)
+        {
+            useSmokeApiToggle.Checked = Program.UseSmokeAPI;
+            useSmokeApiLabel.Text = Program.UseSmokeAPI ? "SmokeAPI" : "CreamAPI";
+        }
     }
 }
