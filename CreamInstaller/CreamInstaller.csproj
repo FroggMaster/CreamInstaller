@@ -169,10 +169,10 @@
         <Compile Update="Forms\InstallForm.cs">
             <SubType>Form</SubType>
         </Compile>
-        <Compile Update="Forms\SelectDialogForm.cs">
+        <Compile Update="Forms\ScanDialog.cs">
             <SubType>Form</SubType>
         </Compile>
-        <Compile Update="Forms\SelectForm.cs">
+        <Compile Update="Forms\MainForm.cs">
             <SubType>Form</SubType>
         </Compile>
         <Compile Update="Forms\UpdateForm.cs">
@@ -194,10 +194,10 @@
         <EmbeddedResource Update="Forms\InstallForm.resx">
             <SubType>Designer</SubType>
         </EmbeddedResource>
-        <EmbeddedResource Update="Forms\SelectDialogForm.resx">
+        <EmbeddedResource Update="Forms\ScanDialog.resx">
             <SubType>Designer</SubType>
         </EmbeddedResource>
-        <EmbeddedResource Update="Forms\SelectForm.resx">
+        <EmbeddedResource Update="Forms\MainForm.resx">
             <SubType>Designer</SubType>
         </EmbeddedResource>
         <EmbeddedResource Update="Forms\UpdateForm.resx">

@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace CreamInstaller.Forms
 {
-    partial class SelectForm
+    partial class MainForm
     {
         private IContainer components = null;
         protected override void Dispose(bool disposing)
@@ -293,7 +293,7 @@ namespace CreamInstaller.Forms
             topOptionsTable.Controls.Add(settingsButton, 2, 0);
             topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 3, 0);
             // 
-            // SelectForm
+            // MainForm
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -317,9 +317,9 @@ namespace CreamInstaller.Forms
             Margin = new Padding(4, 3, 4, 3);
             MaximizeBox = false;
             MinimizeBox = false;
-            Name = "SelectForm";
+            Name = "MainForm";
             StartPosition = FormStartPosition.Manual;
-            Text = "SelectForm";
+            Text = "MainForm";
             Load += OnLoad;
             programsGroupBox.ResumeLayout(false);
             useSmokeAPILayoutPanel.ResumeLayout(false);

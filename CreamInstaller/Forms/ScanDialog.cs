@@ -7,12 +7,12 @@ using CreamInstaller.Utility;
 
 namespace CreamInstaller.Forms;
 
-internal sealed partial class SelectDialogForm : CustomForm
+internal sealed partial class ScanDialog : CustomForm
 {
     private readonly List<(Platform platform, string id, string name)> selected = new();
     private readonly List<(Platform platform, string id, string name, bool alreadySelected)> allChoices = new();
 
-    internal SelectDialogForm(IWin32Window owner) : base(owner)
+    internal ScanDialog(IWin32Window owner) : base(owner)
     {
         InitializeComponent();
         selectionTreeView.TreeViewNodeSorter = sortCheckBox.Checked ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;

@@ -395,7 +395,7 @@ internal sealed partial class InstallForm : CustomForm
                     ProgramData.Log.Info($"[InstallForm] No unlocker detected after install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
             }
         }
-        SelectForm.Current?.Invoke(() => SelectForm.Current?.InvalidateGameList());
+        MainForm.Current?.Invoke(() => MainForm.Current?.InvalidateGameList());
 
         Program.Cleanup();
         int activeCount = activeSelections.Count;

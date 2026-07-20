@@ -71,7 +71,7 @@ internal sealed class Selection : IEquatable<Selection>
         ExecutableDirectories = executableDirectories;
         _ = All.TryAdd(this, default);
         TreeNode = new() { Tag = Platform, Name = Id, Text = Name };
-        SelectForm selectForm = SelectForm.Current;
+        MainForm selectForm = MainForm.Current;
         if (selectForm is null)
             return;
         Enabled = selectForm.allCheckBox.Checked;

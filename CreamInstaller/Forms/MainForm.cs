@@ -21,11 +21,11 @@ using static CreamInstaller.Resources.Resources;
 
 namespace CreamInstaller.Forms;
 
-internal sealed partial class SelectForm : CustomForm
+internal sealed partial class MainForm : CustomForm
 {
     private const string HelpButtonListPrefix = "\n    •  ";
 
-    private static SelectForm current;
+    private static MainForm current;
     private static readonly object currentLock = new();
 
     private readonly ConcurrentDictionary<string, string> remainingDLCs = new();
@@ -36,14 +36,14 @@ internal sealed partial class SelectForm : CustomForm
 
     private List<(Platform platform, string id, string name)> programsToScan;
 
-    private SelectForm()
+    private MainForm()
     {
         InitializeComponent();
         selectionTreeView.TreeViewNodeSorter = Program.SortByName ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
         Text = Program.ApplicationName;
     }
 
-    internal static SelectForm Current
+    internal static MainForm Current
     {
         get
         {
@@ -51,7 +51,7 @@ internal sealed partial class SelectForm : CustomForm
             {
                 if (current is null || current.Disposing || current.IsDisposed)
                 {
-                    current = new SelectForm();
+                    current = new MainForm();
                 }
                 return current;
             }
@@ -733,7 +733,7 @@ internal sealed partial class SelectForm : CustomForm
             ProgramData.Log.Info($"[Total] Total time spent detecting games and libraries: {(selectionTimer.Elapsed.TotalSeconds >= 60 ? $"{selectionTimer.Elapsed.TotalSeconds / 60:F1} minutes" : $"{selectionTimer.Elapsed.TotalSeconds:F3}s")}", LogDestination.Scan);
             if (gameChoices.Count > 0)
             {
-                using SelectDialogForm form = new(this);
+                using ScanDialog form = new(this);
                 DialogResult selectResult = form.QueryUser("Choose which programs and/or games to scan:", gameChoices,
                     out List<(Platform platform, string id, string name)> choices);
                 scan = selectResult == DialogResult.OK && choices is not null && choices.Count > 0;
@@ -810,7 +810,7 @@ internal sealed partial class SelectForm : CustomForm
         }
         catch (Exception ex)
         {
-            ProgramData.Log.Error("SelectForm OnLoad failed", ex);
+            ProgramData.Log.Error("MainForm OnLoad failed", ex);
             // Show error and clean up
             ex.HandleException(this);
             HideProgressBar();
@@ -1246,7 +1246,7 @@ internal sealed partial class SelectForm : CustomForm
 
                         if (newDlcList.Count > 0)
                         {
-                            SelectForm form = SelectForm.Current;
+                            MainForm form = MainForm.Current;
                             if (form is null || form.Disposing || form.IsDisposed)
                                 return;
                             form.Invoke(delegate
