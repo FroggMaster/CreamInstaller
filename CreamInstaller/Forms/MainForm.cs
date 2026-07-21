@@ -1544,6 +1544,7 @@ internal sealed partial class MainForm : CustomForm
     {
         Program.UseSmokeAPI = useSmokeApiToggle.Checked;
         useSmokeApiLabel.Text = useSmokeApiToggle.Checked ? "Selected Unlocker: SmokeAPI" : "Selected Unlocker: CreamAPI";
+        ProgramData.SaveSettings(Program.AppSettings);
         selectionTreeView.Invalidate();
     }
 
