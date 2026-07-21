@@ -44,7 +44,11 @@ internal sealed partial class SettingsForm : CustomForm
         ProgramData.SaveSettings(Program.AppSettings);
 
         if (wasDarkModeEnabled != darkModeCheckBox.Checked)
+        {
             ThemeManager.ApplyToAllOpenForms();
+            if (DebugForm.IsOpen)
+                ThemeManager.Apply(DebugForm.Current);
+        }
 
         if (wasSortByName != sortByNameCheckBox.Checked)
             MainForm.Current?.UpdateSortOrder(sortByNameCheckBox.Checked);
