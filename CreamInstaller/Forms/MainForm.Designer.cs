@@ -97,7 +97,7 @@ namespace CreamInstaller.Forms
             useSmokeAPILayoutPanel.Controls.Add(useSmokeAPIHelpButton);
             useSmokeAPILayoutPanel.Margin = new Padding(0);
             useSmokeAPILayoutPanel.Name = "useSmokeAPILayoutPanel";
-            useSmokeAPILayoutPanel.Size = new System.Drawing.Size(150, 22);
+            useSmokeAPILayoutPanel.Size = new System.Drawing.Size(250, 22);
             useSmokeAPILayoutPanel.TabIndex = 1006;
             useSmokeAPILayoutPanel.WrapContents = false;
             // 
@@ -115,16 +115,16 @@ namespace CreamInstaller.Forms
             useSmokeApiLabel.Location = new System.Drawing.Point(47, 2);
             useSmokeApiLabel.Margin = new Padding(3, 2, 0, 0);
             useSmokeApiLabel.Name = "useSmokeApiLabel";
-            useSmokeApiLabel.Size = new System.Drawing.Size(70, 15);
+            useSmokeApiLabel.Size = new System.Drawing.Size(175, 15);
             useSmokeApiLabel.TabIndex = 3;
-            useSmokeApiLabel.Text = "SmokeAPI";
+            useSmokeApiLabel.Text = "Selected Unlocker: SmokeAPI";
             useSmokeApiLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // useSmokeAPIHelpButton
             // 
             useSmokeAPIHelpButton.Enabled = false;
             useSmokeAPIHelpButton.Font = new System.Drawing.Font("Segoe UI", 7F);
-            useSmokeAPIHelpButton.Location = new System.Drawing.Point(120, 0);
+            useSmokeAPIHelpButton.Location = new System.Drawing.Point(225, 0);
             useSmokeAPIHelpButton.Margin = new Padding(2, 0, 1, 0);
             useSmokeAPIHelpButton.Name = "useSmokeAPIHelpButton";
             useSmokeAPIHelpButton.Size = new System.Drawing.Size(19, 19);

@@ -1543,7 +1543,7 @@ internal sealed partial class MainForm : CustomForm
     private void OnUseSmokeApiToggleChanged(object sender, EventArgs e)
     {
         Program.UseSmokeAPI = useSmokeApiToggle.Checked;
-        useSmokeApiLabel.Text = useSmokeApiToggle.Checked ? "SmokeAPI" : "CreamAPI";
+        useSmokeApiLabel.Text = useSmokeApiToggle.Checked ? "Selected Unlocker: SmokeAPI" : "Selected Unlocker: CreamAPI";
         selectionTreeView.Invalidate();
     }
 
@@ -1569,7 +1569,7 @@ internal sealed partial class MainForm : CustomForm
         if (useSmokeApiToggle is not null)
         {
             useSmokeApiToggle.Checked = Program.UseSmokeAPI;
-            useSmokeApiLabel.Text = Program.UseSmokeAPI ? "SmokeAPI" : "CreamAPI";
+            useSmokeApiLabel.Text = Program.UseSmokeAPI ? "Selected Unlocker: SmokeAPI" : "Selected Unlocker: CreamAPI";
         }
     }
 }
