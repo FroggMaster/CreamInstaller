@@ -1158,10 +1158,12 @@ internal sealed partial class MainForm : CustomForm
                 if (selection.TreeNode.TreeView is null)
                     _ = selectionTreeView.Nodes.Add(selection.TreeNode);
 
-                // Restore DLC children from saved record
+                // Restore DLC children from saved record, deduplicating by ID
                 if (record.Dlc != null && record.Dlc.Count > 0)
                 {
-                    foreach (InstalledDlcRecord dlcRecord in record.Dlc)
+                    foreach (InstalledDlcRecord dlcRecord in record.Dlc
+                        .GroupBy(d => d.Id)
+                        .Select(g => g.First()))
                     {
                         if (!Enum.TryParse(dlcRecord.DlcType, out DLCType dlcType))
                             continue;
@@ -1476,7 +1478,10 @@ internal sealed partial class MainForm : CustomForm
                     UseProxy = existing?.UseProxy ?? false,
                     ProxyDllName = existing?.UseProxy == true ? existing.ProxyDllName : null,
                     UseExtraProtection = existing?.UseExtraProtection ?? false,
-                    Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
+                    Dlc = selection.DLC
+                        .GroupBy(dlc => dlc.Id)
+                        .Select(g => g.First())
+                        .Select(dlc => new InstalledDlcRecord
                     {
                         DlcType = dlc.Type.ToString(),
                         Id = dlc.Id,

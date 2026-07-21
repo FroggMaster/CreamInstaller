@@ -381,7 +381,10 @@ internal sealed partial class InstallForm : CustomForm
                         UseProxy = selection.UseProxy,
                         ProxyDllName = selection.UseProxy ? selection.Proxy ?? Selection.DefaultProxy : null,
                         UseExtraProtection = selection.UseExtraProtection,
-                        Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
+                        Dlc = selection.DLC
+                            .GroupBy(dlc => dlc.Id)
+                            .Select(g => g.First())
+                            .Select(dlc => new InstalledDlcRecord
                         {
                             DlcType = dlc.Type.ToString(),
                             Id = dlc.Id,

@@ -71,7 +71,20 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
                                  Type == other.Type && GameId == other.GameId && Id == other.Id);
 
     internal static SelectionDLC GetOrCreate(DLCType type, string gameId, string id, string name)
-        => FromId(type, gameId, id) ?? new SelectionDLC(type, gameId, id, name);
+    {
+        // For Steam DLCs, Steam and SteamHidden represent the same DLC discovered
+        // through different code paths. Look up by (gameId, id) ignoring the Steam
+        // subtype to prevent duplicate entries for the same DLC.
+        if (type is DLCType.Steam or DLCType.SteamHidden)
+        {
+            SelectionDLC existing = All.Keys.FirstOrDefault(
+                dlc => dlc.GameId == gameId && dlc.Id == id
+                       && dlc.Type is DLCType.Steam or DLCType.SteamHidden);
+            if (existing is not null)
+                return existing;
+        }
+        return FromId(type, gameId, id) ?? new SelectionDLC(type, gameId, id, name);
+    }
 
     internal static SelectionDLC FromId(DLCType type, string gameId, string dlcId)
         => All.Keys.FirstOrDefault(dlc => dlc.Type == type && dlc.GameId == gameId && dlc.Id == dlcId);
