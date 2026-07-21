@@ -1,6 +1,10 @@
+using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
+using CreamInstaller.Platforms.Steam;
+using CreamInstaller.Utility;
 
 namespace CreamInstaller.Forms;
 
@@ -23,10 +27,14 @@ partial class SettingsForm
         gameManagementGroup = new GroupBox();
         blockedGamesCheckBox = new CheckBox();
         sortByNameCheckBox = new CheckBox();
+        maintenanceGroup = new GroupBox();
+        clearCacheButton = new Button();
+        reconfigureSteamCMDButton = new Button();
         saveButton = new Button();
         cancelButton = new Button();
         appearanceGroup.SuspendLayout();
         gameManagementGroup.SuspendLayout();
+        maintenanceGroup.SuspendLayout();
         SuspendLayout();
         // 
         // settingsToolTip
@@ -94,14 +102,50 @@ partial class SettingsForm
         sortByNameCheckBox.UseVisualStyleBackColor = true;
         SettingsToolTip.SetToolTip(sortByNameCheckBox, "When enabled, games in the main list are sorted alphabetically by name. When disabled, games appear in their default platform order.");
         // 
+        // maintenanceGroup
+        // 
+        maintenanceGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        maintenanceGroup.Controls.Add(clearCacheButton);
+        maintenanceGroup.Controls.Add(reconfigureSteamCMDButton);
+        maintenanceGroup.Location = new Point(12, 160);
+        maintenanceGroup.Name = "maintenanceGroup";
+        maintenanceGroup.Size = new Size(376, 55);
+        maintenanceGroup.TabIndex = 2;
+        maintenanceGroup.TabStop = false;
+        maintenanceGroup.Text = "Maintenance";
+        // 
+        // clearCacheButton
+        // 
+        clearCacheButton.AutoSize = true;
+        clearCacheButton.Location = new Point(12, 20);
+        clearCacheButton.Name = "clearCacheButton";
+        clearCacheButton.Size = new Size(175, 25);
+        clearCacheButton.TabIndex = 0;
+        clearCacheButton.Text = "Clear Cached Data";
+        clearCacheButton.UseVisualStyleBackColor = true;
+        clearCacheButton.Click += OnClearCacheClick;
+        SettingsToolTip.SetToolTip(clearCacheButton, "Deletes all cached game data, forcing a fresh scan on the next launch. Settings are preserved.");
+        // 
+        // reconfigureSteamCMDButton
+        // 
+        reconfigureSteamCMDButton.AutoSize = true;
+        reconfigureSteamCMDButton.Location = new Point(195, 20);
+        reconfigureSteamCMDButton.Name = "reconfigureSteamCMDButton";
+        reconfigureSteamCMDButton.Size = new Size(175, 25);
+        reconfigureSteamCMDButton.TabIndex = 1;
+        reconfigureSteamCMDButton.Text = "Reconfigure SteamCMD";
+        reconfigureSteamCMDButton.UseVisualStyleBackColor = true;
+        reconfigureSteamCMDButton.Click += OnReconfigureSteamCMDClick;
+        SettingsToolTip.SetToolTip(reconfigureSteamCMDButton, "Removes the existing SteamCMD installation. It will be re-downloaded automatically on the next scan.");
+        // 
         // saveButton
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 160);
+        saveButton.Location = new Point(232, 228);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
-        saveButton.TabIndex = 2;
+        saveButton.TabIndex = 3;
         saveButton.Text = "Save";
         saveButton.UseVisualStyleBackColor = true;
         saveButton.Click += OnSaveClick;
@@ -110,10 +154,10 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 160);
+        cancelButton.Location = new Point(313, 228);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
-        cancelButton.TabIndex = 3;
+        cancelButton.TabIndex = 4;
         cancelButton.Text = "Cancel";
         cancelButton.UseVisualStyleBackColor = true;
         cancelButton.Click += OnCancelClick;
@@ -122,9 +166,10 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 197);
+        ClientSize = new Size(400, 265);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
+        Controls.Add(maintenanceGroup);
         Controls.Add(gameManagementGroup);
         Controls.Add(appearanceGroup);
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -134,15 +179,20 @@ partial class SettingsForm
         StartPosition = FormStartPosition.CenterParent;
         appearanceGroup.ResumeLayout(false);
         gameManagementGroup.ResumeLayout(false);
+        maintenanceGroup.ResumeLayout(false);
+        maintenanceGroup.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }
 
     private GroupBox appearanceGroup;
     private GroupBox gameManagementGroup;
+    private GroupBox maintenanceGroup;
     private CheckBox darkModeCheckBox;
     private CheckBox blockedGamesCheckBox;
     private CheckBox sortByNameCheckBox;
+    private Button clearCacheButton;
+    private Button reconfigureSteamCMDButton;
     private Button saveButton;
     private Button cancelButton;
     private ToolTip SettingsToolTip;

@@ -250,6 +250,10 @@ internal static event Action<LogEventArgs> OnLog;
             MigrateOldPath(DirectoryPath + @"\cream-steam.log", SteamLogPath);
             MigrateOldPath(DirectoryPath + @"\CreamInstaller.log", AppLogPath);
             MigrateOldPath(DirectoryPath + @"\unlocker.log", UnlockerLogPath);
+
+            // cleanup legacy paths no longer used
+            string oldCooldown = DirectoryPath + @"\cooldown";
+            try { if (Directory.Exists(oldCooldown)) Directory.Delete(oldCooldown, true); } catch { }
         });
 
     private static void MigrateOldPath(string oldPath, string newPath)
@@ -257,7 +261,10 @@ internal static event Action<LogEventArgs> OnLog;
         if (!oldPath.FileExists())
             return;
         if (newPath.FileExists())
+        {
+            oldPath.DeleteFile();
             return;
+        }
         try
         {
             string content = oldPath.ReadFile();
