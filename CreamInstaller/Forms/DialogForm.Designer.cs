@@ -98,7 +98,7 @@ namespace CreamInstaller.Forms
             // 
             // descriptionLabelPanel
             // 
-            descriptionLabelPanel.AutoScroll = true;
+            descriptionLabelPanel.AutoScroll = false;
             descriptionLabelPanel.AutoSize = true;
             descriptionLabelPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             descriptionLabelPanel.Controls.Add(descriptionLabel);

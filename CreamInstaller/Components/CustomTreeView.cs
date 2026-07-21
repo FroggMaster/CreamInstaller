@@ -199,7 +199,7 @@ internal sealed class CustomTreeView : TreeView
         Rectangle bounds = node.Bounds;
         Rectangle selectionBounds = bounds;
 
-        if (form is not SelectForm and not SelectDialogForm)
+        if (form is not MainForm and not ScanDialog)
             return;
 
         string id = node.Name;
@@ -255,7 +255,7 @@ internal sealed class CustomTreeView : TreeView
             TextRenderer.DrawText(graphics, text, font, point, color, TextFormatFlags.Default);
         }
 
-        if (form is SelectForm)
+        if (form is MainForm)
         {
             Selection selection = Selection.FromId(platform, id);
             if (selection is not null)
@@ -448,7 +448,7 @@ internal sealed class CustomTreeView : TreeView
         base.OnMouseDown(e);
         Refresh();
         Point clickPoint = PointToClient(e.Location);
-        SelectForm selectForm = (form ??= FindForm()) as SelectForm;
+        MainForm selectForm = (form ??= FindForm()) as MainForm;
         foreach (KeyValuePair<TreeNode, Rectangle> pair in selectionBounds)
             if (pair.Key.TreeView is null)
                 _ = selectionBounds.Remove(pair.Key);

@@ -5,7 +5,7 @@ using CreamInstaller.Components;
 
 namespace CreamInstaller.Forms
 {
-    partial class SelectDialogForm
+    partial class ScanDialog
     {
         private IContainer components = null;
         protected override void Dispose(bool disposing)
@@ -169,7 +169,7 @@ namespace CreamInstaller.Forms
             saveButton.UseVisualStyleBackColor = true;
             saveButton.Click += OnSave;
             // 
-            // SelectDialogForm
+            // ScanDialog
             // 
             AcceptButton = acceptButton;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -187,10 +187,10 @@ namespace CreamInstaller.Forms
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             MinimizeBox = false;
-            Name = "SelectDialogForm";
+            Name = "ScanDialog";
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            Text = "SelectDialogForm";
+            Text = "ScanDialog";
             groupBox.ResumeLayout(false);
             groupBox.PerformLayout();
             allCheckBoxFlowPanel.ResumeLayout(false);

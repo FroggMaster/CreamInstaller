@@ -79,6 +79,7 @@ internal static class ProgramData
     private static readonly string KoaloaderProxyChoicesPath = CachePath + @"\proxies.json";
     private static readonly string ExtraProtectionChoicesPath = CachePath + @"\extraprotection.json";
     private static readonly string InstalledGamesPath = CachePath + @"\installed.json";
+    private static readonly string SettingsPath = CachePath + @"\settings.json";
 
     private static readonly string LogsPath = DirectoryPath + @"\Logs";
     internal static readonly string ScanLogPath = LogsPath + @"\game-scan.log";
@@ -249,6 +250,10 @@ internal static event Action<LogEventArgs> OnLog;
             MigrateOldPath(DirectoryPath + @"\cream-steam.log", SteamLogPath);
             MigrateOldPath(DirectoryPath + @"\CreamInstaller.log", AppLogPath);
             MigrateOldPath(DirectoryPath + @"\unlocker.log", UnlockerLogPath);
+
+            // cleanup legacy paths no longer used
+            string oldCooldown = DirectoryPath + @"\cooldown";
+            try { if (Directory.Exists(oldCooldown)) Directory.Delete(oldCooldown, true); } catch { }
         });
 
     private static void MigrateOldPath(string oldPath, string newPath)
@@ -256,7 +261,10 @@ internal static event Action<LogEventArgs> OnLog;
         if (!oldPath.FileExists())
             return;
         if (newPath.FileExists())
+        {
+            oldPath.DeleteFile();
             return;
+        }
         try
         {
             string content = oldPath.ReadFile();
@@ -472,5 +480,32 @@ internal static event Action<LogEventArgs> OnLog;
         List<InstalledGameRecord> records = ReadInstalledGames();
         if (records.RemoveAll(r => r.Platform == platform && r.Id == id) > 0)
             WriteInstalledGames(records);
+    }
+
+    internal static SettingsModel LoadSettings()
+    {
+        try
+        {
+            if (JsonConvert.DeserializeObject<SettingsModel>(SettingsPath.ReadFile()) is SettingsModel settings)
+                return settings;
+        }
+        catch
+        {
+            // ignored
+        }
+
+        return new SettingsModel();
+    }
+
+    internal static void SaveSettings(SettingsModel settings)
+    {
+        try
+        {
+            SettingsPath.WriteFile(JsonConvert.SerializeObject(settings, Formatting.Indented));
+        }
+        catch
+        {
+            // ignored
+        }
     }
 }

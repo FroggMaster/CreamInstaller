@@ -38,16 +38,36 @@ internal static class Program
     internal static readonly string CurrentProcessFilePath = CurrentProcess.MainModule?.FileName ?? "";
     internal static readonly int CurrentProcessId = CurrentProcess.Id;
 
-    // Setting is now toggleable. Huzzah! 
-    internal static bool UseSmokeAPI = true;
+    // Settings loaded from ProgramData on startup — persisted across sessions
+    internal static SettingsModel AppSettings { get; private set; } = new();
 
-    internal static bool BlockProtectedGames = true;
+    internal static bool UseSmokeAPI
+    {
+        get => AppSettings.UseSmokeAPI;
+        set => AppSettings.UseSmokeAPI = value;
+    }
+
+    internal static bool BlockProtectedGames
+    {
+        get => AppSettings.BlockProtectedGames;
+        set => AppSettings.BlockProtectedGames = value;
+    }
+
+    internal static bool DarkModeEnabled
+    {
+        get => AppSettings.DarkModeEnabled;
+        set => AppSettings.DarkModeEnabled = value;
+    }
+
+    internal static bool SortByName
+    {
+        get => AppSettings.SortByName;
+        set => AppSettings.SortByName = value;
+    }
+
     internal static readonly string[] ProtectedGames = ["PAYDAY 2"];
     internal static readonly string[] ProtectedGameDirectories = [@"\EasyAntiCheat", @"\BattlEye"];
     internal static readonly string[] ProtectedGameDirectoryExceptions = [];
-
-    // Dark mode enabled by default
-    internal static bool DarkModeEnabled = true;
 
     internal static bool IsGameBlocked(string name, string? directory = null)
         => GetGameBlockedReason(name, directory) is not null;
@@ -83,13 +103,14 @@ internal static class Program
             {
                 try
                 {
-                    HttpClientManager.Setup();
-                    using UpdateForm form = new();
+                HttpClientManager.Setup();
+                AppSettings = ProgramData.LoadSettings(); // load persisted settings
+                using UpdateForm form = new();
 #if DEBUG
-                    DebugForm.Current.Attach(form);
+                DebugForm.Current.Attach(form);
 #endif
-                    // Apply initial theme (dark by default)
-                    Utility.ThemeManager.Apply(form);
+                // Apply initial theme (dark by default)
+                Utility.ThemeManager.Apply(form);
                     Application.Run(form);
                     retry = false;
                 }
@@ -167,6 +188,7 @@ internal static class Program
         }
         finally
         {
+            ProgramData.SaveSettings(AppSettings);
             HttpClientManager.Dispose();
         }
     }

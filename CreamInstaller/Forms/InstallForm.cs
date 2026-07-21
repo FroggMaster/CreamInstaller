@@ -381,7 +381,10 @@ internal sealed partial class InstallForm : CustomForm
                         UseProxy = selection.UseProxy,
                         ProxyDllName = selection.UseProxy ? selection.Proxy ?? Selection.DefaultProxy : null,
                         UseExtraProtection = selection.UseExtraProtection,
-                        Dlc = selection.DLC.Select(dlc => new InstalledDlcRecord
+                        Dlc = selection.DLC
+                            .GroupBy(dlc => dlc.Id)
+                            .Select(g => g.First())
+                            .Select(dlc => new InstalledDlcRecord
                         {
                             DlcType = dlc.Type.ToString(),
                             Id = dlc.Id,
@@ -395,7 +398,7 @@ internal sealed partial class InstallForm : CustomForm
                     ProgramData.Log.Info($"[InstallForm] No unlocker detected after install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
             }
         }
-        SelectForm.Current?.Invoke(() => SelectForm.Current?.InvalidateGameList());
+        MainForm.Current?.Invoke(() => MainForm.Current?.InvalidateGameList());
 
         Program.Cleanup();
         int activeCount = activeSelections.Count;
