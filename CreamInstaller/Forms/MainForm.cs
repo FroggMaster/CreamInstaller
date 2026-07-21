@@ -1343,44 +1343,6 @@ internal sealed partial class MainForm : CustomForm
 
     private void OnUninstall(object sender, EventArgs e) => OnAccept(true);
 
-    private async void OnUninstallAll(object sender, EventArgs e)
-    {
-        using DialogForm confirm = new(this);
-        if (confirm.Show(SystemIcons.Warning,
-                "Are you sure you want to uninstall everything?\n\nThis will remove all DLC unlockers, CreamAPI, SmokeAPI, ScreamAPI, and proxy DLLs from all games.",
-                acceptButtonText: "Uninstall All", cancelButtonText: "Cancel", customFormText: "Uninstall All") != DialogResult.OK)
-            return;
-        scanButton.Enabled = false;
-        installButton.Enabled = false;
-        uninstallButton.Enabled = false;
-        selectionTreeView.Enabled = false;
-        int maxProgress = 0;
-        int curProgress = 0;
-        Progress<int> progress = new();
-        IProgress<int> iProgress = progress;
-        progress.ProgressChanged += (_, _progress) =>
-        {
-            if (Program.Canceled)
-                return;
-            if (_progress < 0 || _progress > maxProgress)
-                maxProgress = -_progress;
-            else
-                curProgress = _progress;
-            int p = Math.Max(Math.Min((int)((float)curProgress / maxProgress * 100), 100), 0);
-            progressLabel.Text = $"Quickly gathering games for uninstallation . . . {p}%";
-            progressBar.Value = p;
-        };
-        ShowProgressBar();
-        progressLabel.Text = "Quickly gathering games for uninstallation . . . ";
-        foreach (Selection selection in Selection.All.Keys)
-            selection.TreeNode.Remove();
-        await GetApplicablePrograms(iProgress, true);
-        if (!Program.Canceled)
-            OnUninstall(null, null);
-        Selection.All.Clear();
-        programsToScan = null;
-    }
-
     private void OnScan(object sender, EventArgs e) => OnLoad(forceProvideChoices: true);
 
     private void OnAllCheckBoxChanged(object sender, EventArgs e)

@@ -31,7 +31,6 @@ namespace CreamInstaller.Forms
             progressBar = new ProgressBar();
             progressLabel = new Label();
             scanButton = new Button();
-            uninstallAllButton = new Button();
             uninstallButton = new Button();
             progressLabelGames = new Label();
             progressLabelDLCs = new Label();
@@ -140,7 +139,7 @@ namespace CreamInstaller.Forms
             allCheckBoxLayoutPanel.AutoSize = true;
             allCheckBoxLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             allCheckBoxLayoutPanel.Controls.Add(allCheckBox);
-            allCheckBoxLayoutPanel.Margin = new Padding(12, 0, 0, 0);
+            allCheckBoxLayoutPanel.Margin = new Padding(12, 3, 0, 0);
             allCheckBoxLayoutPanel.Name = "allCheckBoxLayoutPanel";
             allCheckBoxLayoutPanel.Size = new System.Drawing.Size(42, 19);
             allCheckBoxLayoutPanel.TabIndex = 1007;
@@ -148,16 +147,17 @@ namespace CreamInstaller.Forms
             // 
             // allCheckBox
             // 
-            allCheckBox.AutoSize = true;
+            allCheckBox.AutoSize = false;
             allCheckBox.Checked = true;
             allCheckBox.CheckState = CheckState.Checked;
             allCheckBox.Enabled = false;
+            allCheckBox.FlatStyle = FlatStyle.System;
             allCheckBox.Location = new System.Drawing.Point(2, 0);
             allCheckBox.Margin = new Padding(2, 0, 0, 0);
             allCheckBox.Name = "allCheckBox";
-            allCheckBox.Size = new System.Drawing.Size(40, 19);
+            allCheckBox.Size = new System.Drawing.Size(75, 22);
             allCheckBox.TabIndex = 4;
-            allCheckBox.Text = "All";
+            allCheckBox.Text = "Select All";
             allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
             // 
             // selectionTreeView
@@ -208,29 +208,13 @@ namespace CreamInstaller.Forms
             scanButton.Click += OnScan;
             mainToolTip.SetToolTip(scanButton, "Re-scan for installed games and refresh the DLC list from cache.");
             // 
-            // uninstallAllButton
-            // 
-            uninstallAllButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            uninstallAllButton.AutoSize = true;
-            uninstallAllButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            uninstallAllButton.Enabled = false;
-            uninstallAllButton.Location = new System.Drawing.Point(12, 382);
-            uninstallAllButton.Name = "uninstallAllButton";
-            uninstallAllButton.Padding = new Padding(3, 0, 3, 0);
-            uninstallAllButton.Size = new System.Drawing.Size(85, 25);
-            uninstallAllButton.TabIndex = 10006;
-            uninstallAllButton.Text = "Uninstall All";
-            uninstallAllButton.UseVisualStyleBackColor = true;
-            uninstallAllButton.Click += OnUninstallAll;
-            mainToolTip.SetToolTip(uninstallAllButton, "Remove all installed DLC unlockers from every game.");
-            // 
             // uninstallButton
             // 
             uninstallButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             uninstallButton.AutoSize = true;
             uninstallButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             uninstallButton.Enabled = false;
-            uninstallButton.Location = new System.Drawing.Point(100, 382);
+            uninstallButton.Location = new System.Drawing.Point(12, 382);
             uninstallButton.Name = "uninstallButton";
             uninstallButton.Padding = new Padding(3, 0, 3, 0);
             uninstallButton.Size = new System.Drawing.Size(174, 25);
@@ -301,8 +285,8 @@ namespace CreamInstaller.Forms
             topOptionsTable.TabIndex = 10009;
             topOptionsTable.Controls.Clear();
             topOptionsTable.Controls.Add(useSmokeAPILayoutPanel, 0, 0);
-            topOptionsTable.Controls.Add(settingsButton, 2, 0);
-            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 3, 0);
+            topOptionsTable.Controls.Add(allCheckBoxLayoutPanel, 2, 0);
+            topOptionsTable.Controls.Add(settingsButton, 3, 0);
             // 
             // MainForm
             // 
@@ -318,7 +302,6 @@ namespace CreamInstaller.Forms
             Controls.Add(progressBar);
             Controls.Add(noneFoundLabel);
             Controls.Add(programsGroupBox);
-            Controls.Add(uninstallAllButton);
             Controls.Add(uninstallButton);
             Controls.Add(scanButton);
             Controls.Add(installButton);
@@ -359,7 +342,6 @@ namespace CreamInstaller.Forms
         private FlowLayoutPanel useSmokeAPILayoutPanel;
         private FlowLayoutPanel allCheckBoxLayoutPanel;
         private Button uninstallButton;
-        private Button uninstallAllButton;
         private Label progressLabelGames;
         private Label progressLabelDLCs;
         private FlowLayoutPanel saveFlowPanel;
