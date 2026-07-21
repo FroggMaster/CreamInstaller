@@ -26,6 +26,7 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
     internal string Icon;
     internal string Product;
     internal string Publisher;
+    internal bool IsNew;
     private Selection selection;
 
     private SelectionDLC(DLCType type, string gameId, string id, string name)

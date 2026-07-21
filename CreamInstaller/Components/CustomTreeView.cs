@@ -255,6 +255,23 @@ internal sealed class CustomTreeView : TreeView
             TextRenderer.DrawText(graphics, text, font, point, color, TextFormatFlags.Default);
         }
 
+        // Draw "NEW" tag after the AppID for newly discovered DLCs
+        if (dlcType is not DLCType.None)
+        {
+            SelectionDLC dlc = SelectionDLC.FromId(dlcType, node.Parent?.Name, id);
+            if (dlc?.IsNew == true)
+            {
+                const string newTag = " NEW";
+                size = TextRenderer.MeasureText(graphics, newTag, font);
+                bounds = bounds with { X = bounds.X + bounds.Width + 1, Width = size.Width };
+                selectionBounds = new(selectionBounds.Location,
+                    selectionBounds.Size + new Size(bounds.Size.Width + 1, 0));
+                graphics.FillRectangle(brush, bounds);
+                point = new(bounds.Location.X - 1, bounds.Location.Y + 1);
+                TextRenderer.DrawText(graphics, newTag, font, point, Color.Orange, TextFormatFlags.Default);
+            }
+        }
+
         if (form is MainForm)
         {
             Selection selection = Selection.FromId(platform, id);

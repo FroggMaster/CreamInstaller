@@ -1203,8 +1203,11 @@ internal sealed partial class MainForm : CustomForm
                     try
                     {
                         ProgramData.Log.Info($"[DLCRefresh] Checking for new DLCs on {selection.Platform} game \"{selection.Name}\" ({selection.Id}) ...", LogDestination.Scan);
+                        foreach (SelectionDLC dlc in selection.DLC)
+                            dlc.IsNew = false;
                         HashSet<string> currentDlcIds = [];
                         List<(string id, string name)> newDlcList = [];
+                        List<string> discoveredMessages = [];
 
                         if (selection.Platform == Platform.Steam)
                         {
@@ -1233,7 +1236,7 @@ internal sealed partial class MainForm : CustomForm
                                         dlcName = dlcCmd.Common.Name;
                                 }
                                 newDlcList.Add((dlcId, dlcName));
-                                ProgramData.Log.Info($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{dlcName}\" ({dlcId})", LogDestination.Scan);
+                                discoveredMessages.Add($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{dlcName}\" ({dlcId})");
                             }
                         }
                         else if (selection.Platform == Platform.Epic)
@@ -1246,7 +1249,7 @@ internal sealed partial class MainForm : CustomForm
                                 if (!savedDlcIds.Contains(id))
                                 {
                                     newDlcList.Add((id, name ?? "Unknown"));
-                                    ProgramData.Log.Info($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{name ?? "Unknown"}\" ({id})", LogDestination.Scan);
+                                    discoveredMessages.Add($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{name ?? "Unknown"}\" ({id})");
                                 }
                             }
                         }
@@ -1260,6 +1263,8 @@ internal sealed partial class MainForm : CustomForm
                             {
                                 if (Program.Canceled)
                                     return;
+                                foreach (string msg in discoveredMessages)
+                                    ProgramData.Log.Info(msg, LogDestination.Scan);
                                 foreach ((string id, string name) in newDlcList)
                                 {
                                     DLCType dlcType = selection.Platform switch
@@ -1270,10 +1275,12 @@ internal sealed partial class MainForm : CustomForm
                                     };
                                     SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, selection.Id, id, name);
                                     dlc.Selection = selection;
-                                    dlc.Enabled = false;
+                                    dlc.Enabled = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI;
+                                    dlc.IsNew = true;
                                 }
+                                string state = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI ? "enabled" : "disabled";
+                                ProgramData.Log.Info($"[DLCRefresh] Added {newDlcList.Count} new {state} DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                             });
-                            ProgramData.Log.Info($"[DLCRefresh] Added {newDlcList.Count} new disabled DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                         }
                         else
                             ProgramData.Log.Info($"[DLCRefresh] No new DLCs found for \"{selection.Name}\" ({selection.Id}) — {currentDlcIds.Count} total DLCs known in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
