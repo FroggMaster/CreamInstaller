@@ -36,8 +36,6 @@ internal sealed partial class MainForm : CustomForm
 
     private List<(Platform platform, string id, string name)> programsToScan;
 
-    private static readonly List<Task> configApiTasks = [];
-
     private const int SteamCmdTimeoutMs = 16000;
     private const string DlcRefreshLogPrefix = "[DLCRefresh] ";
 
@@ -813,11 +811,37 @@ internal sealed partial class MainForm : CustomForm
             await SteamCMD.Cleanup();
         }
 
-        LoadSelections();
-        await DrainConfigApiTasks();
-        await LoadSavedInstalledGames();
-        SyncInstallerConfigs();
-        await DrainConfigApiTasks();
+        if (!scan)
+        {
+            int loadSteps = 0;
+            int loadStep = 0;
+            Progress<int> loadProgress = new();
+            loadProgress.ProgressChanged += (_, p) =>
+            {
+                if (p < 0) loadSteps = -p;
+                else loadStep = p;
+                int pc = loadSteps > 0 ? (int)((float)loadStep / loadSteps * 100) : 0;
+                progressBar.Value = Math.Max(0, Math.Min(pc, 100));
+                progressLabel.Text = $"Loading games and DLCs from cached data... {pc}%";
+            };
+            IProgress<int> loadReporter = loadProgress;
+            loadReporter.Report(-4);
+
+            LoadSelections();
+            loadReporter.Report(1);
+
+            await LoadSavedInstalledGames();
+            loadReporter.Report(2);
+
+            SyncInstallerConfigs();
+            loadReporter.Report(3);
+        }
+        else
+        {
+            LoadSelections();
+            await LoadSavedInstalledGames();
+            SyncInstallerConfigs();
+        }
         if (!scan && Selection.All.Keys.Any(s => s.InstalledUnlocker != InstalledUnlocker.None))
             RefreshNewDLCsForInstalledGames();
         HideProgressBar();
@@ -1202,7 +1226,7 @@ internal sealed partial class MainForm : CustomForm
     /// <summary>Fires a one-time async API query for a config-only DLC; only creates the entry if the API confirms it exists.</summary>
     private static void FireConfigDlcApiQuery(MainForm form, Selection selection, string dlcId)
     {
-        Task task = Task.Run(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {
@@ -1219,7 +1243,7 @@ internal sealed partial class MainForm : CustomForm
                             return;
                         SelectionDLC dlc = SelectionDLC.GetOrCreate(DLCType.SteamHidden, selection.Id, dlcId, apiName);
                         dlc.Selection = selection;
-                        dlc.Enabled = true; // explicitly present in CreamAPI config
+                        dlc.Enabled = true;
                     });
                 }
             }
@@ -1228,21 +1252,6 @@ internal sealed partial class MainForm : CustomForm
                 // Don't create the DLC if the API query fails
             }
         });
-        lock (configApiTasks)
-            configApiTasks.Add(task);
-    }
-
-    /// <summary>Waits for all in-flight config API queries to complete so the background refresh has a complete picture of known DLCs.</summary>
-    private static async Task DrainConfigApiTasks()
-    {
-        Task[] tasks;
-        lock (configApiTasks)
-        {
-            tasks = [.. configApiTasks];
-            configApiTasks.Clear();
-        }
-        if (tasks.Length > 0)
-            await Task.WhenAll(tasks);
     }
 
     /// <summary>Fires background tasks per installed game to check for new DLCs from store APIs that were released since the last install or scan. Any newly discovered DLCs are added to the tree in a disabled (unchecked) state, since they are not yet configured in the unlocker config files.</summary>
