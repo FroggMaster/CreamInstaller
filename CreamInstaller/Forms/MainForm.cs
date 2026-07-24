@@ -1001,14 +1001,27 @@ internal sealed partial class MainForm : CustomForm
                     bool isGameNode = selection is not null;
                     _ = items.Add(new ContextMenuItem(isGameNode ? "Refresh Game Data" : "Refresh DLC Data", "Command Prompt", async (_, _) =>
                     {
+                        ProgramData.Log.Info($"[Refresh] Refreshing {(isGameNode ? $"game \"{selection.Name}\"" : $"DLC \"{dlc.Name}\"")} data ...");
                         appInfoVDF.DeleteFile();
                         appInfoCmdJSON.DeleteFile();
                         appInfoJSON.DeleteFile();
                         cooldown.DeleteFile();
                         if (isGameNode)
+                        {
                             await RefreshSingleGameData(selection);
+                            int refreshed = 0;
+                            foreach (SelectionDLC dlc in selection.DLC)
+                            {
+                                await RefreshSingleDlcData(dlc);
+                                refreshed++;
+                            }
+                            ProgramData.Log.Info($"[Refresh] Refreshed {refreshed} DLC(s) for \"{selection.Name}\"");
+                        }
                         else
+                        {
                             await RefreshSingleDlcData(dlc);
+                            ProgramData.Log.Info($"[Refresh] Refreshed DLC \"{dlc.Name}\"");
+                        }
                     }));
                 }
             }
@@ -1398,7 +1411,12 @@ internal sealed partial class MainForm : CustomForm
             {
                 if (existingIds.Contains(dlcId))
                     continue;
+                string jsonCache = $@"{ProgramData.AppInfoPath}\{dlcId}.json";
+                string cmdJsonCache = $@"{ProgramData.AppInfoPath}\{dlcId}.cmd.json";
+                jsonCache.DeleteFile();
+                cmdJsonCache.DeleteFile();
                 string dlcName = await ResolveSteamDlcName(dlcId, selection.Name, selection.Id);
+                ProgramData.Log.Info($"[Refresh] Discovered new DLC \"{dlcName}\" ({dlcId}) for \"{selection.Name}\"");
                 SelectionDLC dlc = SelectionDLC.GetOrCreate(DLCType.Steam, selection.Id, dlcId, dlcName);
                 dlc.Selection = selection;
             }
@@ -1426,9 +1444,19 @@ internal sealed partial class MainForm : CustomForm
     {
         if (dlc.Type is DLCType.Steam or DLCType.SteamHidden)
         {
+            string jsonCache = $@"{ProgramData.AppInfoPath}\{dlc.Id}.json";
+            string cmdJsonCache = $@"{ProgramData.AppInfoPath}\{dlc.Id}.cmd.json";
+            jsonCache.DeleteFile();
+            cmdJsonCache.DeleteFile();
             string name = await ResolveSteamDlcName(dlc.Id, dlc.Selection?.Name, dlc.Selection?.Id);
+            string gameName = dlc.Selection?.Name ?? "Unknown";
             if (name != "Unknown")
+            {
                 dlc.Name = name;
+                ProgramData.Log.Info($"[Refresh] Resolved DLC \"{name}\" ({dlc.Id}) for \"{gameName}\"");
+            }
+            else
+                ProgramData.Log.Info($"[Refresh] Could not resolve DLC ({dlc.Id}) for \"{gameName}\"");
         }
     }
 

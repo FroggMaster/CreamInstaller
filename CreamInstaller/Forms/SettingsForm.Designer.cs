@@ -63,7 +63,7 @@ partial class SettingsForm
         darkModeCheckBox.Name = "darkModeCheckBox";
         darkModeCheckBox.Size = new Size(160, 22);
         darkModeCheckBox.TabIndex = 0;
-        darkModeCheckBox.Text = "Enable Dark Mode";
+        darkModeCheckBox.Text = "Enable dark theme";
         darkModeCheckBox.UseVisualStyleBackColor = true;
         SettingsToolTip.SetToolTip(darkModeCheckBox, "Switches the application between light and dark color themes.");
         // 
@@ -85,9 +85,9 @@ partial class SettingsForm
         blockedGamesCheckBox.FlatStyle = FlatStyle.System;
         blockedGamesCheckBox.Location = new Point(12, 22);
         blockedGamesCheckBox.Name = "blockedGamesCheckBox";
-        blockedGamesCheckBox.Size = new Size(190, 22);
+        blockedGamesCheckBox.Size = new Size(260, 22);
         blockedGamesCheckBox.TabIndex = 0;
-        blockedGamesCheckBox.Text = "Block Protected Games";
+        blockedGamesCheckBox.Text = "Block games with known anti-cheat";
         blockedGamesCheckBox.UseVisualStyleBackColor = true;
         SettingsToolTip.SetToolTip(blockedGamesCheckBox, "Prevents the program from displaying or modifying games protected by anti-cheat software (e.g. Easy Anti-Cheat, BattlEye). Disable at your own risk.");
         // 
