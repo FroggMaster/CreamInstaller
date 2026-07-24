@@ -1660,7 +1660,17 @@ internal sealed partial class MainForm : CustomForm
     private void programsGroupBox_Enter(object sender, EventArgs e) { }
 
     private void OnSettingsButtonClick(object sender, EventArgs e)
-        => SettingsForm.Show(this);
+    {
+        SettingsForm.Show(this);
+        if (ProgramData.CacheCleared)
+        {
+            ProgramData.CacheCleared = false;
+            selectionTreeView.Nodes.Clear();
+            Selection.All.Clear();
+            programsToScan = null;
+            OnLoad(forceProvideChoices: true);
+        }
+    }
 
     protected override void OnShown(EventArgs e)
     {

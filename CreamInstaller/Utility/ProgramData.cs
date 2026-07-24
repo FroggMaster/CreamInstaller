@@ -81,6 +81,8 @@ internal static class ProgramData
     private static readonly string InstalledGamesPath = CachePath + @"\installed.json";
     private static readonly string SettingsPath = CachePath + @"\settings.json";
 
+    internal static bool CacheCleared { get; set; }
+
     internal static readonly string LogsPath = DirectoryPath + @"\Logs";
     internal static readonly string ScanLogPath = LogsPath + @"\game-scan.log";
     internal static readonly string SteamLogPath = LogsPath + @"\cream-steam.log";

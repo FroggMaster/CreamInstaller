@@ -89,7 +89,9 @@ internal sealed partial class SettingsForm : CustomForm
             }
         }
 
+        ProgramData.CacheCleared = true;
         ProgramData.SaveSettings(Program.AppSettings);
+        DialogResult = DialogResult.OK;
     }
 
     private async void OnReconfigureSteamCMDClick(object sender, EventArgs e)
