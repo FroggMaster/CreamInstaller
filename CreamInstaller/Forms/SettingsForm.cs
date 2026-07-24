@@ -120,4 +120,6 @@ internal sealed partial class SettingsForm : CustomForm
         reconfigureSteamCMDButton.ForeColor = originalColor;
         reconfigureSteamCMDButton.Enabled = true;
     }
+
+    private void OnOpenLogDirClick(object sender, EventArgs e) => Diagnostics.OpenDirectoryInFileExplorer(ProgramData.LogsPath);
 }

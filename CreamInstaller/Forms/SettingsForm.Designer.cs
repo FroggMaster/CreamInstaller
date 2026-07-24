@@ -32,6 +32,7 @@ partial class SettingsForm
         reconfigureSteamCMDButton = new Button();
         saveButton = new Button();
         cancelButton = new Button();
+        openLogDirButton = new Button();
         appearanceGroup.SuspendLayout();
         gameManagementGroup.SuspendLayout();
         maintenanceGroup.SuspendLayout();
@@ -107,9 +108,10 @@ partial class SettingsForm
         maintenanceGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         maintenanceGroup.Controls.Add(clearCacheButton);
         maintenanceGroup.Controls.Add(reconfigureSteamCMDButton);
+        maintenanceGroup.Controls.Add(openLogDirButton);
         maintenanceGroup.Location = new Point(12, 160);
         maintenanceGroup.Name = "maintenanceGroup";
-        maintenanceGroup.Size = new Size(376, 55);
+        maintenanceGroup.Size = new Size(376, 85);
         maintenanceGroup.TabIndex = 2;
         maintenanceGroup.TabStop = false;
         maintenanceGroup.Text = "Maintenance";
@@ -138,11 +140,23 @@ partial class SettingsForm
         reconfigureSteamCMDButton.Click += OnReconfigureSteamCMDClick;
         SettingsToolTip.SetToolTip(reconfigureSteamCMDButton, "Removes the existing SteamCMD installation. It will be re-downloaded automatically on the next scan.");
         // 
+        // openLogDirButton
+        // 
+        openLogDirButton.AutoSize = true;
+        openLogDirButton.Location = new Point(12, 50);
+        openLogDirButton.Name = "openLogDirButton";
+        openLogDirButton.Size = new Size(175, 25);
+        openLogDirButton.TabIndex = 2;
+        openLogDirButton.Text = "Open Log Directory";
+        openLogDirButton.UseVisualStyleBackColor = true;
+        openLogDirButton.Click += OnOpenLogDirClick;
+        SettingsToolTip.SetToolTip(openLogDirButton, "Opens the logs directory in File Explorer.");
+        // 
         // saveButton
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 228);
+        saveButton.Location = new Point(232, 260);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
         saveButton.TabIndex = 3;
@@ -154,7 +168,7 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 228);
+        cancelButton.Location = new Point(313, 260);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
         cancelButton.TabIndex = 4;
@@ -166,7 +180,7 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 265);
+        ClientSize = new Size(400, 295);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
         Controls.Add(maintenanceGroup);
@@ -195,5 +209,6 @@ partial class SettingsForm
     private Button reconfigureSteamCMDButton;
     private Button saveButton;
     private Button cancelButton;
+    private Button openLogDirButton;
     private ToolTip SettingsToolTip;
 }
