@@ -28,7 +28,9 @@ internal static class CreamAPI
         config = directory + @"\cream_api.ini";
     }
 
-    internal static HashSet<string> ReadConfigDlcIds(string directory)
+    internal static HashSet<string> ReadConfigDlcIds(string directory) => ReadConfigDlcs(directory)?.Select(e => e.id).ToHashSet();
+
+    internal static List<(string id, string name)> ReadConfigDlcs(string directory)
     {
         directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
         if (!config.FileExists())
@@ -36,7 +38,7 @@ internal static class CreamAPI
 
         try
         {
-            HashSet<string> dlcIds = [];
+            List<(string id, string name)> dlcEntries = [];
             string[] lines = File.ReadAllLines(config, Encoding.Default);
             bool inDlcSection = false;
             foreach (string line in lines)
@@ -51,14 +53,16 @@ internal static class CreamAPI
                     break;
                 if (inDlcSection && trimmed.Contains('='))
                 {
-                    string id = trimmed.Split('=')[0].Trim();
+                    string[] parts = trimmed.Split('=', 2);
+                    string id = parts[0].Trim();
+                    string name = parts.Length > 1 ? parts[1].Trim() : "Unknown";
                     if (!string.IsNullOrEmpty(id))
-                        dlcIds.Add(id);
+                        dlcEntries.Add((id, name));
                 }
             }
 
-            ProgramData.Log.Info($"[CreamAPI] Read config: {config} — {dlcIds.Count} DLC", LogDestination.Unlocker);
-            return dlcIds;
+            ProgramData.Log.Info($"[CreamAPI] Read config: {config} — {dlcEntries.Count} DLC", LogDestination.Unlocker);
+            return dlcEntries;
         }
         catch (Exception e)
         {

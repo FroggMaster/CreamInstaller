@@ -19,13 +19,23 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
     internal static readonly ConcurrentDictionary<SelectionDLC, byte> All = new();
 
     internal readonly string Id;
-    internal readonly string Name;
+    private string _name;
+    internal string Name
+    {
+        get => _name;
+        set
+        {
+            _name = value;
+            TreeNode.Text = value;
+        }
+    }
     internal readonly TreeNode TreeNode;
     internal readonly DLCType Type;
     internal readonly string GameId;
     internal string Icon;
     internal string Product;
     internal string Publisher;
+    internal bool IsNew;
     private Selection selection;
 
     private SelectionDLC(DLCType type, string gameId, string id, string name)
@@ -33,7 +43,7 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
         Type = type;
         GameId = gameId;
         Id = id;
-        Name = name;
+        _name = name;
         TreeNode = new() { Tag = Type, Name = Id, Text = Name };
         _ = All.TryAdd(this, 0);
     }
@@ -51,6 +61,9 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
         {
             if (ReferenceEquals(selection, value))
                 return;
+            // Remove from previous selection's per-game dictionary
+            if (selection is not null)
+                _ = selection.DLCById.TryRemove(Id, out _);
             selection = value;
             if (value is null)
             {
@@ -60,6 +73,7 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
             else
             {
                 _ = All.TryAdd(this, default);
+                _ = value.DLCById.TryAdd(Id, this);
                 _ = value.TreeNode.Nodes.Add(TreeNode);
                 Enabled = Name != "Unknown" && value.Enabled;
             }
@@ -72,17 +86,15 @@ internal sealed class SelectionDLC : IEquatable<SelectionDLC>
 
     internal static SelectionDLC GetOrCreate(DLCType type, string gameId, string id, string name)
     {
-        // For Steam DLCs, Steam and SteamHidden represent the same DLC discovered
-        // through different code paths. Look up by (gameId, id) ignoring the Steam
-        // subtype to prevent duplicate entries for the same DLC.
-        if (type is DLCType.Steam or DLCType.SteamHidden)
-        {
-            SelectionDLC existing = All.Keys.FirstOrDefault(
-                dlc => dlc.GameId == gameId && dlc.Id == id
-                       && dlc.Type is DLCType.Steam or DLCType.SteamHidden);
-            if (existing is not null)
+        // Search per-selection dictionaries first (authoritative, deduplicated by ID)
+        foreach (Selection s in Selection.All.Keys)
+            if (s.DLCById.TryGetValue(id, out SelectionDLC existing)
+                && existing.GameId == gameId
+                && (existing.Type == type
+                    || (type is DLCType.Steam or DLCType.SteamHidden
+                        && existing.Type is DLCType.Steam or DLCType.SteamHidden)))
                 return existing;
-        }
+        // Fall back to the global pool for unassociated DLCs
         return FromId(type, gameId, id) ?? new SelectionDLC(type, gameId, id, name);
     }
 

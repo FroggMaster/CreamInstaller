@@ -36,6 +36,9 @@ internal sealed partial class MainForm : CustomForm
 
     private List<(Platform platform, string id, string name)> programsToScan;
 
+    private const int SteamCmdTimeoutMs = 16000;
+    private const string DlcRefreshLogPrefix = "[DLCRefresh] ";
+
     private MainForm()
     {
         InitializeComponent();
@@ -128,6 +131,15 @@ internal sealed partial class MainForm : CustomForm
         if (await Task.WhenAny(task, Task.Delay(millisecondsTimeout)) == task)
             return await task;
         return default;
+    }
+
+    private static async Task<string> ResolveSteamDlcName(string dlcId, string parentGameName = null, string parentGameId = null)
+    {
+        StoreAppData dlcStore = await SteamStore.QueryStoreAPI(dlcId, isDlc: true, attempts: 0, parentGameName, parentGameId);
+        if (dlcStore?.Name is not null)
+            return dlcStore.Name;
+        CmdAppData dlcCmd = await SteamCMD.GetAppInfo(dlcId);
+        return dlcCmd?.Common?.Name ?? "Unknown";
     }
     private async Task GetApplicablePrograms(IProgress<int> progress, bool uninstallAll = false)
     {
@@ -256,7 +268,7 @@ internal sealed partial class MainForm : CustomForm
                     _ = Interlocked.Decrement(ref steamGamesToCheck);
                     if (Volatile.Read(ref steamGamesToCheck) == 0)
                         gameQueriesDone.TrySetResult();
-                    CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), 16000);
+                    CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(appId, branch, buildId), SteamCmdTimeoutMs);
                     if (storeAppData is null && cmdAppData is null)
                     {
                         ProgramData.Log.Info($"[Steam] Skipping {name} ({appId}): no store data from Steam Store or SteamCMD — unable to determine DLCs", LogDestination.Scan);
@@ -307,7 +319,7 @@ internal sealed partial class MainForm : CustomForm
                                 }
                                 else
                                 {
-                                    CmdAppData dlcCmdAppData = await WithTimeout(SteamCMD.GetAppInfo(dlcAppId), 16000);
+                                    CmdAppData dlcCmdAppData = await SteamCMD.GetAppInfo(dlcAppId);
                                     if (dlcCmdAppData is not null)
                                     {
                                         dlcName = dlcCmdAppData.Common?.Name;
@@ -351,7 +363,7 @@ internal sealed partial class MainForm : CustomForm
 
                                     if (Program.Canceled)
                                         return;
-                                    if (!string.IsNullOrWhiteSpace(fullGameName) && fullGameAppId != dlcAppId && !SelectionDLC.All.Keys.Any(d => d.GameId == appId && d.Id == fullGameAppId))
+                                    if (!string.IsNullOrWhiteSpace(fullGameName) && fullGameAppId != dlcAppId && !Selection.FromId(Platform.Steam, appId)?.DLCById.ContainsKey(fullGameAppId) == true)
                                     {
                                         SelectionDLC fullGameDlc = SelectionDLC.GetOrCreate(
                                             fullGameOnSteamStore ? DLCType.Steam : DLCType.SteamHidden, appId,
@@ -799,8 +811,37 @@ internal sealed partial class MainForm : CustomForm
             await SteamCMD.Cleanup();
         }
 
-        LoadSelections();
-        await LoadSavedInstalledGames();
+        if (!scan)
+        {
+            int loadSteps = 0;
+            int loadStep = 0;
+            Progress<int> loadProgress = new();
+            loadProgress.ProgressChanged += (_, p) =>
+            {
+                if (p < 0) loadSteps = -p;
+                else loadStep = p;
+                int pc = loadSteps > 0 ? (int)((float)loadStep / loadSteps * 100) : 0;
+                progressBar.Value = Math.Max(0, Math.Min(pc, 100));
+                progressLabel.Text = $"Loading games and DLCs from cached data... {pc}%";
+            };
+            IProgress<int> loadReporter = loadProgress;
+            loadReporter.Report(-4);
+
+            LoadSelections();
+            loadReporter.Report(1);
+
+            await LoadSavedInstalledGames();
+            loadReporter.Report(2);
+
+            SyncInstallerConfigs();
+            loadReporter.Report(3);
+        }
+        else
+        {
+            LoadSelections();
+            await LoadSavedInstalledGames();
+            SyncInstallerConfigs();
+        }
         if (!scan && Selection.All.Keys.Any(s => s.InstalledUnlocker != InstalledUnlocker.None))
             RefreshNewDLCsForInstalledGames();
         HideProgressBar();
@@ -957,16 +998,17 @@ internal sealed partial class MainForm : CustomForm
                     _ = items.Add(new ToolStripSeparator());
                     foreach (ContextMenuItem query in queries)
                         _ = items.Add(query);
-                    _ = items.Add(new ContextMenuItem("Refresh Queries", "Command Prompt", (_, _) =>
+                    bool isGameNode = selection is not null;
+                    _ = items.Add(new ContextMenuItem(isGameNode ? "Refresh Game Data" : "Refresh DLC Data", "Command Prompt", async (_, _) =>
                     {
                         appInfoVDF.DeleteFile();
                         appInfoCmdJSON.DeleteFile();
                         appInfoJSON.DeleteFile();
                         cooldown.DeleteFile();
-                        selection?.Remove();
-                        if (dlc is not null)
-                            dlc.Selection = null;
-                        OnLoad(true);
+                        if (isGameNode)
+                            await RefreshSingleGameData(selection);
+                        else
+                            await RefreshSingleDlcData(dlc);
                     }));
                 }
             }
@@ -1158,12 +1200,10 @@ internal sealed partial class MainForm : CustomForm
                 if (selection.TreeNode.TreeView is null)
                     _ = selectionTreeView.Nodes.Add(selection.TreeNode);
 
-                // Restore DLC children from saved record, deduplicating by ID
+                // Restore DLC children from saved record
                 if (record.Dlc != null && record.Dlc.Count > 0)
                 {
-                    foreach (InstalledDlcRecord dlcRecord in record.Dlc
-                        .GroupBy(d => d.Id)
-                        .Select(g => g.First()))
+                    foreach (InstalledDlcRecord dlcRecord in record.Dlc)
                     {
                         if (!Enum.TryParse(dlcRecord.DlcType, out DLCType dlcType))
                             continue;
@@ -1181,6 +1221,37 @@ internal sealed partial class MainForm : CustomForm
             List<InstalledGameRecord> updated = saved.Except(toRemove).ToList();
             ProgramData.WriteInstalledGames(updated);
         }
+    }
+
+    /// <summary>Fires a one-time async API query for a config-only DLC; only creates the entry if the API confirms it exists.</summary>
+    private static void FireConfigDlcApiQuery(MainForm form, Selection selection, string dlcId)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                string apiName = await ResolveSteamDlcName(dlcId, selection.Name, selection.Id);
+                if (apiName == "Unknown")
+                    apiName = null;
+                if (!string.IsNullOrEmpty(apiName))
+                {
+                    if (form is null || form.Disposing || form.IsDisposed)
+                        return;
+                    form.Invoke(delegate
+                    {
+                        if (Program.Canceled)
+                            return;
+                        SelectionDLC dlc = SelectionDLC.GetOrCreate(DLCType.SteamHidden, selection.Id, dlcId, apiName);
+                        dlc.Selection = selection;
+                        dlc.Enabled = true;
+                    });
+                }
+            }
+            catch
+            {
+                // Don't create the DLC if the API query fails
+            }
+        });
     }
 
     /// <summary>Fires background tasks per installed game to check for new DLCs from store APIs that were released since the last install or scan. Any newly discovered DLCs are added to the tree in a disabled (unchecked) state, since they are not yet configured in the unlocker config files.</summary>
@@ -1202,9 +1273,12 @@ internal sealed partial class MainForm : CustomForm
                     Stopwatch timer = Stopwatch.StartNew();
                     try
                     {
-                        ProgramData.Log.Info($"[DLCRefresh] Checking for new DLCs on {selection.Platform} game \"{selection.Name}\" ({selection.Id}) ...", LogDestination.Scan);
+                        ProgramData.Log.Info($"{DlcRefreshLogPrefix}Checking for new DLCs on {selection.Platform} game \"{selection.Name}\" ({selection.Id}) ...", LogDestination.Scan);
+                        foreach (SelectionDLC dlc in selection.DLC)
+                            dlc.IsNew = false;
                         HashSet<string> currentDlcIds = [];
                         List<(string id, string name)> newDlcList = [];
+                        List<string> discoveredMessages = [];
 
                         if (selection.Platform == Platform.Steam)
                         {
@@ -1213,7 +1287,7 @@ internal sealed partial class MainForm : CustomForm
                                 foreach (string dlcId in await SteamStore.ParseDlcAppIds(storeAppData))
                                     _ = currentDlcIds.Add(dlcId);
 
-                            CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(selection.Id), 16000);
+                            CmdAppData cmdAppData = await WithTimeout(SteamCMD.GetAppInfo(selection.Id), SteamCmdTimeoutMs);
                             if (cmdAppData is not null)
                                 foreach (string dlcId in await SteamCMD.ParseDlcAppIds(cmdAppData))
                                     _ = currentDlcIds.Add(dlcId);
@@ -1222,18 +1296,9 @@ internal sealed partial class MainForm : CustomForm
                             {
                                 if (savedDlcIds.Contains(dlcId))
                                     continue;
-                                string dlcName = "Unknown";
-                                StoreAppData dlcStore = await SteamStore.QueryStoreAPI(dlcId, true, 0, selection.Name, selection.Id);
-                                if (dlcStore is not null)
-                                    dlcName = dlcStore.Name;
-                                else
-                                {
-                                    CmdAppData dlcCmd = await WithTimeout(SteamCMD.GetAppInfo(dlcId), 16000);
-                                    if (dlcCmd?.Common?.Name is not null)
-                                        dlcName = dlcCmd.Common.Name;
-                                }
+                                string dlcName = await ResolveSteamDlcName(dlcId, selection.Name, selection.Id);
                                 newDlcList.Add((dlcId, dlcName));
-                                ProgramData.Log.Info($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{dlcName}\" ({dlcId})", LogDestination.Scan);
+                                discoveredMessages.Add($"{DlcRefreshLogPrefix}New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{dlcName}\" ({dlcId})");
                             }
                         }
                         else if (selection.Platform == Platform.Epic)
@@ -1246,7 +1311,7 @@ internal sealed partial class MainForm : CustomForm
                                 if (!savedDlcIds.Contains(id))
                                 {
                                     newDlcList.Add((id, name ?? "Unknown"));
-                                    ProgramData.Log.Info($"[DLCRefresh] New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{name ?? "Unknown"}\" ({id})", LogDestination.Scan);
+                                    discoveredMessages.Add($"{DlcRefreshLogPrefix}New DLC discovered for \"{selection.Name}\" ({selection.Id}): \"{name ?? "Unknown"}\" ({id})");
                                 }
                             }
                         }
@@ -1260,6 +1325,8 @@ internal sealed partial class MainForm : CustomForm
                             {
                                 if (Program.Canceled)
                                     return;
+                                foreach (string msg in discoveredMessages)
+                                    ProgramData.Log.Info(msg, LogDestination.Scan);
                                 foreach ((string id, string name) in newDlcList)
                                 {
                                     DLCType dlcType = selection.Platform switch
@@ -1270,17 +1337,19 @@ internal sealed partial class MainForm : CustomForm
                                     };
                                     SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, selection.Id, id, name);
                                     dlc.Selection = selection;
-                                    dlc.Enabled = false;
+                                    dlc.Enabled = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI;
+                                    dlc.IsNew = true;
                                 }
+                                string state = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI ? "enabled" : "disabled";
+                                ProgramData.Log.Info($"{DlcRefreshLogPrefix}Added {newDlcList.Count} new {state} DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                             });
-                            ProgramData.Log.Info($"[DLCRefresh] Added {newDlcList.Count} new disabled DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                         }
                         else
-                            ProgramData.Log.Info($"[DLCRefresh] No new DLCs found for \"{selection.Name}\" ({selection.Id}) — {currentDlcIds.Count} total DLCs known in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+                            ProgramData.Log.Info($"{DlcRefreshLogPrefix}No new DLCs found for \"{selection.Name}\" ({selection.Id}) — {currentDlcIds.Count} total DLCs known in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                     }
                     catch (Exception e)
                     {
-                        ProgramData.Log.Info($"[DLCRefresh] Failed to refresh DLCs for \"{selection.Name}\" ({selection.Id}) after {timer.Elapsed.TotalSeconds:F3}s: {e.Message}", LogDestination.Scan);
+                        ProgramData.Log.Info($"{DlcRefreshLogPrefix}Failed to refresh DLCs for \"{selection.Name}\" ({selection.Id}) after {timer.Elapsed.TotalSeconds:F3}s: {e.Message}", LogDestination.Scan);
                     }
                 });
                 refreshTasks.Add(task);
@@ -1288,8 +1357,79 @@ internal sealed partial class MainForm : CustomForm
             Stopwatch timer = Stopwatch.StartNew();
             await Task.WhenAll(refreshTasks);
             timer.Stop();
-            ProgramData.Log.Info($"[DLCRefresh] Background DLC refresh completed for {refreshTasks.Count} installed game(s) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+            ProgramData.Log.Info($"{DlcRefreshLogPrefix}Background DLC refresh completed for {refreshTasks.Count} installed game(s) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
+
+            // Persist all selections with unlockers so newly discovered DLCs survive restart
+            PersistInstalledGames();
         });
+    }
+
+    /// <summary>Persists all selections with a detected unlocker to installed.json, preserving existing proxy/extra-protection data so detection does not overwrite prior install state.</summary>
+    private static void PersistInstalledGames()
+    {
+        List<InstalledGameRecord> installedRecords = ProgramData.ReadInstalledGames();
+        foreach (Selection selection in Selection.All.Keys)
+        {
+            if (selection.InstalledUnlocker != InstalledUnlocker.None)
+            {
+                InstalledGameRecord existing = installedRecords.FirstOrDefault(r =>
+                    r.Platform == selection.Platform && r.Id == selection.Id);
+                ProgramData.UpsertInstalledGame(selection.ToInstalledGameRecord(existing));
+            }
+        }
+    }
+
+    /// <summary>Re-queries store/SteamCMD data for a single game and adds any newly-discovered DLCs to the tree. Does not remove existing DLCs.</summary>
+    private static async Task RefreshSingleGameData(Selection selection)
+    {
+        if (selection.Platform == Platform.Steam)
+        {
+            StoreAppData storeAppData = await SteamStore.QueryStoreAPI(selection.Id);
+            CmdAppData cmdAppData = await SteamCMD.GetAppInfo(selection.Id);
+            HashSet<string> currentDlcIds = [];
+            if (storeAppData is not null)
+                foreach (string dlcId in await SteamStore.ParseDlcAppIds(storeAppData))
+                    _ = currentDlcIds.Add(dlcId);
+            if (cmdAppData is not null)
+                foreach (string dlcId in await SteamCMD.ParseDlcAppIds(cmdAppData))
+                    _ = currentDlcIds.Add(dlcId);
+            HashSet<string> existingIds = selection.DLC.Select(d => d.Id).ToHashSet();
+            foreach (string dlcId in currentDlcIds)
+            {
+                if (existingIds.Contains(dlcId))
+                    continue;
+                string dlcName = await ResolveSteamDlcName(dlcId, selection.Name, selection.Id);
+                SelectionDLC dlc = SelectionDLC.GetOrCreate(DLCType.Steam, selection.Id, dlcId, dlcName);
+                dlc.Selection = selection;
+            }
+        }
+        else if (selection.Platform == Platform.Epic)
+        {
+            List<(string id, string name, string product, string icon, string developer)> catalog =
+                await EpicStore.QueryCatalog(selection.Id);
+            HashSet<string> existingIds = selection.DLC.Select(d => d.Id).ToHashSet();
+            foreach ((string id, string name, string product, string icon, string developer) in catalog)
+            {
+                if (existingIds.Contains(id))
+                    continue;
+                SelectionDLC dlc = SelectionDLC.GetOrCreate(DLCType.Epic, selection.Id, id, name);
+                dlc.Product = product;
+                dlc.Icon = icon;
+                dlc.Publisher = developer;
+                dlc.Selection = selection;
+            }
+        }
+    }
+
+    /// <summary>Re-queries the name for a single DLC and updates it in the tree.</summary>
+    private static async Task RefreshSingleDlcData(SelectionDLC dlc)
+    {
+        if (dlc.Type is DLCType.Steam or DLCType.SteamHidden)
+        {
+            string name = await ResolveSteamDlcName(dlc.Id, dlc.Selection?.Name, dlc.Selection?.Id);
+            if (name != "Unknown")
+                dlc.Name = name;
+        }
     }
 
     private void OnLoad(object sender, EventArgs _)
@@ -1400,6 +1540,26 @@ internal sealed partial class MainForm : CustomForm
 
         ProgramData.WriteExtraProtectionChoices(extraProtectionChoices);
 
+        SyncInstallerConfigs();
+        PersistInstalledGames();
+
+        OnProxyChanged();
+    }
+
+    internal void InvalidateGameList() => selectionTreeView.Invalidate();
+
+    internal void OnProxyChanged()
+    {
+        selectionTreeView.Invalidate();
+    }
+
+    /// <summary>
+    /// Detect installed unlockers and proxy DLLs, read SmokeAPI/CreamAPI configs, fire API queries for config DLCs,
+    /// and merge with persisted installed game records. Must run after selections are populated and unlocker detection
+    /// is meaningful (i.e., after <see cref="LoadSavedInstalledGames"/> on the non-scan path).
+    /// </summary>
+    private void SyncInstallerConfigs()
+    {
         // Detect installed unlockers, proxy DLLs, and read config files — grouped per-game
         foreach (Selection selection in Selection.All.Keys)
         {
@@ -1437,11 +1597,24 @@ internal sealed partial class MainForm : CustomForm
                 {
                     foreach (string directory in selection.DllDirectories)
                     {
-                        HashSet<string> enabledIds = CreamAPI.ReadConfigDlcIds(directory);
-                        if (enabledIds is not null)
+                        List<(string id, string name)> configDlcs = CreamAPI.ReadConfigDlcs(directory);
+                        if (configDlcs is not null)
                         {
+                            HashSet<string> configDlcIds = configDlcs.Select(e => e.id).ToHashSet();
+                            MainForm form = MainForm.Current;
+                            // Sync enabled state for already-known DLCs from the CreamAPI config
                             foreach (SelectionDLC dlc in selection.DLC)
-                                dlc.Enabled = enabledIds.Contains(dlc.Id);
+                                dlc.Enabled = configDlcIds.Contains(dlc.Id);
+                            // Fire async API queries for config DLCs not already known;
+                            // DLC entries are only created if the API confirms they exist
+                            foreach ((string id, string name) in configDlcs)
+                            {
+                                if (!selection.DLC.Any(d => d.Id == id))
+                                {
+                                    if (form is not null && !form.Disposing && !form.IsDisposed && selection.Platform is Platform.Steam)
+                                        FireConfigDlcApiQuery(form, selection, id);
+                                }
+                            }
                             break;
                         }
                     }
@@ -1459,47 +1632,6 @@ internal sealed partial class MainForm : CustomForm
             if (selection.InstalledUnlocker == InstalledUnlocker.None && record.Unlocker != InstalledUnlocker.None)
                 selection.InstalledUnlocker = record.Unlocker;
         }
-
-        // Persist any selections with a detected unlocker to installed.json, preserving existing
-        // proxy/extrapolation data from the saved record so detection does not overwrite prior install state
-        foreach (Selection selection in Selection.All.Keys)
-        {
-            if (selection.InstalledUnlocker != InstalledUnlocker.None)
-            {
-                InstalledGameRecord existing = installedRecords.FirstOrDefault(r =>
-                    r.Platform == selection.Platform && r.Id == selection.Id);
-                ProgramData.UpsertInstalledGame(new InstalledGameRecord
-                {
-                    Platform = selection.Platform,
-                    Id = selection.Id,
-                    Name = selection.Name,
-                    RootDirectory = selection.RootDirectory,
-                    Unlocker = selection.InstalledUnlocker,
-                    UseProxy = existing?.UseProxy ?? false,
-                    ProxyDllName = existing?.UseProxy == true ? existing.ProxyDllName : null,
-                    UseExtraProtection = existing?.UseExtraProtection ?? false,
-                    Dlc = selection.DLC
-                        .GroupBy(dlc => dlc.Id)
-                        .Select(g => g.First())
-                        .Select(dlc => new InstalledDlcRecord
-                    {
-                        DlcType = dlc.Type.ToString(),
-                        Id = dlc.Id,
-                        Name = dlc.Name,
-                        Enabled = dlc.Enabled
-                    }).ToList()
-                });
-            }
-        }
-
-        OnProxyChanged();
-    }
-
-    internal void InvalidateGameList() => selectionTreeView.Invalidate();
-
-    internal void OnProxyChanged()
-    {
-        selectionTreeView.Invalidate();
     }
 
     internal void OnExtraProtectionChanged()

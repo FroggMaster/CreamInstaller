@@ -371,27 +371,7 @@ internal sealed partial class InstallForm : CustomForm
                 if (unlocker != InstalledUnlocker.None)
                 {
                     int dlcCount = selection.DLC.Count();
-                    ProgramData.UpsertInstalledGame(new InstalledGameRecord
-                    {
-                        Platform = selection.Platform,
-                        Id = selection.Id,
-                        Name = selection.Name,
-                        RootDirectory = selection.RootDirectory,
-                        Unlocker = unlocker,
-                        UseProxy = selection.UseProxy,
-                        ProxyDllName = selection.UseProxy ? selection.Proxy ?? Selection.DefaultProxy : null,
-                        UseExtraProtection = selection.UseExtraProtection,
-                        Dlc = selection.DLC
-                            .GroupBy(dlc => dlc.Id)
-                            .Select(g => g.First())
-                            .Select(dlc => new InstalledDlcRecord
-                        {
-                            DlcType = dlc.Type.ToString(),
-                            Id = dlc.Id,
-                            Name = dlc.Name,
-                            Enabled = dlc.Enabled
-                        }).ToList()
-                    });
+                    ProgramData.UpsertInstalledGame(selection.ToInstalledGameRecord());
                     ProgramData.Log.Info($"[InstallForm] Saved to installed.json: {unlocker} with {dlcCount} DLCs | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
                 }
                 else
