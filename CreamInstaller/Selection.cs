@@ -28,6 +28,7 @@ internal sealed class Selection : IEquatable<Selection>
 
     internal static readonly ConcurrentDictionary<Selection, byte> All = new();
 
+    internal readonly ConcurrentDictionary<string, SelectionDLC> DLCById = new();
     internal readonly HashSet<string> DllDirectories;
     internal readonly List<(string directory, BinaryType binaryType)> ExecutableDirectories;
     internal readonly HashSet<Selection> ExtraSelections = [];
@@ -86,7 +87,26 @@ internal sealed class Selection : IEquatable<Selection>
         set => TreeNode.Checked = value;
     }
 
-    internal IEnumerable<SelectionDLC> DLC => SelectionDLC.All.Keys.Where(dlc => Equals(dlc.Selection, this));
+    internal IEnumerable<SelectionDLC> DLC => DLCById.Values;
+
+    internal InstalledGameRecord ToInstalledGameRecord(InstalledGameRecord existing = null) => new()
+    {
+        Platform = Platform,
+        Id = Id,
+        Name = Name,
+        RootDirectory = RootDirectory,
+        Unlocker = InstalledUnlocker,
+        UseProxy = existing?.UseProxy ?? UseProxy,
+        ProxyDllName = (existing?.UseProxy ?? UseProxy) ? (existing?.ProxyDllName ?? Proxy ?? DefaultProxy) : null,
+        UseExtraProtection = existing?.UseExtraProtection ?? UseExtraProtection,
+        Dlc = DLC.Select(dlc => new InstalledDlcRecord
+        {
+            DlcType = dlc.Type.ToString(),
+            Id = dlc.Id,
+            Name = dlc.Name,
+            Enabled = dlc.Enabled
+        }).ToList()
+    };
 
     public bool Equals(Selection other) => other is not null &&
                                            (ReferenceEquals(this, other) ||
@@ -102,7 +122,7 @@ internal sealed class Selection : IEquatable<Selection>
     {
         _ = All.TryRemove(this, out _);
         TreeNode.Remove();
-        foreach (SelectionDLC dlc in DLC)
+        foreach (SelectionDLC dlc in DLCById.Values.ToList())
             dlc.Selection = null;
     }
 
