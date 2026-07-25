@@ -1495,7 +1495,7 @@ internal sealed partial class MainForm : CustomForm
                 InheritLocation(form);
                 Show();
 #if DEBUG
-                DebugForm.Current.Attach(this);
+                DebugForm.Current.Open(this);
 #endif
                 OnLoad();
             }
@@ -1505,7 +1505,7 @@ internal sealed partial class MainForm : CustomForm
         form.Show();
         Hide();
 #if DEBUG
-        DebugForm.Current.Attach(form);
+        DebugForm.Current.Open(form);
 #endif
     }
 

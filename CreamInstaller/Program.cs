@@ -107,7 +107,7 @@ internal static class Program
                 AppSettings = ProgramData.LoadSettings(); // load persisted settings
                 using UpdateForm form = new();
 #if DEBUG
-                DebugForm.Current.Attach(form);
+                DebugForm.Current.Open(form);
 #endif
                 // Apply initial theme (dark by default)
                 Utility.ThemeManager.Apply(form);

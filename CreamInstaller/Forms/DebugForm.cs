@@ -13,8 +13,6 @@ internal sealed partial class DebugForm : CustomForm
 
     internal static bool IsOpen { get; private set; }
 
-    private Form attachedForm;
-
     private DebugForm()
     {
         InitializeComponent();
@@ -36,35 +34,8 @@ internal sealed partial class DebugForm : CustomForm
         }
     }
 
-    protected override void WndProc(ref Message message) // make form immovable by user
+    internal void Open(Form owner = null)
     {
-        if (message.Msg == 0x0112) // WM_SYSCOMMAND
-        {
-            int command = message.WParam.ToInt32() & 0xFFF0;
-            if (command == 0xF010) // SC_MOVE
-                return;
-        }
-
-        base.WndProc(ref message);
-    }
-
-    internal void Attach(Form form)
-    {
-        if (attachedForm is not null)
-        {
-            attachedForm.Activated -= OnChange;
-            attachedForm.LocationChanged -= OnChange;
-            attachedForm.SizeChanged -= OnChange;
-            attachedForm.VisibleChanged -= OnChange;
-        }
-
-        attachedForm = form;
-        attachedForm.Activated += OnChange;
-        attachedForm.LocationChanged += OnChange;
-        attachedForm.SizeChanged += OnChange;
-        attachedForm.VisibleChanged += OnChange;
-        UpdateAttachment();
-
         if (!IsOpen)
         {
             IsOpen = true;
@@ -85,17 +56,34 @@ internal sealed partial class DebugForm : CustomForm
                 Log(args.Message, color);
             };
         }
-    }
-
-    private void OnChange(object sender, EventArgs args) => UpdateAttachment();
-
-    private void UpdateAttachment()
-    {
-        if (attachedForm is null || !attachedForm.Visible)
-            return;
-        //Size = new(Size.Width, attachedForm.Size.Height);
-        Location = new(attachedForm.Right, attachedForm.Top);
-        BringToFrontWithoutActivation();
+        if (owner is not null)
+        {
+            Owner = owner;
+            StartPosition = FormStartPosition.Manual;
+            if (owner.Visible)
+            {
+                Location = new(owner.Right, owner.Top);
+                Show();
+                Activate();
+            }
+            else
+            {
+                EventHandler onShown = null;
+                onShown = (_, _) =>
+                {
+                    Location = new(owner.Right, owner.Top);
+                    owner.Shown -= onShown;
+                    Show();
+                    Activate();
+                };
+                owner.Shown += onShown;
+            }
+        }
+        else
+        {
+            Show();
+            Activate();
+        }
     }
 
     internal void Log(string text) => Log(text, LogTextBox.Error);
