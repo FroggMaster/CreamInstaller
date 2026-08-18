@@ -34,6 +34,7 @@ internal sealed partial class SettingsForm : CustomForm
         darkModeCheckBox.Checked = Program.DarkModeEnabled;
         blockedGamesCheckBox.Checked = Program.BlockProtectedGames;
         sortByNameCheckBox.Checked = Program.SortByName;
+        defaultAppStatusComboBox.SelectedIndex = (int)Program.DefaultAppStatus;
         wasDarkModeEnabled = Program.DarkModeEnabled;
         wasSortByName = Program.SortByName;
     }
@@ -43,6 +44,7 @@ internal sealed partial class SettingsForm : CustomForm
         Program.DarkModeEnabled = darkModeCheckBox.Checked;
         Program.BlockProtectedGames = blockedGamesCheckBox.Checked;
         Program.SortByName = sortByNameCheckBox.Checked;
+        Program.DefaultAppStatus = (DefaultAppStatus)defaultAppStatusComboBox.SelectedIndex;
 
         ProgramData.SaveSettings(Program.AppSettings);
 
@@ -89,7 +91,9 @@ internal sealed partial class SettingsForm : CustomForm
             }
         }
 
+        ProgramData.CacheCleared = true;
         ProgramData.SaveSettings(Program.AppSettings);
+        DialogResult = DialogResult.OK;
     }
 
     private async void OnReconfigureSteamCMDClick(object sender, EventArgs e)
@@ -120,4 +124,6 @@ internal sealed partial class SettingsForm : CustomForm
         reconfigureSteamCMDButton.ForeColor = originalColor;
         reconfigureSteamCMDButton.Enabled = true;
     }
+
+    private void OnOpenLogDirClick(object sender, EventArgs e) => Diagnostics.OpenDirectoryInFileExplorer(ProgramData.LogsPath);
 }

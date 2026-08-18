@@ -1001,14 +1001,27 @@ internal sealed partial class MainForm : CustomForm
                     bool isGameNode = selection is not null;
                     _ = items.Add(new ContextMenuItem(isGameNode ? "Refresh Game Data" : "Refresh DLC Data", "Command Prompt", async (_, _) =>
                     {
+                        ProgramData.Log.Info($"[Refresh] Refreshing {(isGameNode ? $"game \"{selection.Name}\"" : $"DLC \"{dlc.Name}\"")} data ...");
                         appInfoVDF.DeleteFile();
                         appInfoCmdJSON.DeleteFile();
                         appInfoJSON.DeleteFile();
                         cooldown.DeleteFile();
                         if (isGameNode)
+                        {
                             await RefreshSingleGameData(selection);
+                            int refreshed = 0;
+                            foreach (SelectionDLC dlc in selection.DLC)
+                            {
+                                await RefreshSingleDlcData(dlc);
+                                refreshed++;
+                            }
+                            ProgramData.Log.Info($"[Refresh] Refreshed {refreshed} DLC(s) for \"{selection.Name}\"");
+                        }
                         else
+                        {
                             await RefreshSingleDlcData(dlc);
+                            ProgramData.Log.Info($"[Refresh] Refreshed DLC \"{dlc.Name}\"");
+                        }
                     }));
                 }
             }
@@ -1327,6 +1340,10 @@ internal sealed partial class MainForm : CustomForm
                                     return;
                                 foreach (string msg in discoveredMessages)
                                     ProgramData.Log.Info(msg, LogDestination.Scan);
+                                bool defaultIsUnlocked = selection.ConfigDefaultAppStatus is not null
+                                    ? selection.ConfigDefaultAppStatus == "unlocked"
+                                    : Program.DefaultAppStatus == DefaultAppStatus.Unlocked;
+                                bool newDlcsEnabled = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI && defaultIsUnlocked;
                                 foreach ((string id, string name) in newDlcList)
                                 {
                                     DLCType dlcType = selection.Platform switch
@@ -1337,10 +1354,10 @@ internal sealed partial class MainForm : CustomForm
                                     };
                                     SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, selection.Id, id, name);
                                     dlc.Selection = selection;
-                                    dlc.Enabled = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI;
+                                    dlc.Enabled = newDlcsEnabled;
                                     dlc.IsNew = true;
                                 }
-                                string state = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI ? "enabled" : "disabled";
+                                string state = newDlcsEnabled ? "enabled" : "disabled";
                                 ProgramData.Log.Info($"{DlcRefreshLogPrefix}Added {newDlcList.Count} new {state} DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                             });
                         }
@@ -1398,7 +1415,12 @@ internal sealed partial class MainForm : CustomForm
             {
                 if (existingIds.Contains(dlcId))
                     continue;
+                string jsonCache = $@"{ProgramData.AppInfoPath}\{dlcId}.json";
+                string cmdJsonCache = $@"{ProgramData.AppInfoPath}\{dlcId}.cmd.json";
+                jsonCache.DeleteFile();
+                cmdJsonCache.DeleteFile();
                 string dlcName = await ResolveSteamDlcName(dlcId, selection.Name, selection.Id);
+                ProgramData.Log.Info($"[Refresh] Discovered new DLC \"{dlcName}\" ({dlcId}) for \"{selection.Name}\"");
                 SelectionDLC dlc = SelectionDLC.GetOrCreate(DLCType.Steam, selection.Id, dlcId, dlcName);
                 dlc.Selection = selection;
             }
@@ -1426,9 +1448,19 @@ internal sealed partial class MainForm : CustomForm
     {
         if (dlc.Type is DLCType.Steam or DLCType.SteamHidden)
         {
+            string jsonCache = $@"{ProgramData.AppInfoPath}\{dlc.Id}.json";
+            string cmdJsonCache = $@"{ProgramData.AppInfoPath}\{dlc.Id}.cmd.json";
+            jsonCache.DeleteFile();
+            cmdJsonCache.DeleteFile();
             string name = await ResolveSteamDlcName(dlc.Id, dlc.Selection?.Name, dlc.Selection?.Id);
+            string gameName = dlc.Selection?.Name ?? "Unknown";
             if (name != "Unknown")
+            {
                 dlc.Name = name;
+                ProgramData.Log.Info($"[Refresh] Resolved DLC \"{name}\" ({dlc.Id}) for \"{gameName}\"");
+            }
+            else
+                ProgramData.Log.Info($"[Refresh] Could not resolve DLC ({dlc.Id}) for \"{gameName}\"");
         }
     }
 
@@ -1467,7 +1499,7 @@ internal sealed partial class MainForm : CustomForm
                 InheritLocation(form);
                 Show();
 #if DEBUG
-                DebugForm.Current.Attach(this);
+                DebugForm.Current.Open(this);
 #endif
                 OnLoad();
             }
@@ -1477,7 +1509,7 @@ internal sealed partial class MainForm : CustomForm
         form.Show();
         Hide();
 #if DEBUG
-        DebugForm.Current.Attach(form);
+        DebugForm.Current.Open(form);
 #endif
     }
 
@@ -1577,9 +1609,11 @@ internal sealed partial class MainForm : CustomForm
                     foreach (string directory in selection.DllDirectories)
                     {
                         HashSet<string> allDlcIds = selection.DLC.Select(d => d.Id).ToHashSet();
-                        var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory, allDlcIds);
+                        var (enabledIds, disabledIds, configDefaultAppStatus) = SmokeAPI.ReadConfigDlcIds(directory, allDlcIds);
                         if (enabledIds is not null) // config was found and read
                         {
+                            selection.ConfigDefaultAppStatus = configDefaultAppStatus;
+                            bool defaultIsUnlocked = configDefaultAppStatus == "unlocked";
                             foreach (SelectionDLC dlc in selection.DLC)
                             {
                                 if (enabledIds.Contains(dlc.Id))
@@ -1587,7 +1621,7 @@ internal sealed partial class MainForm : CustomForm
                                 else if (disabledIds.Contains(dlc.Id))
                                     dlc.Enabled = false;
                                 else
-                                    dlc.Enabled = true; // not in config — SmokeAPI auto-unlocks by default
+                                    dlc.Enabled = defaultIsUnlocked; // not in config — depends on config's default_app_status
                             }
                             break;
                         }
@@ -1660,7 +1694,17 @@ internal sealed partial class MainForm : CustomForm
     private void programsGroupBox_Enter(object sender, EventArgs e) { }
 
     private void OnSettingsButtonClick(object sender, EventArgs e)
-        => SettingsForm.Show(this);
+    {
+        SettingsForm.Show(this);
+        if (ProgramData.CacheCleared)
+        {
+            ProgramData.CacheCleared = false;
+            selectionTreeView.Nodes.Clear();
+            Selection.All.Clear();
+            programsToScan = null;
+            OnLoad(forceProvideChoices: true);
+        }
+    }
 
     protected override void OnShown(EventArgs e)
     {
