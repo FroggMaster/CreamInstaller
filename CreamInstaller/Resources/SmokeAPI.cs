@@ -34,11 +34,11 @@ internal static class SmokeAPI
         cache = directory + @"\SmokeAPI.cache.json";
     }
 
-    internal static (HashSet<string> enabledDlcIds, HashSet<string> disabledDlcIds) ReadConfigDlcIds(string directory, HashSet<string> allDlcIds = null)
+    internal static (HashSet<string> enabledDlcIds, HashSet<string> disabledDlcIds, string defaultAppStatus) ReadConfigDlcIds(string directory, HashSet<string> allDlcIds = null)
     {
         directory.GetSmokeApiComponents(out _, out _, out _, out _, out _, out string config, out _, out _, out _);
         if (!config.FileExists())
-            return (null, null);
+            return (null, null, null);
 
         try
         {
@@ -49,6 +49,7 @@ internal static class SmokeAPI
             HashSet<string> disabled = [];
             int overrideLocked = 0, overrideUnlocked = 0, overrideOriginal = 0;
             HashSet<string> allOverriddenIds = [];
+            string defaultAppStatus = obj["default_app_status"]?.ToString() ?? "unlocked";
 
             if (obj["override_dlc_status"] is JObject overrideStatus)
                 foreach (JProperty prop in overrideStatus.Properties())
@@ -84,14 +85,14 @@ internal static class SmokeAPI
 
             string logMessage = $"[SmokeAPI] Read config: {config} — override_dlc_status: {overrideLocked} locked, {overrideUnlocked} unlocked, {overrideOriginal} original | extra_dlcs: {extraDlcEntries} entries";
             if (notPresent > 0)
-                logMessage += $" | {notPresent} game DLCs not present in config — SmokeAPI will attempt to unlock automatically";
+                logMessage += $" | {notPresent} game DLCs not present in config — SmokeAPI default_app_status: {defaultAppStatus}";
             ProgramData.Log.Info(logMessage, LogDestination.Unlocker);
-            return (enabled, disabled);
+            return (enabled, disabled, defaultAppStatus);
         }
         catch (Exception e)
         {
             ProgramData.Log.Error($"[SmokeAPI] Error reading config: {config}", e);
-            return (null, null);
+            return (null, null, null);
         }
     }
 
@@ -157,7 +158,13 @@ internal static class SmokeAPI
         writer.WriteLine("  \"$version\": 4,");
         writer.WriteLine("  \"logging\": false,");
         writer.WriteLine("  \"log_steam_http\": false,");
-        writer.WriteLine("  \"default_app_status\": \"unlocked\",");
+        string defaultStatus = Program.DefaultAppStatus switch
+        {
+            DefaultAppStatus.Locked => "locked",
+            DefaultAppStatus.Original => "original",
+            _ => "unlocked"
+        };
+        writer.WriteLine($"  \"default_app_status\": \"{defaultStatus}\",");
         writer.WriteLine("  \"override_app_status\": {},");
         if (overrideDlc.Count > 0)
         {

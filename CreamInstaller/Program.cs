@@ -65,6 +65,12 @@ internal static class Program
         set => AppSettings.SortByName = value;
     }
 
+    internal static DefaultAppStatus DefaultAppStatus
+    {
+        get => AppSettings.DefaultAppStatus;
+        set => AppSettings.DefaultAppStatus = value;
+    }
+
     internal static readonly string[] ProtectedGames = ["PAYDAY 2"];
     internal static readonly string[] ProtectedGameDirectories = [@"\EasyAntiCheat", @"\BattlEye"];
     internal static readonly string[] ProtectedGameDirectoryExceptions = [];
@@ -92,6 +98,9 @@ internal static class Program
         {
             _ = Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
+            // Opt into Windows dark mode for common controls BEFORE any window is created,
+            // otherwise "DarkMode_Explorer" themes (combo boxes, scrollbars) render light.
+            Utility.NativeMethods.EnableProcessDarkMode();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.ApplicationExit += OnApplicationExit;
             Application.ThreadException += (_, e) => e.Exception.HandleFatalException();

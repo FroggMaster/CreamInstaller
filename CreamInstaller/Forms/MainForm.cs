@@ -1340,6 +1340,10 @@ internal sealed partial class MainForm : CustomForm
                                     return;
                                 foreach (string msg in discoveredMessages)
                                     ProgramData.Log.Info(msg, LogDestination.Scan);
+                                bool defaultIsUnlocked = selection.ConfigDefaultAppStatus is not null
+                                    ? selection.ConfigDefaultAppStatus == "unlocked"
+                                    : Program.DefaultAppStatus == DefaultAppStatus.Unlocked;
+                                bool newDlcsEnabled = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI && defaultIsUnlocked;
                                 foreach ((string id, string name) in newDlcList)
                                 {
                                     DLCType dlcType = selection.Platform switch
@@ -1350,10 +1354,10 @@ internal sealed partial class MainForm : CustomForm
                                     };
                                     SelectionDLC dlc = SelectionDLC.GetOrCreate(dlcType, selection.Id, id, name);
                                     dlc.Selection = selection;
-                                    dlc.Enabled = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI;
+                                    dlc.Enabled = newDlcsEnabled;
                                     dlc.IsNew = true;
                                 }
-                                string state = selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI ? "enabled" : "disabled";
+                                string state = newDlcsEnabled ? "enabled" : "disabled";
                                 ProgramData.Log.Info($"{DlcRefreshLogPrefix}Added {newDlcList.Count} new {state} DLC(s) to the tree for \"{selection.Name}\" ({selection.Id}) in {timer.Elapsed.TotalSeconds:F3}s", LogDestination.Scan);
                             });
                         }
@@ -1605,9 +1609,11 @@ internal sealed partial class MainForm : CustomForm
                     foreach (string directory in selection.DllDirectories)
                     {
                         HashSet<string> allDlcIds = selection.DLC.Select(d => d.Id).ToHashSet();
-                        var (enabledIds, disabledIds) = SmokeAPI.ReadConfigDlcIds(directory, allDlcIds);
+                        var (enabledIds, disabledIds, configDefaultAppStatus) = SmokeAPI.ReadConfigDlcIds(directory, allDlcIds);
                         if (enabledIds is not null) // config was found and read
                         {
+                            selection.ConfigDefaultAppStatus = configDefaultAppStatus;
+                            bool defaultIsUnlocked = configDefaultAppStatus == "unlocked";
                             foreach (SelectionDLC dlc in selection.DLC)
                             {
                                 if (enabledIds.Contains(dlc.Id))
@@ -1615,7 +1621,7 @@ internal sealed partial class MainForm : CustomForm
                                 else if (disabledIds.Contains(dlc.Id))
                                     dlc.Enabled = false;
                                 else
-                                    dlc.Enabled = true; // not in config — SmokeAPI auto-unlocks by default
+                                    dlc.Enabled = defaultIsUnlocked; // not in config — depends on config's default_app_status
                             }
                             break;
                         }

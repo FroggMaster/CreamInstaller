@@ -27,6 +27,9 @@ partial class SettingsForm
         gameManagementGroup = new GroupBox();
         blockedGamesCheckBox = new CheckBox();
         sortByNameCheckBox = new CheckBox();
+        smokeApiGroup = new GroupBox();
+        defaultAppStatusLabel = new Label();
+        defaultAppStatusComboBox = new ComboBox();
         maintenanceGroup = new GroupBox();
         clearCacheButton = new Button();
         reconfigureSteamCMDButton = new Button();
@@ -35,6 +38,7 @@ partial class SettingsForm
         openLogDirButton = new Button();
         appearanceGroup.SuspendLayout();
         gameManagementGroup.SuspendLayout();
+        smokeApiGroup.SuspendLayout();
         maintenanceGroup.SuspendLayout();
         SuspendLayout();
         // 
@@ -103,16 +107,50 @@ partial class SettingsForm
         sortByNameCheckBox.UseVisualStyleBackColor = true;
         SettingsToolTip.SetToolTip(sortByNameCheckBox, "When enabled, games in the main list are sorted alphabetically by name. When disabled, games appear in their default platform order.");
         // 
+        // smokeApiGroup
+        // 
+        smokeApiGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        smokeApiGroup.Controls.Add(defaultAppStatusLabel);
+        smokeApiGroup.Controls.Add(defaultAppStatusComboBox);
+        smokeApiGroup.Location = new Point(12, 158);
+        smokeApiGroup.Name = "smokeApiGroup";
+        smokeApiGroup.Size = new Size(376, 55);
+        smokeApiGroup.TabIndex = 2;
+        smokeApiGroup.TabStop = false;
+        smokeApiGroup.Text = "SmokeAPI";
+        // 
+        // defaultAppStatusLabel
+        // 
+        defaultAppStatusLabel.AutoSize = true;
+        defaultAppStatusLabel.Location = new Point(12, 24);
+        defaultAppStatusLabel.Name = "defaultAppStatusLabel";
+        defaultAppStatusLabel.Size = new Size(160, 15);
+        defaultAppStatusLabel.TabIndex = 0;
+        defaultAppStatusLabel.Text = "Default app status for new DLC";
+        // 
+        // defaultAppStatusComboBox
+        // 
+        defaultAppStatusComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        defaultAppStatusComboBox.Items.AddRange(new object[] {
+            "unlocked",
+            "locked",
+            "original"});
+        defaultAppStatusComboBox.Location = new Point(268, 21);
+        defaultAppStatusComboBox.Name = "defaultAppStatusComboBox";
+        defaultAppStatusComboBox.Size = new Size(95, 23);
+        defaultAppStatusComboBox.TabIndex = 1;
+        SettingsToolTip.SetToolTip(defaultAppStatusComboBox, "Sets the default_app_status in SmokeAPI.config.json. \"unlocked\" enables all DLC by default, \"locked\" disables them, \"original\" leaves them as-is.");
+        // 
         // maintenanceGroup
         // 
         maintenanceGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         maintenanceGroup.Controls.Add(clearCacheButton);
         maintenanceGroup.Controls.Add(reconfigureSteamCMDButton);
         maintenanceGroup.Controls.Add(openLogDirButton);
-        maintenanceGroup.Location = new Point(12, 160);
+        maintenanceGroup.Location = new Point(12, 223);
         maintenanceGroup.Name = "maintenanceGroup";
         maintenanceGroup.Size = new Size(376, 85);
-        maintenanceGroup.TabIndex = 2;
+        maintenanceGroup.TabIndex = 3;
         maintenanceGroup.TabStop = false;
         maintenanceGroup.Text = "Maintenance";
         // 
@@ -156,10 +194,10 @@ partial class SettingsForm
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 260);
+        saveButton.Location = new Point(232, 320);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
-        saveButton.TabIndex = 3;
+        saveButton.TabIndex = 4;
         saveButton.Text = "Save";
         saveButton.UseVisualStyleBackColor = true;
         saveButton.Click += OnSaveClick;
@@ -168,10 +206,10 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 260);
+        cancelButton.Location = new Point(313, 320);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
-        cancelButton.TabIndex = 4;
+        cancelButton.TabIndex = 5;
         cancelButton.Text = "Cancel";
         cancelButton.UseVisualStyleBackColor = true;
         cancelButton.Click += OnCancelClick;
@@ -180,10 +218,11 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 295);
+        ClientSize = new Size(400, 355);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
         Controls.Add(maintenanceGroup);
+        Controls.Add(smokeApiGroup);
         Controls.Add(gameManagementGroup);
         Controls.Add(appearanceGroup);
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -193,6 +232,8 @@ partial class SettingsForm
         StartPosition = FormStartPosition.CenterParent;
         appearanceGroup.ResumeLayout(false);
         gameManagementGroup.ResumeLayout(false);
+        smokeApiGroup.ResumeLayout(false);
+        smokeApiGroup.PerformLayout();
         maintenanceGroup.ResumeLayout(false);
         maintenanceGroup.PerformLayout();
         ResumeLayout(false);
@@ -201,10 +242,13 @@ partial class SettingsForm
 
     private GroupBox appearanceGroup;
     private GroupBox gameManagementGroup;
+    private GroupBox smokeApiGroup;
     private GroupBox maintenanceGroup;
     private CheckBox darkModeCheckBox;
     private CheckBox blockedGamesCheckBox;
     private CheckBox sortByNameCheckBox;
+    private Label defaultAppStatusLabel;
+    private ComboBox defaultAppStatusComboBox;
     private Button clearCacheButton;
     private Button reconfigureSteamCMDButton;
     private Button saveButton;
