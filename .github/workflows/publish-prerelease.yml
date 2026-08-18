@@ -45,6 +45,7 @@ jobs:
             SHA="${{ github.event.workflow_run.head_sha }}"
             echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
             echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            echo "sha_short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
             echo "Using CI run $RUN_ID (commit $SHA)"
           else
             # Manual dispatch - find the latest successful CI Builds run.
@@ -57,6 +58,7 @@ jobs:
             fi
             echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
             echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            echo "sha_short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
             echo "Using CI run $RUN_ID (commit $SHA)"
           fi
 
@@ -75,8 +77,8 @@ jobs:
             echo "::error::No .exe found in the downloaded artifact"
             exit 1
           fi
-          cp "$EXE" "./CreamInstaller-CI-${{ steps.run.outputs.sha }}.exe"
-          echo "Staged: CreamInstaller-CI-${{ steps.run.outputs.sha }}.exe"
+          cp "$EXE" "./CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe"
+          echo "Staged: CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe"
 
       - name: Clear old pre-release assets
         shell: bash
@@ -111,6 +113,6 @@ jobs:
           prerelease: true
           make_latest: false
           overwrite_files: true
-          files: ./CreamInstaller-CI-${{ steps.run.outputs.sha }}.exe
+          files: ./CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
