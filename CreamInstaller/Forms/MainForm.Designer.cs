@@ -305,11 +305,11 @@ namespace CreamInstaller.Forms
             Controls.Add(uninstallButton);
             Controls.Add(scanButton);
             Controls.Add(installButton);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
+            FormBorderStyle = FormBorderStyle.Sizable;
             HelpButton = true;
             Icon = Properties.Resources.Icon;
             Margin = new Padding(4, 3, 4, 3);
-            MaximizeBox = false;
+            MaximizeBox = true;
             MinimizeBox = false;
             Name = "MainForm";
             StartPosition = FormStartPosition.Manual;

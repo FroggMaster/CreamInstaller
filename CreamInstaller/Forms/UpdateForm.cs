@@ -38,7 +38,7 @@ internal sealed partial class UpdateForm : CustomForm
         form.Show();
         Hide();
 #if DEBUG
-        DebugForm.Current.Attach(form);
+        DebugForm.Current.Open(form);
 #endif
         ThemeManager.Apply(form); // apply current theme when transitioning
     }

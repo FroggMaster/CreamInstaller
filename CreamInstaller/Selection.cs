@@ -46,6 +46,7 @@ internal sealed class Selection : IEquatable<Selection>
     internal string SubIcon;
     internal string Website;
     internal InstalledUnlocker InstalledUnlocker;
+    internal string ConfigDefaultAppStatus; // "unlocked", "locked", or "original" from existing SmokeAPI config (null if no config)
     internal bool SteamApiDllMissing;
 
     internal IEnumerable<string> GetAvailableProxies()

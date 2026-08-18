@@ -7,6 +7,7 @@ namespace CreamInstaller.Utility;
 
 internal static class ThemeManager
 {
+
     // -----------------------------------------------------------------
     // Color definitions (do not change values)
     // -----------------------------------------------------------------
@@ -279,6 +280,18 @@ internal static class ThemeManager
             case FlowLayoutPanel flp:
                 flp.BackColor = DarkBack;
                 break;
+
+            // ComboBox: dark chrome. The built-in ComboBox paints its border and dropdown
+            // button with the light theme regardless of per-window theme overrides, so we
+            // disable its visual styles entirely and drive the chrome ourselves
+            // (ComboBoxChrome paints the dark ring border, button and arrow).
+            case ComboBox cb:
+                cb.FlatStyle = FlatStyle.Flat;
+                cb.BackColor = DarkBackAlt;
+                cb.ForeColor = DarkFore;
+                ComboBoxChrome chrome = ComboBoxChromes.GetValue(cb, static c => new ComboBoxChrome());
+                chrome.Attach(cb);
+                break;
         }
     }
 
@@ -340,6 +353,16 @@ internal static class ThemeManager
             case FlowLayoutPanel flp:
                 flp.BackColor = LightBack;
                 break;
+
+            // ComboBox: standard appearance; detach the dark chrome engine and let the
+            // native control paint normally again
+            case ComboBox cb:
+                if (ComboBoxChromes.TryGetValue(cb, out ComboBoxChrome? chrome))
+                    chrome.Detach();
+                cb.FlatStyle = FlatStyle.Standard;
+                cb.BackColor = SystemColors.Control;
+                cb.ForeColor = SystemColors.ControlText;
+                break;
         }
     }
 
@@ -372,6 +395,11 @@ internal static class ThemeManager
     {
         try
         {
+            // ComboBox chrome is fully owned by ComboBoxChrome (which disables visual
+            // styles with the empty-subapp form and paints the dark ring/button itself);
+            // re-applying DarkMode_Explorer here would override that theme disable.
+            if (control is ComboBox) return;
+
             string theme = dark ? "DarkMode_Explorer" : null;
             NativeImports.SetWindowTheme(control.Handle, theme, null);
         }
@@ -614,10 +642,200 @@ internal static class ThemeManager
         using SolidBrush arrowBrush = new(CustomTreeViewComboTextColor);
         graphics.FillPolygon(arrowBrush, arrowPoints);
     }
+
+    // -----------------------------------------------------------------
+    // Dark ComboBox chrome
+    //
+    // The built-in ComboBox paints its border and dropdown arrow with the
+    // LIGHT theme no matter what per-window theme (DarkMode_Explorer etc.) is
+    // applied, because the native control draws them in WM_PAINT on the client
+    // area.  The only reliable dark border + arrow is to disable visual styles
+    // on the control entirely (SetWindowTheme(handle, "", "")) and paint the
+    // chrome by hand from a NativeWindow subclass, exactly like the CustomTreeView
+    // combo already does in managed drawing.
+    // -----------------------------------------------------------------
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ComboBox, ComboBoxChrome> ComboBoxChromes = new();
+
+    private sealed class ComboBoxChrome : NativeWindow
+    {
+        private const int WM_NCPAINT = 0x0085;
+        private const int WM_NCACTIVATE = 0x0086;
+        private const int WM_PAINT = 0x000F;
+
+        private ComboBox? _combo;
+
+        internal void Attach(ComboBox combo)
+        {
+            Detach();
+            _combo = combo;
+            combo.HandleCreated += OnHandleCreated;
+            combo.HandleDestroyed += OnHandleDestroyed;
+            if (combo.IsHandleCreated)
+                OnHandleCreated(combo, EventArgs.Empty);
+        }
+
+        internal void Detach()
+        {
+            ComboBox? combo = _combo;
+            if (combo is null) return;
+            combo.HandleCreated -= OnHandleCreated;
+            combo.HandleDestroyed -= OnHandleDestroyed;
+            ReleaseHandle();
+            _combo = null;
+            // Re-enable the default visual style so the control renders normally
+            // again in light mode.
+            try { NativeImports.SetWindowTheme(combo.Handle, null, null); }
+            catch (Exception ex) { ProgramData.Log.Warn($"[Theme] ComboBox chrome detach failed: {ex.Message}"); }
+        }
+
+        private void OnHandleCreated(object? sender, EventArgs e)
+        {
+            if (_combo?.IsHandleCreated != true) return;
+            try { NativeImports.SetWindowTheme(_combo.Handle, "", ""); }
+            catch (Exception ex) { ProgramData.Log.Warn($"[Theme] ComboBox theme disable failed: {ex.Message}"); }
+            AssignHandle(_combo.Handle);
+        }
+
+        private void OnHandleDestroyed(object? sender, EventArgs e) => ReleaseHandle();
+
+        protected override void WndProc(ref Message m)
+        {
+            switch (m.Msg)
+            {
+                case WM_NCPAINT:
+                    PaintRing();
+                    // Validate exactly what we painted so the system doesn't loop NC paint.
+                    if (m.WParam == (IntPtr)1)
+                    {
+                        _ = GetUpdateRect(_combo!.Handle, IntPtr.Zero, false);
+                        _ = ValidateRect(_combo.Handle, IntPtr.Zero);
+                        // Re-queue the client paint separately so the field still renders.
+                        _ = InvalidateRect(_combo.Handle, IntPtr.Zero, false);
+                    }
+                    else
+                    {
+                        _ = ValidateRgn(_combo!.Handle, m.WParam);
+                    }
+                    m.Result = IntPtr.Zero;
+                    return;
+
+                case WM_NCACTIVATE:
+                    base.WndProc(ref m); // default activation feedback
+                    PaintRing();         // then re-cover the light NC frame it drew
+                    return;
+
+                case WM_PAINT:
+                    base.WndProc(ref m); // native paints dark field + light button
+                    PaintButton();       // then cover the light button with dark + arrow
+                    PaintRing();         // then re-cover the light 3D bevel frame the
+                                         // native client paint drew over our NC ring
+                    m.Result = IntPtr.Zero;
+                    return;
+
+                default:
+                    base.WndProc(ref m);
+                    break;
+            }
+        }
+
+        private void PaintRing()
+        {
+            if (_combo?.Handle == IntPtr.Zero) return;
+            IntPtr hdc = GetWindowDC(_combo.Handle);
+            if (hdc == IntPtr.Zero) return;
+            try
+            {
+                using Graphics g = Graphics.FromHdc(hdc);
+                int w = _combo.Width, h = _combo.Height;
+                using SolidBrush back = new(DarkBackAlt);
+                using Pen border = new(DarkBorder);
+                // Cover only the outer 2px frame (the native NC frame plus the
+                // native client-area bevel) - never the interior, so the text
+                // and arrow painted by WM_PAINT remain visible.
+                g.FillRectangle(back, 0, 0, w, 2);        // top
+                g.FillRectangle(back, 0, h - 2, w, 2);    // bottom
+                g.FillRectangle(back, 0, 0, 2, h);        // left
+                g.FillRectangle(back, w - 2, 0, 2, h);    // right
+                g.DrawRectangle(border, 0, 0, w - 1, h - 1);
+            }
+            finally
+            {
+                _ = ReleaseDC(_combo.Handle, hdc);
+            }
+        }
+
+        private void PaintButton()
+        {
+            if (_combo?.Handle == IntPtr.Zero) return;
+            COMBOBOXINFO info = new() { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<COMBOBOXINFO>() };
+            if (!GetComboBoxInfo(_combo.Handle, ref info)) return;
+            Rectangle btn = new(
+                info.rcButton.left, info.rcButton.top,
+                info.rcButton.right - info.rcButton.left,
+                info.rcButton.bottom - info.rcButton.top);
+            if (btn.Width <= 0 || btn.Height <= 0) return;
+
+            using Graphics g = _combo.CreateGraphics();
+            using SolidBrush back = new(DarkBackAlt);
+            using Pen sep = new(DarkBorder);
+            using SolidBrush arrow = new(DarkFore);
+            g.FillRectangle(back, btn);
+            g.DrawLine(sep, btn.Left, btn.Top, btn.Left, btn.Bottom - 1);
+            int cx = btn.Left + btn.Width / 2;
+            int cy = btn.Top + btn.Height / 2;
+            Point[] pts =
+            [
+                new(cx, cy + 2),
+                new(cx - 5, cy - 2),
+                new(cx + 5, cy - 2)
+            ];
+            g.FillPolygon(arrow, pts);
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int left, top, right, bottom;
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct COMBOBOXINFO
+        {
+            public int cbSize;
+            public RECT rcItem;
+            public RECT rcButton;
+            public int stateButton;
+            public IntPtr hwndCombo;
+            public IntPtr hwndItem;
+            public IntPtr hwndList;
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern bool GetComboBoxInfo(IntPtr hWnd, ref COMBOBOXINFO pcbi);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetUpdateRect(IntPtr hWnd, IntPtr lpRect, bool bErase);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ValidateRect(IntPtr hWnd, IntPtr lpRect);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool InvalidateRect(IntPtr hWnd, IntPtr lpRect, bool bErase);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ValidateRgn(IntPtr hWnd, IntPtr hRgn);
+    }
 }
 
-/// <summary>
-/// Wraps Win32 API calls that have no managed equivalent in WinForms.
+    /// <summary>
+    /// Wraps Win32 API calls that have no managed equivalent in WinForms.
 /// These P/Invoke declarations are required because .NET does not expose
 /// the underlying Windows messages or DWM attributes through its own APIs.
 /// </summary>
@@ -641,6 +859,36 @@ internal static class NativeMethods
     internal static void EnableDarkTitleBar(System.IntPtr handle, int useDark)
     {
         _ = DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDark, sizeof(int));
+    }
+
+    // The following three uxtheme.dll exports are undocumented; they are reached by
+    // ordinal.  Opting the process into dark mode (SetPreferredAppMode) is a
+    // prerequisite for "DarkMode_Explorer" window themes — without it, uxtheme
+    // silently renders those controls with the light theme instead.
+    [System.Runtime.InteropServices.DllImport("uxtheme.dll", EntryPoint = "#104")]
+    private static extern void RefreshImmersiveColorPolicyState();
+
+    [System.Runtime.InteropServices.DllImport("uxtheme.dll", EntryPoint = "#135")]
+    private static extern int SetPreferredAppMode(int appMode);
+
+    [System.Runtime.InteropServices.DllImport("uxtheme.dll", EntryPoint = "#136")]
+    private static extern void FlushMenuThemes();
+
+    /// <summary>
+    /// Opts the process into Windows 10/11 dark mode for common controls.
+    /// Must be called once at startup, before any window or control is created,
+    /// otherwise SetWindowTheme(handle, "DarkMode_Explorer", null) falls back
+    /// to light rendering.
+    /// </summary>
+    internal static void EnableProcessDarkMode()
+    {
+        try
+        {
+            RefreshImmersiveColorPolicyState();
+            _ = SetPreferredAppMode(1); // PreferredAppMode.AllowDark
+            FlushMenuThemes();
+        }
+        catch (Exception ex) { ProgramData.Log.Warn($"[Theme] Dark mode opt-in failed: {ex.Message}"); }
     }
 
     // Win32 Edit control message that sets or updates the cue (placeholder) banner text.
