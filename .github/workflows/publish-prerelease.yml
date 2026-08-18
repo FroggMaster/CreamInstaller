@@ -1,8 +1,9 @@
 name: Publish Pre-Release
 
 # Publishes the latest CI build from the "CI Builds" workflow as a rolling
-# pre-release (tag: pre-release). The pre-release is updated in place, so
-# testers always get the newest build and the releases list stays clean.
+# pre-release (tag: pre-release). The entire release is regenerated on every
+# publish so the release timestamp, name, and body stay fresh while testers
+# always get the newest build.
 #
 # Triggers:
 #   - Automatic: after every successful "CI Builds" run (workflow_run)
@@ -80,25 +81,19 @@ jobs:
           cp "$EXE" "./CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe"
           echo "Staged: CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe"
 
-      - name: Clear old pre-release assets
+      - name: Delete old pre-release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Existing assets have different SHA names, so overwrite_files can't
-          # replace them - delete every asset from the rolling pre-release
-          # before uploading the new build.
-          RELEASE_ID=$(gh api "repos/${{ github.repository }}/releases/tags/pre-release" --jq '.id' 2>/dev/null || true)
-          if [[ -n "$RELEASE_ID" && "$RELEASE_ID" != "null" ]]; then
-            ASSET_IDS=$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/assets" --jq '.[].id' 2>/dev/null || true)
-            for ASSET_ID in $ASSET_IDS; do
-              echo "Deleting asset $ASSET_ID"
-              gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$ASSET_ID" >/dev/null || true
-            done
-            echo "Cleared existing pre-release assets"
-          else
-            echo "No existing pre-release - nothing to clear"
-          fi
+          # Delete the entire release (not just its assets) so the publish
+          # step creates a brand-new release with a fresh published
+          # timestamp, name, and body. Swapping only the exe leaves the
+          # release itself stale (GitHub's "Released X ago" time never
+          # updates on edit). The git tag is kept, so the release URL and
+          # the tag-to-commit mapping stay stable.
+          gh release delete pre-release --yes || true
+          echo "Deleted old pre-release (if any)"
 
       - name: Publish pre-release
         uses: softprops/action-gh-release@v3
