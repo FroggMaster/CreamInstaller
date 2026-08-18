@@ -56,7 +56,7 @@ namespace CreamInstaller.Forms
             filterTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             filterTextBox.Location = new System.Drawing.Point(12, 14);
             filterTextBox.Name = "filterTextBox";
-            filterTextBox.PlaceholderText = "Enter the name of a game to search";
+            filterTextBox.PlaceholderText = "Enter the name or AppID of a game to search";
             filterTextBox.Size = new System.Drawing.Size(524, 23);
             filterTextBox.TabIndex = 0;
             filterTextBox.TextChanged += OnFilterTextChanged;

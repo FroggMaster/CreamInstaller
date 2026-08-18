@@ -82,7 +82,8 @@ internal sealed partial class ScanDialog : CustomForm
         bool hasSelections = selected.Count > 0;
         foreach ((Platform platform, string id, string name, bool alreadySelected) in allChoices)
         {
-            if (filter.Length > 0 && name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
+            if (filter.Length > 0 && name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0
+                && id.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
                 continue;
             bool checkedState = hasSelections
                 ? selected.Any(s => s.platform == platform && s.id == id)
