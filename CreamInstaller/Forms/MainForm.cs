@@ -1651,9 +1651,18 @@ internal sealed partial class MainForm : CustomForm
     {
         using DialogForm form = new(this);
         _ = form.Show(SystemIcons.Information,
-            "[Experimental] WARNING: This may still be unstable.\n" +
-            "This setting restores the use of SmokeAPI.\n" +
-            "If some games don't launch with SmokeAPI enabled, try disabling this setting then Generate and Install again.",
+            "Changing this toggle will change which DLC unlocker is actively deployed for Steam games.\n" +
+            "\n" +
+            "CreamAPI\n" +
+            "- Uses a cream_api.ini config file that lists each DLC to unlock by its app ID.\n" +
+            "- Has an Extra Protection setting that can be used if the game has SteamAPI DLL verification\n" +
+            "\n" +
+            "SmokeAPI\n" +
+            "- Designed to work without a config file and automatically unlocks all DLCs for a game.\n" +
+            "- Has an optional SmokeAPI.config.json to override which DLCs are locked or unlocked.\n" +
+            "- Can spoof Steam inventory items\n" +
+            "\n" +
+            "If some games don't launch with SmokeAPI enabled, try toggling this setting to CreamAPI then Generate and Install again.",
             customFormText: "Use SmokeAPI");
     }
 
