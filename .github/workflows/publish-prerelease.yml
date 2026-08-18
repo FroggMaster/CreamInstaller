@@ -1,0 +1,90 @@
+name: Publish Pre-Release
+
+# Publishes the latest CI build from the "CI Builds" workflow as a rolling
+# pre-release (tag: pre-release). The pre-release is updated in place, so
+# testers always get the newest build and the releases list stays clean.
+#
+# Triggers:
+#   - Automatic: after every successful "CI Builds" run (workflow_run)
+#   - Manual:    "Run workflow" button fetches the latest successful run
+#
+# Note: workflow_run only fires when this workflow exists on the default branch.
+
+on:
+  workflow_run:
+    workflows: ["CI Builds"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Auto mode only publishes on successful builds; manual mode always runs.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write # create/update the pre-release
+      actions: read   # download artifacts from the CI build run
+
+    steps:
+      - name: Resolve CI build run
+        id: run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            # Triggered by a completed CI Builds run - use its ID directly.
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            echo "Using CI run $RUN_ID (commit $SHA)"
+          else
+            # Manual dispatch - find the latest successful CI Builds run.
+            RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/workflows/ci-builds.yml/runs?per_page=1&status=success" --jq '.workflow_runs[0]')
+            RUN_ID=$(echo "$RUN_JSON" | jq -r '.id')
+            SHA=$(echo "$RUN_JSON" | jq -r '.head_sha')
+            if [[ "$RUN_ID" == "null" || -z "$RUN_ID" ]]; then
+              echo "::error::No successful 'CI Builds' run found. Run ci-builds.yml first."
+              exit 1
+            fi
+            echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            echo "Using CI run $RUN_ID (commit $SHA)"
+          fi
+
+      - name: Download CI artifact
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.run.outputs.run_id }}
+          path: ./artifact
+
+      - name: Stage exe with stable name
+        shell: bash
+        run: |
+          EXE=$(find ./artifact -name "*.exe" -type f | head -n 1)
+          if [[ -z "$EXE" ]]; then
+            echo "::error::No .exe found in the downloaded artifact"
+            exit 1
+          fi
+          cp "$EXE" ./CreamInstaller-CI-latest.exe
+          echo "Staged: $EXE"
+
+      - name: Publish pre-release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: pre-release
+          name: Latest CI Build (pre-release)
+          body: |
+            Latest CI build of CreamInstaller from the [CI Builds](https://github.com/${{ github.repository }}/actions/workflows/ci-builds.yml) workflow.
+
+            - Commit: `${{ steps.run.outputs.sha }}`
+            - Build: [run #${{ steps.run.outputs.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ steps.run.outputs.run_id }})
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: ./CreamInstaller-CI-latest.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
