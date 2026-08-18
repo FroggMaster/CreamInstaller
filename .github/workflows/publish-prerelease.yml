@@ -17,6 +17,12 @@ on:
       - completed
   workflow_dispatch:
 
+# Only one publish at a time - rapid consecutive CI builds would otherwise
+# race each other clearing assets and uploading.
+concurrency:
+  group: publish-pre-release
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -61,7 +67,7 @@ jobs:
           run-id: ${{ steps.run.outputs.run_id }}
           path: ./artifact
 
-      - name: Stage exe with stable name
+      - name: Stage exe with commit SHA name
         shell: bash
         run: |
           EXE=$(find ./artifact -name "*.exe" -type f | head -n 1)
@@ -69,8 +75,28 @@ jobs:
             echo "::error::No .exe found in the downloaded artifact"
             exit 1
           fi
-          cp "$EXE" ./CreamInstaller-CI-latest.exe
-          echo "Staged: $EXE"
+          cp "$EXE" "./CreamInstaller-CI-${{ steps.run.outputs.sha }}.exe"
+          echo "Staged: CreamInstaller-CI-${{ steps.run.outputs.sha }}.exe"
+
+      - name: Clear old pre-release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Existing assets have different SHA names, so overwrite_files can't
+          # replace them - delete every asset from the rolling pre-release
+          # before uploading the new build.
+          RELEASE_ID=$(gh api "repos/${{ github.repository }}/releases/tags/pre-release" --jq '.id' 2>/dev/null || true)
+          if [[ -n "$RELEASE_ID" && "$RELEASE_ID" != "null" ]]; then
+            ASSET_IDS=$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/assets" --jq '.[].id' 2>/dev/null || true)
+            for ASSET_ID in $ASSET_IDS; do
+              echo "Deleting asset $ASSET_ID"
+              gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$ASSET_ID" >/dev/null || true
+            done
+            echo "Cleared existing pre-release assets"
+          else
+            echo "No existing pre-release - nothing to clear"
+          fi
 
       - name: Publish pre-release
         uses: softprops/action-gh-release@v3
@@ -85,6 +111,6 @@ jobs:
           prerelease: true
           make_latest: false
           overwrite_files: true
-          files: ./CreamInstaller-CI-latest.exe
+          files: ./CreamInstaller-CI-${{ steps.run.outputs.sha }}.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
