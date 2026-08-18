@@ -92,8 +92,23 @@ jobs:
           # release itself stale (GitHub's "Released X ago" time never
           # updates on edit). The git tag is kept, so the release URL and
           # the tag-to-commit mapping stay stable.
-          gh release delete pre-release --yes || true
-          echo "Deleted old pre-release (if any)"
+          RELEASE_JSON=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/pre-release")
+          RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id // empty')
+          if [[ -n "$RELEASE_ID" ]]; then
+            STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -X DELETE \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID")
+            if [[ "$STATUS" != "204" ]]; then
+              echo "::error::Failed to delete pre-release (HTTP $STATUS)"
+              exit 1
+            fi
+            echo "Deleted old pre-release (id $RELEASE_ID, HTTP $STATUS)"
+          else
+            echo "No existing pre-release - nothing to delete"
+          fi
 
       - name: Publish pre-release
         uses: softprops/action-gh-release@v3
