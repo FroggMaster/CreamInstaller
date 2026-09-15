@@ -12,8 +12,6 @@
         <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <PlatformTarget>x64</PlatformTarget>
-        <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
         <Deterministic>true</Deterministic>
         <Optimize>True</Optimize>
         <DebugType>embedded</DebugType>
@@ -24,7 +22,7 @@
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
         <Platforms>x64</Platforms>
-		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+        <ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AssemblyName>$(Company)</AssemblyName>
@@ -160,52 +158,21 @@
         <PackageReference Include="System.ServiceModel.Primitives" Version="8.0.0" />
     </ItemGroup>
     <ItemGroup>
-        <Compile Update="Forms\DebugForm.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Update="Forms\DialogForm.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Update="Forms\InstallForm.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Update="Forms\ScanDialog.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Update="Forms\MainForm.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Update="Forms\UpdateForm.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Update="Properties\Resources.Designer.cs">
-            <DesignTime>True</DesignTime>
-            <AutoGen>True</AutoGen>
-            <DependentUpon>Resources.resx</DependentUpon>
-        </Compile>
+        <Compile Update="Forms\DebugForm.cs"><SubType>Form</SubType></Compile>
+        <Compile Update="Forms\DialogForm.cs"><SubType>Form</SubType></Compile>
+        <Compile Update="Forms\InstallForm.cs"><SubType>Form</SubType></Compile>
+        <Compile Update="Forms\ScanDialog.cs"><SubType>Form</SubType></Compile>
+        <Compile Update="Forms\MainForm.cs"><SubType>Form</SubType></Compile>
+        <Compile Update="Forms\UpdateForm.cs"><SubType>Form</SubType></Compile>
+        <Compile Update="Properties\Resources.Designer.cs"><DesignTime>True</DesignTime><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile>
     </ItemGroup>
     <ItemGroup>
-        <EmbeddedResource Update="Forms\DebugForm.resx">
-            <SubType>Designer</SubType>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Forms\DialogForm.resx">
-            <SubType>Designer</SubType>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Forms\InstallForm.resx">
-            <SubType>Designer</SubType>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Forms\ScanDialog.resx">
-            <SubType>Designer</SubType>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Forms\MainForm.resx">
-            <SubType>Designer</SubType>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Forms\UpdateForm.resx">
-            <SubType>Designer</SubType>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Properties\Resources.resx">
-            <Generator>ResXFileCodeGenerator</Generator>
-            <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-        </EmbeddedResource>
+        <EmbeddedResource Update="Forms\DebugForm.resx"><SubType>Designer</SubType></EmbeddedResource>
+        <EmbeddedResource Update="Forms\DialogForm.resx"><SubType>Designer</SubType></EmbeddedResource>
+        <EmbeddedResource Update="Forms\InstallForm.resx"><SubType>Designer</SubType></EmbeddedResource>
+        <EmbeddedResource Update="Forms\ScanDialog.resx"><SubType>Designer</SubType></EmbeddedResource>
+        <EmbeddedResource Update="Forms\MainForm.resx"><SubType>Designer</SubType></EmbeddedResource>
+        <EmbeddedResource Update="Forms\UpdateForm.resx"><SubType>Designer</SubType></EmbeddedResource>
+        <EmbeddedResource Update="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource>
     </ItemGroup>
 </Project>

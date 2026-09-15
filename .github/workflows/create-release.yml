@@ -1,20 +1,13 @@
-name: Create Release
+name: Create Clean Release
 
 on:
+  push:
+    branches:
+      - clean-release
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version number (example: 5.0.1.3)"
-        required: true
-        type: string
-      title:
-        description: "Release title (optional)"
-        required: false
-        type: string
-      notes:
-        description: "Release notes (optional)"
-        required: false
-        type: string
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -24,19 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # Needed for tag creation and pushing
+          fetch-depth: 0
 
-      - name: Create and push tag
+      - name: Read application version
+        id: version
         shell: pwsh
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          $tag = "v${{ inputs.version }}"
-          Write-Host "Creating tag $tag"
-
-          git tag $tag
-          git push origin $tag
+          [xml]$project = Get-Content './CreamInstaller/CreamInstaller.csproj'
+          $version = $project.Project.PropertyGroup.Version | Select-Object -First 1
+          if ([string]::IsNullOrWhiteSpace($version)) { throw 'Could not read application version.' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Building clean release version $version"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -49,22 +40,53 @@ jobs:
       - name: Build Release
         run: dotnet build CreamInstaller.sln --configuration Release --no-restore
 
-      - name: Publish single-file
-        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
+      - name: Publish clean Windows build
+        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 --self-contained false --output ./publish/clean
 
-      - name: Zip Release
+      - name: Verify expected executable
+        shell: pwsh
         run: |
-          Compress-Archive -Path ./publish/* -DestinationPath ./publish/CreamInstaller.zip
+          $exe = './publish/clean/CreamInstaller.exe'
+          if (!(Test-Path $exe)) { throw "Expected executable was not produced: $exe" }
+          Get-Item $exe | Format-List FullName,Length,LastWriteTime
+
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          $zip = "./publish/CreamInstaller-Clean-v${{ steps.version.outputs.version }}-win-x64.zip"
+          Compress-Archive -Path './publish/clean/*' -DestinationPath $zip -CompressionLevel Optimal
+          Write-Host "Created $zip"
+
+      - name: Create and push clean tag
+        shell: pwsh
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          $tag = "clean-v${{ steps.version.outputs.version }}"
+          if (git ls-remote --tags origin "refs/tags/$tag" | Select-String $tag) {
+            Write-Host "Tag $tag already exists; reusing it."
+          } else {
+            git tag $tag
+            git push origin $tag
+          }
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: ${{ inputs.title || format('Release v{0}', inputs.version) }}
-          body: ${{ inputs.notes }}
-          generate_release_notes: true
+          tag_name: clean-v${{ steps.version.outputs.version }}
+          name: Clean Rebuild v${{ steps.version.outputs.version }}
+          body: |
+            Clean rebuild of CreamInstaller from the audited source tree in this fork.
+
+            Packaging changes:
+            - No compressed self-extracting single-file publish.
+            - Framework-dependent Win-x64 build.
+            - Original application source and unlocker logic are otherwise preserved.
+
+            Important: this release is intended to reduce heuristic antivirus false positives; the build is not code-signed and no claim of zero detections is made.
           files: |
-            ./publish/CreamInstaller.exe
-            ./publish/CreamInstaller.zip
+            ./publish/clean/CreamInstaller.exe
+            ./publish/CreamInstaller-Clean-v${{ steps.version.outputs.version }}-win-x64.zip
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
