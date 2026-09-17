@@ -30,6 +30,8 @@ partial class SettingsForm
         smokeApiGroup = new GroupBox();
         defaultAppStatusLabel = new Label();
         defaultAppStatusComboBox = new ComboBox();
+        updatesGroup = new GroupBox();
+        preReleaseCheckBox = new CheckBox();
         maintenanceGroup = new GroupBox();
         clearCacheButton = new Button();
         reconfigureSteamCMDButton = new Button();
@@ -39,6 +41,7 @@ partial class SettingsForm
         appearanceGroup.SuspendLayout();
         gameManagementGroup.SuspendLayout();
         smokeApiGroup.SuspendLayout();
+        updatesGroup.SuspendLayout();
         maintenanceGroup.SuspendLayout();
         SuspendLayout();
         // 
@@ -141,16 +144,39 @@ partial class SettingsForm
         defaultAppStatusComboBox.TabIndex = 1;
         SettingsToolTip.SetToolTip(defaultAppStatusComboBox, "Sets the default_app_status in SmokeAPI.config.json. \"unlocked\" enables all DLC by default, \"locked\" disables them, \"original\" leaves them as-is.");
         // 
+        // updatesGroup
+        // 
+        updatesGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        updatesGroup.Controls.Add(preReleaseCheckBox);
+        updatesGroup.Location = new Point(12, 223);
+        updatesGroup.Name = "updatesGroup";
+        updatesGroup.Size = new Size(376, 50);
+        updatesGroup.TabIndex = 3;
+        updatesGroup.TabStop = false;
+        updatesGroup.Text = "Updates";
+        // 
+        // preReleaseCheckBox
+        // 
+        preReleaseCheckBox.AutoSize = false;
+        preReleaseCheckBox.FlatStyle = FlatStyle.System;
+        preReleaseCheckBox.Location = new Point(12, 20);
+        preReleaseCheckBox.Name = "preReleaseCheckBox";
+        preReleaseCheckBox.Size = new Size(340, 22);
+        preReleaseCheckBox.TabIndex = 0;
+        preReleaseCheckBox.Text = "Check for pre-release (CI) updates";
+        preReleaseCheckBox.UseVisualStyleBackColor = true;
+        SettingsToolTip.SetToolTip(preReleaseCheckBox, "When enabled, update checks also consider the rolling GitHub pre-release (CI) build. Pre-release builds have no version number: they are identified by their commit hash and are only offered when it differs from your current build.");
+        // 
         // maintenanceGroup
         // 
         maintenanceGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         maintenanceGroup.Controls.Add(clearCacheButton);
         maintenanceGroup.Controls.Add(reconfigureSteamCMDButton);
         maintenanceGroup.Controls.Add(openLogDirButton);
-        maintenanceGroup.Location = new Point(12, 223);
+        maintenanceGroup.Location = new Point(12, 283);
         maintenanceGroup.Name = "maintenanceGroup";
         maintenanceGroup.Size = new Size(376, 85);
-        maintenanceGroup.TabIndex = 3;
+        maintenanceGroup.TabIndex = 4;
         maintenanceGroup.TabStop = false;
         maintenanceGroup.Text = "Maintenance";
         // 
@@ -194,10 +220,10 @@ partial class SettingsForm
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 320);
+        saveButton.Location = new Point(232, 378);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
-        saveButton.TabIndex = 4;
+        saveButton.TabIndex = 5;
         saveButton.Text = "Save";
         saveButton.UseVisualStyleBackColor = true;
         saveButton.Click += OnSaveClick;
@@ -206,10 +232,10 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 320);
+        cancelButton.Location = new Point(313, 378);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
-        cancelButton.TabIndex = 5;
+        cancelButton.TabIndex = 6;
         cancelButton.Text = "Cancel";
         cancelButton.UseVisualStyleBackColor = true;
         cancelButton.Click += OnCancelClick;
@@ -218,10 +244,11 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 355);
+        ClientSize = new Size(400, 413);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
         Controls.Add(maintenanceGroup);
+        Controls.Add(updatesGroup);
         Controls.Add(smokeApiGroup);
         Controls.Add(gameManagementGroup);
         Controls.Add(appearanceGroup);
@@ -236,6 +263,7 @@ partial class SettingsForm
         smokeApiGroup.PerformLayout();
         maintenanceGroup.ResumeLayout(false);
         maintenanceGroup.PerformLayout();
+        updatesGroup.ResumeLayout(false);
         ResumeLayout(false);
         PerformLayout();
     }
@@ -243,7 +271,9 @@ partial class SettingsForm
     private GroupBox appearanceGroup;
     private GroupBox gameManagementGroup;
     private GroupBox smokeApiGroup;
+    private GroupBox updatesGroup;
     private GroupBox maintenanceGroup;
+    private CheckBox preReleaseCheckBox;
     private CheckBox darkModeCheckBox;
     private CheckBox blockedGamesCheckBox;
     private CheckBox sortByNameCheckBox;

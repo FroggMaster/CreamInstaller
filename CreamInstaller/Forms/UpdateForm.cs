@@ -67,25 +67,26 @@ internal sealed partial class UpdateForm : CustomForm
                     $"https://api.github.com/repos/{Program.RepositoryOwner}/{Program.RepositoryName}/releases");
             if (response is not null)
                 releases = JsonConvert.DeserializeObject<List<ProgramRelease>>(response)
-                    ?.Where(release => !release.Draft && !release.Prerelease && release.Asset is not null).ToList();
-            latestRelease = releases?.FirstOrDefault();
-#if DEBUG
-            if (latestRelease?.Version is not { } latestVersion)
-#else
-            if (latestRelease?.Version is not { } latestVersion || latestVersion <= currentVersion)
-#endif
+                    ?.Where(release => !release.Draft && release.Asset is not null
+                                       && (Program.CheckPreReleases || !release.Prerelease)).ToList();
+            latestRelease = FindUpdate(releases);
+            if (latestRelease is null)
                 StartProgram();
             else
             {
-                progressLabel.Text = $"An update is available: v{latestVersion}";
+                progressLabel.Text = latestRelease.Prerelease
+                    ? $"A pre-release update is available: {latestRelease.CommitHash}"
+                    : $"An update is available: v{latestRelease.Version}";
                 ignoreButton.Enabled = true;
                 updateButton.Enabled = true;
                 updateButton.Click += OnUpdate;
                 changelogTreeView.Visible = true;
                 foreach (ProgramRelease release in releases)
                 {
+                    if (release.Prerelease && !ReferenceEquals(release, latestRelease))
+                        continue;
 #if !DEBUG
-                    if (release.Version <= currentVersion)
+                    if (release.Version is { } releaseVersion && releaseVersion <= currentVersion)
                         continue;
 #endif
                     TreeNode root = new(release.Name) { Name = release.Name };
@@ -113,6 +114,34 @@ internal sealed partial class UpdateForm : CustomForm
             StartProgram();
 #endif
         }
+    }
+
+    /// <summary>
+    /// Selects the release to offer as an update. Stable releases win when their version is newer
+    /// than the running build; otherwise, when pre-release checking is enabled, the rolling
+    /// pre-release is offered whenever its commit hash differs from this build's commit hash.
+    /// </summary>
+    private static ProgramRelease FindUpdate(List<ProgramRelease> releases)
+    {
+        if (releases is null || releases.Count == 0)
+            return null;
+#if DEBUG
+        return releases[0];
+#else
+        ProgramRelease latestStable = releases.FirstOrDefault(release => !release.Prerelease);
+        if (latestStable?.Version is { } stableVersion && stableVersion > new Version(Program.Version))
+            return latestStable;
+        if (Program.CheckPreReleases)
+        {
+            ProgramRelease prerelease = releases.FirstOrDefault(release => release.Prerelease);
+            if (prerelease?.CommitHash is { } commitHash
+                && (Program.ShortCommitHash is null
+                    || !commitHash.Equals(Program.ShortCommitHash, StringComparison.OrdinalIgnoreCase)))
+                return prerelease;
+        }
+
+        return null;
+#endif
     }
 
     private void OnLoad(object sender, EventArgs _)
@@ -160,8 +189,10 @@ internal sealed partial class UpdateForm : CustomForm
             progressLabel.Text = "Updating . . . ";
             cancellation = new();
             bool success = true;
-            PackagePath.DeleteFile(true);
-            await using FileStream update = PackagePath.CreateFile(true);
+            bool prerelease = latestRelease.Prerelease;
+            string downloadPath = prerelease ? ExecutablePath : PackagePath;
+            downloadPath.DeleteFile(true);
+            await using FileStream update = downloadPath.CreateFile(true);
             bool retry = true;
             try
             {
@@ -212,10 +243,20 @@ internal sealed partial class UpdateForm : CustomForm
             bool canContinue = success && !Program.Canceled;
             if (canContinue)
                 updateButton.Enabled = false;
-            ExecutablePath.DeleteFile(canContinue);
-            if (canContinue)
-                await Task.Run(() => PackagePath.ExtractZip(ProgramData.DirectoryPath, true, this));
-            PackagePath.DeleteFile(canContinue);
+            if (prerelease)
+            {
+                // Pre-release builds are published as a standalone executable that has already
+                // been staged directly at ExecutablePath, so no archive extraction is needed.
+                if (!canContinue)
+                    ExecutablePath.DeleteFile();
+            }
+            else
+            {
+                ExecutablePath.DeleteFile(canContinue);
+                if (canContinue)
+                    await Task.Run(() => PackagePath.ExtractZip(ProgramData.DirectoryPath, true, this));
+                PackagePath.DeleteFile(canContinue);
+            }
             if (canContinue)
             {
                 string path = Program.CurrentProcessFilePath;
