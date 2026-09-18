@@ -25,17 +25,37 @@ jobs:
       - name: Build Release
         run: dotnet build CreamInstaller.sln --configuration Release --no-restore
 
-      - name: Publish single-file
-        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish
-
-      - name: Set short commit SHA and branch name
-        id: vars
-        run: |
-          $shortSha = $env:GITHUB_SHA.Substring(0,7)
-          $branch = $env:GITHUB_REF_NAME
-          Write-Output "shortSha=$shortSha" >> $env:GITHUB_ENV
-          Write-Output "branch=$branch" >> $env:GITHUB_ENV
+      - name: Derive CI version
+        id: version
         shell: pwsh
+        run: |
+          # Read base version from csproj
+          $projPath = "CreamInstaller/CreamInstaller.csproj"
+          $xml = [xml](Get-Content $projPath -Raw)
+          $baseVersion = $xml.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if (-not $baseVersion) {
+            Write-Error "Could not read Version from $projPath"
+            exit 1
+          }
+          $ciVersion = "$baseVersion+$env:GITHUB_SHA.ci.${{ github.run_number }}"
+          # Compute the short sha into a variable first: PowerShell does not expand
+          # method calls inside an interpolated string, so
+          # "shortSha=$env:GITHUB_SHA.Substring(0,7)" would emit the literal text
+          # ".Substring(0,7)" instead of the 7-char sha.
+          $shortSha = $env:GITHUB_SHA.Substring(0,7)
+          Write-Output "baseVersion=$baseVersion" >> $env:GITHUB_OUTPUT
+          Write-Output "ciVersion=$ciVersion" >> $env:GITHUB_OUTPUT
+          Write-Output "shortSha=$shortSha" >> $env:GITHUB_ENV
+          Write-Output "branch=$env:GITHUB_REF_NAME" >> $env:GITHUB_ENV
+
+      - name: Publish single-file
+        run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish -p:InformationalVersion=${{ steps.version.outputs.ciVersion }} -p:IncludeSourceRevisionInInformationalVersion=false
+
+      - name: Write version.txt
+        shell: pwsh
+        run: |
+          $ciVersion = "${{ steps.version.outputs.ciVersion }}"
+          Set-Content -Path ./publish/version.txt -Value $ciVersion -NoNewline
 
       - name: Rename EXE with branch and short commit SHA
         run: |
@@ -46,4 +66,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: CreamInstaller-CI-${{ env.branch }}-${{ env.shortSha }}
-          path: ./publish/CreamInstaller-CI-${{ env.branch }}-${{ env.shortSha }}.exe
+          path: |
+            ./publish/CreamInstaller-CI-${{ env.branch }}-${{ env.shortSha }}.exe
+            ./publish/version.txt

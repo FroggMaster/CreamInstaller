@@ -13,5 +13,6 @@ internal sealed class SettingsModel
     public bool BlockProtectedGames { get; set; } = true;
     public bool DarkModeEnabled { get; set; } = true;
     public bool SortByName { get; set; } = true;
+    public bool CheckPreReleases { get; set; }
     public DefaultAppStatus DefaultAppStatus { get; set; } = DefaultAppStatus.Unlocked;
 }

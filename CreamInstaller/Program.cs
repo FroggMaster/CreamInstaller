@@ -22,10 +22,24 @@ internal static class Program
             ? index
             : Application.ProductVersion.Length)];
 
+    // Full commit hash of this build. The .NET SDK appends it to the informational version
+    // (SourceRevisionId), e.g. "5.0.2.3+5c9f5143939727f406359840c74e0f182f547e31".
+    // Null when the project was built outside a git repository.
+    internal static readonly string? CommitHash =
+        Application.ProductVersion.IndexOf('+') is var hashIndex && hashIndex != -1
+                                                    && hashIndex + 1 < Application.ProductVersion.Length
+            ? Application.ProductVersion[(hashIndex + 1)..]
+            : null;
+
+    // Abbreviated (7-character) commit hash, matching the short SHA used in pre-release asset names.
+    internal static readonly string? ShortCommitHash =
+        CommitHash is { Length: >= 7 } ? CommitHash[..7] : CommitHash;
+
     internal const string RepositoryOwner = "FroggMaster";
     internal static readonly string RepositoryName = Name;
     internal static readonly string RepositoryPackage = Name + ".zip";
     internal static readonly string RepositoryExecutable = Name + ".exe";
+    internal static readonly string RepositoryPrereleasePrefix = Name + "-CI-";
 #if DEBUG
     internal static readonly string ApplicationName = Name + " v" + Version + "-debug: " + Description;
     internal static readonly string ApplicationNameShort = Name + " v" + Version + "-debug";
@@ -63,6 +77,12 @@ internal static class Program
     {
         get => AppSettings.SortByName;
         set => AppSettings.SortByName = value;
+    }
+
+    internal static bool CheckPreReleases
+    {
+        get => AppSettings.CheckPreReleases;
+        set => AppSettings.CheckPreReleases = value;
     }
 
     internal static DefaultAppStatus DefaultAppStatus

@@ -30,7 +30,7 @@ jobs:
     # Auto mode only publishes on successful builds; manual mode always runs.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
-      contents: write # create/update the pre-release
+      contents: write # create/update the pre-release, move the tag
       actions: read   # download artifacts from the CI build run
 
     steps:
@@ -70,6 +70,20 @@ jobs:
           run-id: ${{ steps.run.outputs.run_id }}
           path: ./artifact
 
+      - name: Read version.txt from artifact
+        id: version
+        shell: bash
+        run: |
+          VERSION_FILE="./artifact/version.txt"
+          if [[ -f "$VERSION_FILE" ]]; then
+            CI_VERSION=$(cat "$VERSION_FILE" | tr -d '\n\r')
+            echo "ci_version=$CI_VERSION" >> "$GITHUB_OUTPUT"
+            echo "Found version.txt: $CI_VERSION"
+          else
+            echo "::warning::version.txt not found in artifact - proceeding without version stamp"
+            echo "ci_version=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Stage exe with commit SHA name
         shell: bash
         run: |
@@ -86,12 +100,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Delete the entire release (not just its assets) so the publish
+          # Delete the existing pre-release (not the tag) so the publish
           # step creates a brand-new release with a fresh published
-          # timestamp, name, and body. Swapping only the exe leaves the
-          # release itself stale (GitHub's "Released X ago" time never
-          # updates on edit). The git tag is kept, so the release URL and
-          # the tag-to-commit mapping stay stable.
+          # timestamp, name, and body. The tag is deliberately kept and
+          # will be moved to the new commit in the next step.
           RELEASE_JSON=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/pre-release")
@@ -110,16 +122,156 @@ jobs:
             echo "No existing pre-release - nothing to delete"
           fi
 
+      - name: Move pre-release tag to new commit
+        id: tag_move
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA="${{ steps.run.outputs.sha }}"
+          # Defensive guard: ensure SHA is a valid 40-char hex
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Invalid SHA format: $SHA"
+            exit 1
+          fi
+
+          REPO="${{ github.repository }}"
+          TAG_REF="pre-release"
+
+          # Check if tag ref exists
+          REF_URL="https://api.github.com/repos/$REPO/git/ref/tags/$TAG_REF"
+          REF_RESPONSE=$(curl -sS -w "\n%{http_code}" -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" "$REF_URL")
+          HTTP_CODE=$(echo "$REF_RESPONSE" | tail -n1)
+          REF_BODY=$(echo "$REF_RESPONSE" | head -n -1)
+
+          if [[ "$HTTP_CODE" == "200" ]]; then
+            # Tag exists - force-move it
+            PATCH_URL="https://api.github.com/repos/$REPO/git/refs/tags/$TAG_REF"
+            PATCH_RESPONSE=$(curl -sS -w "\n%{http_code}" -X PATCH \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" \
+              -d "{\"sha\":\"$SHA\",\"force\":true}" "$PATCH_URL")
+            PATCH_CODE=$(echo "$PATCH_RESPONSE" | tail -n1)
+            if [[ "$PATCH_CODE" != "200" ]]; then
+              echo "::error::Failed to force-move tag (HTTP $PATCH_CODE): $(echo "$PATCH_RESPONSE" | head -n -1)"
+              exit 1
+            fi
+            echo "Force-moved tag $TAG_REF to $SHA"
+          elif [[ "$HTTP_CODE" == "404" ]]; then
+            # Tag doesn't exist - create it
+            CREATE_URL="https://api.github.com/repos/$REPO/git/refs"
+            CREATE_RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" \
+              -d "{\"ref\":\"refs/tags/pre-release\",\"sha\":\"$SHA\"}" "$CREATE_URL")
+            CREATE_CODE=$(echo "$CREATE_RESPONSE" | tail -n1)
+            if [[ "$CREATE_CODE" != "201" ]]; then
+              echo "::error::Failed to create tag (HTTP $CREATE_CODE): $(echo "$CREATE_RESPONSE" | head -n -1)"
+              exit 1
+            fi
+            echo "Created tag $TAG_REF at $SHA"
+          else
+            echo "::error::Failed to check tag ref (HTTP $HTTP_CODE): $REF_BODY"
+            exit 1
+          fi
+
+          # Verify the tag now points to the correct commit
+          VERIFY_RESPONSE=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" "$REF_URL")
+          VERIFY_SHA=$(echo "$VERIFY_RESPONSE" | jq -r '.object.sha // empty')
+          if [[ "$VERIFY_SHA" != "$SHA" ]]; then
+            echo "::error::Tag verification failed: expected $SHA, got $VERIFY_SHA"
+            exit 1
+          fi
+          echo "Tag verification successful: $TAG_REF now points to $SHA"
+
+      - name: Generate release body with change list
+        id: body
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA="${{ steps.run.outputs.sha }}"
+          RUN_ID="${{ steps.run.outputs.run_id }}"
+          CI_VERSION="${{ steps.version.outputs.ci_version }}"
+          REPO="${{ github.repository }}"
+
+          # Find the previous stable release (non-prerelease, non-draft)
+          RELEASES_JSON=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/releases?per_page=100")
+          PREV_TAG=$(echo "$RELEASES_JSON" | jq -r '
+            .[] | select(.prerelease == false and .draft == false) | .tag_name
+          ' | head -n1)
+
+          BODY_FILE="release_body.md"
+          {
+            echo "Latest CI build of CreamInstaller from the [CI Builds](https://github.com/$REPO/actions/workflows/ci-builds.yml) workflow."
+            echo ""
+            if [[ -n "$CI_VERSION" ]]; then
+              echo "- **Version**: \`$CI_VERSION\`"
+            fi
+            echo "- **Commit**: \`$SHA\`"
+            echo "- **Build**: [run #$RUN_ID](https://github.com/$REPO/actions/runs/$RUN_ID)"
+            echo ""
+          } > "$BODY_FILE"
+
+          if [[ -z "$PREV_TAG" ]]; then
+            echo "_No previous stable release to compare against._" >> "$BODY_FILE"
+          else
+            echo "Changes since $PREV_TAG:" >> "$BODY_FILE"
+            echo "" >> "$BODY_FILE"
+
+            # Get compare data
+            COMPARE_URL="https://api.github.com/repos/$REPO/compare/$PREV_TAG...$SHA"
+            # Web (human-browsable) equivalent of the compare URL. The API URL
+            # returns raw JSON, so it must never be used as a clickable link.
+            COMPARE_WEB_URL="https://github.com/$REPO/compare/$PREV_TAG...$SHA"
+            COMPARE_JSON=$(curl -sS -w "\n%{http_code}" -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" "$COMPARE_URL")
+            HTTP_CODE=$(echo "$COMPARE_JSON" | tail -n1)
+            COMPARE_BODY=$(echo "$COMPARE_JSON" | head -n -1)
+
+            if [[ "$HTTP_CODE" != "200" ]]; then
+              echo "::warning::Compare API returned HTTP $HTTP_CODE - omitting change list"
+              echo "_Unable to retrieve changes (API error)._" >> "$BODY_FILE"
+            else
+              STATUS=$(echo "$COMPARE_BODY" | jq -r '.status // "unknown"')
+              TOTAL_COMMITS=$(echo "$COMPARE_BODY" | jq -r '.total_commits // 0')
+              COMMITS_JSON=$(echo "$COMPARE_BODY" | jq -c '.commits // []')
+
+              if [[ "$STATUS" == "identical" || "$TOTAL_COMMITS" -eq 0 ]]; then
+                echo "_No changes since $PREV_TAG._" >> "$BODY_FILE"
+              else
+                # Render at most 30 commits. The slice is done IN jq rather than by
+                # breaking a reader loop early: `shell: bash` runs with -e -o pipefail,
+                # so abandoning the consumer leaves jq writing into a closed pipe
+                # (EPIPE), and pipefail then fails the whole step.
+                echo "$COMMITS_JSON" \
+                  | jq -r '.[0:30][] | "- `\(.sha[0:7])` \((.commit.message // "") | split("\n")[0] | gsub("[`|]"; "") | .[0:100])"' \
+                  >> "$BODY_FILE"
+
+                if [[ "$TOTAL_COMMITS" -gt 30 ]]; then
+                  REMAINING=$((TOTAL_COMMITS - 30))
+                  echo "" >> "$BODY_FILE"
+                  echo "_...and $REMAINING more commits_ ([view all]($COMPARE_WEB_URL))" >> "$BODY_FILE"
+                fi
+              fi
+            fi
+          fi
+
+          echo "body_path=$BODY_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Publish pre-release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: pre-release
+          target_commitish: ${{ steps.run.outputs.sha }}
           name: Latest CI Build (pre-release)
-          body: |
-            Latest CI build of CreamInstaller from the [CI Builds](https://github.com/${{ github.repository }}/actions/workflows/ci-builds.yml) workflow.
-
-            - Commit: `${{ steps.run.outputs.sha }}`
-            - Build: [run #${{ steps.run.outputs.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ steps.run.outputs.run_id }})
+          body_path: ${{ steps.body.outputs.body_path }}
           prerelease: true
           make_latest: false
           overwrite_files: true

@@ -34,6 +34,7 @@ internal sealed partial class SettingsForm : CustomForm
         darkModeCheckBox.Checked = Program.DarkModeEnabled;
         blockedGamesCheckBox.Checked = Program.BlockProtectedGames;
         sortByNameCheckBox.Checked = Program.SortByName;
+        preReleaseCheckBox.Checked = Program.CheckPreReleases;
         defaultAppStatusComboBox.SelectedIndex = (int)Program.DefaultAppStatus;
         wasDarkModeEnabled = Program.DarkModeEnabled;
         wasSortByName = Program.SortByName;
@@ -44,6 +45,7 @@ internal sealed partial class SettingsForm : CustomForm
         Program.DarkModeEnabled = darkModeCheckBox.Checked;
         Program.BlockProtectedGames = blockedGamesCheckBox.Checked;
         Program.SortByName = sortByNameCheckBox.Checked;
+        Program.CheckPreReleases = preReleaseCheckBox.Checked;
         Program.DefaultAppStatus = (DefaultAppStatus)defaultAppStatusComboBox.SelectedIndex;
 
         ProgramData.SaveSettings(Program.AppSettings);
