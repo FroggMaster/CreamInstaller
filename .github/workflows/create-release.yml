@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0   # Needed for tag creation and pushing
 
@@ -39,7 +39,7 @@ jobs:
           git push origin $tag
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -57,7 +57,7 @@ jobs:
           Compress-Archive -Path ./publish/* -DestinationPath ./publish/CreamInstaller.zip
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ inputs.version }}
           name: ${{ inputs.title || format('Release v{0}', inputs.version) }}
