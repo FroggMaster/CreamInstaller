@@ -122,17 +122,37 @@ CreamInstaller is **not a virus**, but it's commonly flagged because of its func
 
 ## Common False Positive Names
 
-| Detection Name | What It Usually Means / Why It’s a False Positive |
-|----------------------------------------|---------------------------------------------------|
-| Mamson.A!ac | Generic heuristic detection; often triggered by packed or obfuscated executables |
-| Phonzy.A!ml | Machine learning detection; flags unusual behavior patterns |
-| Wacatac.H!ml | Extremely common false positive; triggered by compressed or self-updating programs |
-| Malgent!MSR | Generic Microsoft label for “suspicious behavior,” not confirmed malware |
-| Tiggre!rfn | Heuristic runtime detection often seen with tools that hook processes |
-| UDS:DangerousObject.Multi.Generic | Reputation based detection for tools that *can* be abused |
-| Trojan.Win64.Agent | Very broad category; common false positive for unsigned binaries |
-| Trojan.Win64.Agent.oa!s1 | Cloud/AI heuristic variant of the above |
-| Backdoor.Agent | Heuristic detection for applications that download remote content, extract archives, spawn processes, and self-replace. |
+The table below lists the antivirus engines that commonly flag CreamInstaller and the detection names they assign. 
+
+**None of these are actual malware** they are heuristic (pattern-based), reputation-based, or machine-learning detections triggered by legitimate DLC unlocker behavior.
+
+| Engine | Detection Name | What It Usually Means / Why It’s a False Positive |
+|--------------------------------|----------------------------------|---------------------------------------------------|
+| Alibaba Cloud | Software:Win/Generic.Gen | Generic heuristic for unsigned installers that extract, replace, or patch game files |
+| Avast | Other:Malware-gen [Trj] | Generic family detection; "gen" indicates a generated heuristic rather than a specific signature |
+| AVG | Other:Malware-gen [Trj] | Identical detection shared with Avast (same engine); generic heuristic for unsigned binaries |
+| Avira (no cloud) | TR/Malware | Broad "trojan" heuristic for tools that modify or replace DLLs |
+| CTX | Exe.trojan.dllhijack | Flags the legitimate installation of proxy DLLs as DLL hijacking |
+| DeepInstinct | MALICIOUS | Deep-learning model flags the download-and-execute/self-update pattern; no signature granularity |
+| Google | Detected | Google Safe Browsing's generic label; provides no specific malware family |
+| Ikarus | Backdoor.Agent | Heuristic detection for applications that download remote content, extract archives, spawn processes, and self-replace |
+| Kaspersky | UDS:DangerousObject.Multi.Generic | Reputation based detection for tools that *can* be abused |
+| Kingsoft | Win32.Troj.Unknown.a | "Unknown" placeholder classification for an unrecognized generic trojan |
+| Lionic | Trojan.Win32.Generic.4!c | Cloud/heuristic generic trojan classification |
+| Microsoft | Mamson.A!ac | Generic heuristic detection; often triggered by packed or obfuscated executables |
+| Microsoft | Phonzy.A!ml | Machine learning detection; flags unusual behavior patterns |
+| Microsoft | Wacatac.H!ml | Extremely common false positive; triggered by compressed or self-updating programs |
+| Microsoft | Malgent!MSR | Generic Microsoft label for “suspicious behavior,” not confirmed malware |
+| Microsoft | Tiggre!rfn | Heuristic runtime detection often seen with tools that hook processes |
+| Microsoft | Trojan.Win64.Agent | Very broad category; common false positive for unsigned binaries |
+| Microsoft | Trojan.Win64.Agent.oa!s1 | Cloud/AI heuristic variant of the above |
+| Palo Alto Networks | Generic.ml | Machine-learning generic detection |
+| Skyhigh (SWG) | Artemis | Artifact/hash reputation detection shared with McAfee |
+| Sophos | Mal/Generic-S | Generic malware heuristic for unsigned or packed binaries |
+| Symantec | Trojan.Gen.MBT | Broad "gen" detection based on file behavior and reputation |
+| Tencent | Win64.Trojan.Dllhijack.Qnkl | Flags legitimate proxy DLL installation as DLL hijacking |
+| Varist | W64/ABTrojan.GGBG-1819 | Generic 64-bit trojan heuristic; "AB" denotes behavior-based detection |
+| WithSecure | Trojan.TR/Malware | Generic trojan detection (same engine lineage as F-Secure) |
 
 **See also:** [Archived issue #40](https://web.archive.org/web/20240604162435/https://github.com/pointfeev/CreamInstaller/issues/40)
 
@@ -140,9 +160,8 @@ CreamInstaller is **not a virus**, but it's commonly flagged because of its func
 
 CreamInstaller is **100% open source**:
 
-1. **Review the source code** in this repository
-2. **Build it yourself**
-3. **Compare hashes** of your build with the official release
+- **Review the source code** in this repository, or use an AI Model to review it for you if you're not a developer. 
+
 
 </details>
 
