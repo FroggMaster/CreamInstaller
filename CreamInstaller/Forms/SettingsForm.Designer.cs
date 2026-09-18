@@ -32,6 +32,7 @@ partial class SettingsForm
         defaultAppStatusComboBox = new ComboBox();
         updatesGroup = new GroupBox();
         preReleaseCheckBox = new CheckBox();
+        checkForUpdatesButton = new Button();
         maintenanceGroup = new GroupBox();
         clearCacheButton = new Button();
         reconfigureSteamCMDButton = new Button();
@@ -148,9 +149,10 @@ partial class SettingsForm
         // 
         updatesGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         updatesGroup.Controls.Add(preReleaseCheckBox);
+        updatesGroup.Controls.Add(checkForUpdatesButton);
         updatesGroup.Location = new Point(12, 223);
         updatesGroup.Name = "updatesGroup";
-        updatesGroup.Size = new Size(376, 50);
+        updatesGroup.Size = new Size(376, 85);
         updatesGroup.TabIndex = 3;
         updatesGroup.TabStop = false;
         updatesGroup.Text = "Updates";
@@ -167,13 +169,25 @@ partial class SettingsForm
         preReleaseCheckBox.UseVisualStyleBackColor = true;
         SettingsToolTip.SetToolTip(preReleaseCheckBox, "When enabled, update checks also consider the rolling GitHub pre-release (CI) build. Pre-release builds have no version number: they are identified by their commit hash and are only offered when it differs from your current build.");
         // 
+        // checkForUpdatesButton
+        // 
+        checkForUpdatesButton.AutoSize = true;
+        checkForUpdatesButton.Location = new Point(12, 50);
+        checkForUpdatesButton.Name = "checkForUpdatesButton";
+        checkForUpdatesButton.Size = new Size(175, 25);
+        checkForUpdatesButton.TabIndex = 1;
+        checkForUpdatesButton.Text = "Check For Updates";
+        checkForUpdatesButton.UseVisualStyleBackColor = true;
+        checkForUpdatesButton.Click += OnCheckForUpdatesClick;
+        SettingsToolTip.SetToolTip(checkForUpdatesButton, "Immediately checks GitHub for a newer version and lets you install or ignore it.");
+        // 
         // maintenanceGroup
         // 
         maintenanceGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         maintenanceGroup.Controls.Add(clearCacheButton);
         maintenanceGroup.Controls.Add(reconfigureSteamCMDButton);
         maintenanceGroup.Controls.Add(openLogDirButton);
-        maintenanceGroup.Location = new Point(12, 283);
+        maintenanceGroup.Location = new Point(12, 318);
         maintenanceGroup.Name = "maintenanceGroup";
         maintenanceGroup.Size = new Size(376, 85);
         maintenanceGroup.TabIndex = 4;
@@ -220,7 +234,7 @@ partial class SettingsForm
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 378);
+        saveButton.Location = new Point(232, 413);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
         saveButton.TabIndex = 5;
@@ -232,7 +246,7 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 378);
+        cancelButton.Location = new Point(313, 413);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
         cancelButton.TabIndex = 6;
@@ -244,7 +258,7 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 413);
+        ClientSize = new Size(400, 448);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
         Controls.Add(maintenanceGroup);
@@ -264,6 +278,7 @@ partial class SettingsForm
         maintenanceGroup.ResumeLayout(false);
         maintenanceGroup.PerformLayout();
         updatesGroup.ResumeLayout(false);
+        updatesGroup.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -284,5 +299,6 @@ partial class SettingsForm
     private Button saveButton;
     private Button cancelButton;
     private Button openLogDirButton;
+    private Button checkForUpdatesButton;
     private ToolTip SettingsToolTip;
 }

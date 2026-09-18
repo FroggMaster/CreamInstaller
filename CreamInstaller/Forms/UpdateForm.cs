@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,13 +22,42 @@ internal sealed partial class UpdateForm : CustomForm
     private static readonly string ExecutablePath = ProgramData.DirectoryPath + @"\" + Program.RepositoryExecutable;
     private static readonly string UpdaterPath = ProgramData.DirectoryPath + @"\updater.cmd";
 
+    private readonly bool dialogMode;
     private CancellationTokenSource cancellation;
     private ProgramRelease latestRelease;
 
-    internal UpdateForm()
+    internal bool CheckCompleted { get; private set; }
+    internal bool CheckFailed { get; private set; }
+    internal bool FoundUpdate { get; private set; }
+
+    internal UpdateForm(bool dialogMode = false)
     {
         InitializeComponent();
         Text = Program.ApplicationNameShort;
+        this.dialogMode = dialogMode;
+    }
+
+    /// <summary>
+    /// Performs an on-demand update check from the settings dialog, reusing the same prompt shown
+    /// at launch. When no update is available (or the check fails), an informational dialog is shown.
+    /// </summary>
+    internal static void ShowUpdateCheck(Form owner)
+    {
+        using UpdateForm form = new(true);
+        form.Owner = owner;
+        form.StartPosition = FormStartPosition.CenterParent;
+        _ = form.ShowDialog(owner);
+        if (!form.CheckCompleted || form.FoundUpdate)
+            return;
+        using DialogForm dialog = new(owner);
+        if (form.CheckFailed)
+            _ = dialog.Show(SystemIcons.Error,
+                "An error occurred while checking for updates.\n\nPlease verify your internet connection and try again.",
+                acceptButtonText: "OK", customFormText: "Update Check Failed");
+        else
+            _ = dialog.Show(SystemIcons.Information,
+                $"You are already running the latest version of {Program.Name}.",
+                acceptButtonText: "OK", customFormText: "No Updates Available");
     }
 
     private void StartProgram()
@@ -65,15 +95,18 @@ internal sealed partial class UpdateForm : CustomForm
             (string response, _) =
                 await HttpClientManager.EnsureGet(
                     $"https://api.github.com/repos/{Program.RepositoryOwner}/{Program.RepositoryName}/releases");
+            CheckFailed = response is null;
             if (response is not null)
                 releases = JsonConvert.DeserializeObject<List<ProgramRelease>>(response)
                     ?.Where(release => !release.Draft && release.Asset is not null
                                        && (Program.CheckPreReleases || !release.Prerelease)).ToList();
             latestRelease = FindUpdate(releases);
+            CheckCompleted = true;
             if (latestRelease is null)
-                StartProgram();
+                ReturnToProgram();
             else
             {
+                FoundUpdate = true;
                 progressLabel.Text = latestRelease.Prerelease
                     ? $"A pre-release update is available: {latestRelease.CommitHash}"
                     : $"An update is available: v{latestRelease.Version}";
@@ -108,12 +141,25 @@ internal sealed partial class UpdateForm : CustomForm
         catch (Exception ex)
         {
             ProgramData.Log.Error("UpdateForm OnLoad failed", ex);
+            CheckFailed = true;
+            CheckCompleted = true;
 #if DEBUG
             ex.HandleFatalException();
 #else
-            StartProgram();
+            ReturnToProgram();
 #endif
         }
+    }
+
+    private void ReturnToProgram()
+    {
+        if (dialogMode)
+        {
+            if (!IsDisposed && !Disposing)
+                Close();
+        }
+        else
+            StartProgram();
     }
 
     /// <summary>
@@ -164,7 +210,7 @@ internal sealed partial class UpdateForm : CustomForm
         }
     }
 
-    private void OnIgnore(object sender, EventArgs e) => StartProgram();
+    private void OnIgnore(object sender, EventArgs e) => ReturnToProgram();
 
     private async void OnUpdate(object sender, EventArgs e)
     {
@@ -295,7 +341,7 @@ internal sealed partial class UpdateForm : CustomForm
             }
 
             if (!retry)
-                StartProgram();
+                ReturnToProgram();
             else
                 OnLoad();
         }
@@ -304,7 +350,7 @@ internal sealed partial class UpdateForm : CustomForm
             ProgramData.Log.Error("UpdateForm OnUpdate failed", ex);
             // Show error to user
             ex.HandleException(this, Program.Name + " encountered an unexpected error during update");
-            StartProgram();
+            ReturnToProgram();
         }
     }
 
