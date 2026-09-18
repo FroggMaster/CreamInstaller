@@ -17,19 +17,25 @@ internal static class Program
     internal static readonly string Name = Application.CompanyName!;
     private static readonly string Description = Application.ProductName!;
 
+    // Full product version, e.g. "5.0.2.3" for a release build or "5.0.2.3-CI412-bcd29f4" for a
+    // CI build. Anything after a "+" is the SDK's SourceRevisionId and not part of the version.
     internal static readonly string Version = Application.ProductVersion[
         ..(Application.ProductVersion.IndexOf('+') is var index && index != -1
             ? index
             : Application.ProductVersion.Length)];
 
-    // Full commit hash of this build. The .NET SDK appends it to the informational version
-    // (SourceRevisionId), e.g. "5.0.2.3+5c9f5143939727f406359840c74e0f182f547e31".
-    // Null when the project was built outside a git repository.
-    internal static readonly string? CommitHash =
-        Application.ProductVersion.IndexOf('+') is var hashIndex && hashIndex != -1
-                                                    && hashIndex + 1 < Application.ProductVersion.Length
-            ? Application.ProductVersion[(hashIndex + 1)..]
-            : null;
+    // Numeric part of the version, used for update comparisons. System.Version cannot parse the
+    // "-CI<runNumber>-<shortSha>" suffix that CI builds append, so everything up to the first "-"
+    // is used instead (e.g. "5.0.2.3-CI412-bcd29f4" yields "5.0.2.3").
+    internal static readonly string VersionBase = Version[
+        ..(Version.IndexOf('-') is var index && index != -1 ? index : Version.Length)];
+
+    // Commit hash of this build. CI builds encode it in the version as
+    // "<Version>-CI<runNumber>-<shortSha>"; other builds rely on the SourceRevisionId that the
+    // .NET SDK appends to the informational version
+    // (e.g. "5.0.2.3+5c9f5143939727f406359840c74e0f182f547e31").
+    // Null when neither is present, which happens when the project was built outside a git repo.
+    internal static readonly string? CommitHash = ParseCommitHash(Application.ProductVersion);
 
     // Abbreviated (7-character) commit hash, matching the short SHA used in pre-release asset names.
     internal static readonly string? ShortCommitHash =
@@ -39,7 +45,7 @@ internal static class Program
     internal static readonly string RepositoryName = Name;
     internal static readonly string RepositoryPackage = Name + ".zip";
     internal static readonly string RepositoryExecutable = Name + ".exe";
-    internal static readonly string RepositoryPrereleasePrefix = Name + "-CI-";
+    internal static readonly string RepositoryPrereleasePrefix = Name + "-CI";
 #if DEBUG
     internal static readonly string ApplicationName = Name + " v" + Version + "-debug: " + Description;
     internal static readonly string ApplicationNameShort = Name + " v" + Version + "-debug";
@@ -47,6 +53,26 @@ internal static class Program
     internal static readonly string ApplicationName = Name + " v" + Version + ": " + Description;
     internal static readonly string ApplicationNameShort = Name + " v" + Version;
 #endif
+
+    // Extracts the commit hash from a product version. CI builds encode it as the last segment of
+    // a "-CI<runNumber>-<shortSha>" suffix; any other build falls back to the "+<sourceRevisionId>"
+    // that the SDK appends.
+    private static string? ParseCommitHash(string productVersion)
+    {
+        int ciIndex = productVersion.IndexOf("-CI", StringComparison.Ordinal);
+        if (ciIndex != -1)
+        {
+            int separator = productVersion.LastIndexOf('-');
+            if (separator > ciIndex && separator + 1 < productVersion.Length)
+                return productVersion[(separator + 1)..];
+        }
+
+        int hashIndex = productVersion.IndexOf('+');
+        if (hashIndex != -1 && hashIndex + 1 < productVersion.Length)
+            return productVersion[(hashIndex + 1)..];
+
+        return null;
+    }
 
     private static readonly Process CurrentProcess = Process.GetCurrentProcess();
     internal static readonly string CurrentProcessFilePath = CurrentProcess.MainModule?.FileName ?? "";

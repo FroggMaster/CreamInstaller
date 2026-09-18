@@ -37,15 +37,18 @@ jobs:
             Write-Error "Could not read Version from $projPath"
             exit 1
           }
-          $ciVersion = "$baseVersion+$env:GITHUB_SHA.ci.${{ github.run_number }}"
           # Compute the short sha into a variable first: PowerShell does not expand
           # method calls inside an interpolated string, so
           # "shortSha=$env:GITHUB_SHA.Substring(0,7)" would emit the literal text
           # ".Substring(0,7)" instead of the 7-char sha.
           $shortSha = $env:GITHUB_SHA.Substring(0,7)
+          # CI builds are versioned "<Version>-CI<runNumber>-<shortSha>" so the title bar,
+          # the file properties and everything else in the app shows that it is a CI build.
+          $ciVersion = "$baseVersion-CI${{ github.run_number }}-$shortSha"
           Write-Output "baseVersion=$baseVersion" >> $env:GITHUB_OUTPUT
           Write-Output "ciVersion=$ciVersion" >> $env:GITHUB_OUTPUT
           Write-Output "shortSha=$shortSha" >> $env:GITHUB_ENV
+          Write-Output "runNumber=${{ github.run_number }}" >> $env:GITHUB_ENV
 
       - name: Publish single-file
         run: dotnet publish CreamInstaller.sln -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output ./publish -p:InformationalVersion=${{ steps.version.outputs.ciVersion }} -p:IncludeSourceRevisionInInformationalVersion=false
@@ -56,15 +59,23 @@ jobs:
           $ciVersion = "${{ steps.version.outputs.ciVersion }}"
           Set-Content -Path ./publish/version.txt -Value $ciVersion -NoNewline
 
-      - name: Rename EXE with short commit SHA
-        run: |
-          Rename-Item -Path ./publish/CreamInstaller.exe -NewName "CreamInstaller-CI-$env:shortSha.exe"
+      - name: Rename EXE with run number and short commit SHA
         shell: pwsh
+        run: |
+          Rename-Item -Path ./publish/CreamInstaller.exe -NewName "CreamInstaller-CI${env:runNumber}-${env:shortSha}.exe"
+
+      - name: Zip release
+        shell: pwsh
+        run: |
+          # Sources are listed explicitly instead of globbing ./publish/* so the archive
+          # can never end up containing itself.
+          Compress-Archive -Path "./publish/CreamInstaller-CI${env:runNumber}-${env:shortSha}.exe", './publish/version.txt' -DestinationPath "./publish/CreamInstaller-CI${env:runNumber}-${env:shortSha}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: CreamInstaller-CI-Release-${{ env.shortSha }}
+          name: CreamInstaller-CI${{ env.runNumber }}-${{ env.shortSha }}
           path: |
-            ./publish/CreamInstaller-CI-${{ env.shortSha }}.exe
+            ./publish/CreamInstaller-CI${{ env.runNumber }}-${{ env.shortSha }}.exe
+            ./publish/CreamInstaller-CI${{ env.runNumber }}-${{ env.shortSha }}.zip
             ./publish/version.txt

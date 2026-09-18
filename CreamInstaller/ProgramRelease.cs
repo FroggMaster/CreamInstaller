@@ -38,7 +38,7 @@ public class ProgramRelease
 
     /// <summary>
     /// Release asset to download. Stable releases use the versioned ZIP package; pre-releases
-    /// use the standalone CI executable named "CreamInstaller-CI-{commitHash}.exe".
+    /// use the standalone CI executable named "CreamInstaller-CI{runNumber}-{commitHash}.exe".
     /// </summary>
     public Asset Asset => asset ??= Assets.FirstOrDefault(a =>
         Prerelease
@@ -55,7 +55,7 @@ public class ProgramRelease
 
     /// <summary>
     /// Commit hash of a pre-release (CI) build, parsed from its asset file name
-    /// (e.g. "CreamInstaller-CI-bcd29f4.exe" yields "bcd29f4"). Null for stable releases.
+    /// (e.g. "CreamInstaller-CI412-bcd29f4.exe" yields "bcd29f4"). Null for stable releases.
     /// </summary>
     public string CommitHash
     {

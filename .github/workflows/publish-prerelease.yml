@@ -43,24 +43,28 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             # Triggered by a completed CI Builds run - use its ID directly.
             RUN_ID="${{ github.event.workflow_run.id }}"
+            RUN_NUMBER="${{ github.event.workflow_run.run_number }}"
             SHA="${{ github.event.workflow_run.head_sha }}"
             echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "run_number=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
             echo "sha=$SHA" >> "$GITHUB_OUTPUT"
             echo "sha_short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
-            echo "Using CI run $RUN_ID (commit $SHA)"
+            echo "Using CI run #$RUN_NUMBER (id $RUN_ID, commit $SHA)"
           else
             # Manual dispatch - find the latest successful CI Builds run.
             RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/workflows/ci-builds.yml/runs?per_page=1&status=success" --jq '.workflow_runs[0]')
             RUN_ID=$(echo "$RUN_JSON" | jq -r '.id')
+            RUN_NUMBER=$(echo "$RUN_JSON" | jq -r '.run_number')
             SHA=$(echo "$RUN_JSON" | jq -r '.head_sha')
             if [[ "$RUN_ID" == "null" || -z "$RUN_ID" ]]; then
               echo "::error::No successful 'CI Builds' run found. Run ci-builds.yml first."
               exit 1
             fi
             echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "run_number=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
             echo "sha=$SHA" >> "$GITHUB_OUTPUT"
             echo "sha_short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
-            echo "Using CI run $RUN_ID (commit $SHA)"
+            echo "Using CI run #$RUN_NUMBER (id $RUN_ID, commit $SHA)"
           fi
 
       - name: Download CI artifact
@@ -84,16 +88,29 @@ jobs:
             echo "ci_version=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Stage exe with commit SHA name
+      - name: Stage release assets
         shell: bash
         run: |
-          EXE=$(find ./artifact -name "*.exe" -type f | head -n 1)
+          # Keep whatever file names the build workflow produced (they embed the run number and
+          # short sha) instead of rebuilding them here, so the naming scheme lives in one place.
+          # `find -print -quit` stops at the first match itself, so there is no pipe for the
+          # consumer to abandon (a plain `find | head -n 1` can raise SIGPIPE under pipefail).
+          mkdir -p ./release-assets
+          EXE=$(find ./artifact -name "*.exe" -type f -print -quit)
+          ZIP=$(find ./artifact -name "*.zip" -type f -print -quit)
           if [[ -z "$EXE" ]]; then
             echo "::error::No .exe found in the downloaded artifact"
             exit 1
           fi
-          cp "$EXE" "./CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe"
-          echo "Staged: CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe"
+          cp "$EXE" "./release-assets/$(basename "$EXE")"
+          echo "Staged exe: $(basename "$EXE")"
+          if [[ -n "$ZIP" ]]; then
+            cp "$ZIP" "./release-assets/$(basename "$ZIP")"
+            echo "Staged zip: $(basename "$ZIP")"
+          else
+            echo "::warning::No .zip found in the downloaded artifact - publishing the exe only"
+          fi
+          ls -l ./release-assets
 
       - name: Delete old pre-release
         shell: bash
@@ -196,6 +213,7 @@ jobs:
         run: |
           SHA="${{ steps.run.outputs.sha }}"
           RUN_ID="${{ steps.run.outputs.run_id }}"
+          RUN_NUMBER="${{ steps.run.outputs.run_number }}"
           CI_VERSION="${{ steps.version.outputs.ci_version }}"
           REPO="${{ github.repository }}"
 
@@ -215,7 +233,7 @@ jobs:
               echo "- **Version**: \`$CI_VERSION\`"
             fi
             echo "- **Commit**: \`$SHA\`"
-            echo "- **Build**: [run #$RUN_ID](https://github.com/$REPO/actions/runs/$RUN_ID)"
+            echo "- **Build**: [run #$RUN_NUMBER](https://github.com/$REPO/actions/runs/$RUN_ID)"
             echo ""
           } > "$BODY_FILE"
 
@@ -275,6 +293,6 @@ jobs:
           prerelease: true
           make_latest: false
           overwrite_files: true
-          files: ./CreamInstaller-CI-${{ steps.run.outputs.sha_short }}.exe
+          files: ./release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

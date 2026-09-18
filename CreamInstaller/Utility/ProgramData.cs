@@ -237,7 +237,7 @@ internal static event Action<LogEventArgs> OnLog;
             {
                 AppInfoPath.DeleteDirectory();
                 AppInfoPath.CreateDirectory();
-                AppInfoVersionPath.WriteFile(Program.Version);
+                AppInfoVersionPath.WriteFile(Program.VersionBase);
             }
 
             CooldownPath.CreateDirectory();

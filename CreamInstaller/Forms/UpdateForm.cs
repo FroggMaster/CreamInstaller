@@ -59,7 +59,7 @@ internal sealed partial class UpdateForm : CustomForm
             };
             Refresh();
 #if !DEBUG
-            Version currentVersion = new(Program.Version);
+            Version currentVersion = new(Program.VersionBase);
 #endif
             List<ProgramRelease> releases = null;
             (string response, _) =
@@ -129,7 +129,7 @@ internal sealed partial class UpdateForm : CustomForm
         return releases[0];
 #else
         ProgramRelease latestStable = releases.FirstOrDefault(release => !release.Prerelease);
-        if (latestStable?.Version is { } stableVersion && stableVersion > new Version(Program.Version))
+        if (latestStable?.Version is { } stableVersion && stableVersion > new Version(Program.VersionBase))
             return latestStable;
         if (Program.CheckPreReleases)
         {
