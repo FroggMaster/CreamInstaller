@@ -128,4 +128,6 @@ internal sealed partial class SettingsForm : CustomForm
     }
 
     private void OnOpenLogDirClick(object sender, EventArgs e) => Diagnostics.OpenDirectoryInFileExplorer(ProgramData.LogsPath);
+
+    private void OnCheckForUpdatesClick(object sender, EventArgs e) => UpdateForm.ShowUpdateCheck(this);
 }
