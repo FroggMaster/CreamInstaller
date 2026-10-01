@@ -76,7 +76,11 @@ internal sealed class Selection : IEquatable<Selection>
         MainForm selectForm = MainForm.Current;
         if (selectForm is null)
             return;
-        Enabled = selectForm.allCheckBox.Checked;
+        // New root game selections default to selected. Primary/root games that are already installed or cached are
+        // deselected afterwards (see MainForm.DeselectInstalledSelections) so they are not treated as new selections.
+        // This deliberately does not read selectForm.allCheckBox: that reflects whether every node is currently
+        // checked, which becomes false once installed games are deselected and must not make future additions unchecked.
+        Enabled = true;
         UseProxy = false;
     }
 

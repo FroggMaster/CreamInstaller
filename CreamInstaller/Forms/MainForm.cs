@@ -844,6 +844,11 @@ internal sealed partial class MainForm : CustomForm
         }
         if (!scan && Selection.All.Keys.Any(s => s.InstalledUnlocker != InstalledUnlocker.None))
             RefreshNewDLCsForInstalledGames();
+
+        // Installed/cached root games are auto-selected by default when loaded; deselect them so they are not
+        // needlessly regenerated or reinstalled. DLC selection states are intentionally left untouched.
+        DeselectInstalledSelections();
+
         HideProgressBar();
             selectionTreeView.Enabled = !Selection.All.IsEmpty;
             allCheckBox.Enabled = selectionTreeView.Enabled;
@@ -864,6 +869,35 @@ internal sealed partial class MainForm : CustomForm
             useSmokeApiToggle.Enabled = true;
             useSmokeAPIHelpButton.Enabled = true;
         }
+    }
+
+    /// <summary>
+    /// Clears the automatic selection on primary/root games that are already installed or cached so they are not
+    /// needlessly regenerated or reinstalled. Only the root game's check state is changed; DLC selection states are
+    /// intentionally left untouched (programmatic check changes do not cascade, and the DLC nodes are never synced).
+    /// Users can still re-check a game to process it explicitly.
+    /// </summary>
+    private void DeselectInstalledSelections()
+    {
+        bool anyChanged = false;
+        foreach (Selection selection in Selection.All.Keys)
+        {
+            // Leave genuinely new selections and already-unchecked games alone.
+            if (selection.InstalledUnlocker == InstalledUnlocker.None || !selection.Enabled)
+                continue;
+            selection.Enabled = false;
+            anyChanged = true;
+        }
+
+        if (!anyChanged)
+            return;
+
+        // Keep the "Select All" checkbox in sync without invoking OnAllCheckBoxChanged (which would re-enable selections).
+        allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
+        allCheckBox.Checked = EnumerateTreeNodes(selectionTreeView.Nodes)
+            .All(node => node.Text == "Unknown" || node.Checked);
+        allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
+        selectionTreeView.Invalidate();
     }
 
     private void OnTreeViewNodeCheckedChanged(object sender, TreeViewEventArgs e)
