@@ -36,7 +36,7 @@ namespace CreamInstaller.Forms
             progressLabelDLCs = new Label();
             saveFlowPanel = new FlowLayoutPanel();
             settingsButton = new Button();
-            selectionTreeView = new CustomTreeView();
+            gamesHostPanel = new Panel();
             topOptionsTable = new TableLayoutPanel();
             mainToolTip = new ToolTip();
             mainToolTip.AutoPopDelay = 8000;
@@ -67,7 +67,7 @@ namespace CreamInstaller.Forms
             // programsGroupBox
             // 
             programsGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            programsGroupBox.Controls.Add(selectionTreeView);
+            programsGroupBox.Controls.Add(gamesHostPanel);
             programsGroupBox.Location = new System.Drawing.Point(12, 43);
             programsGroupBox.Name = "programsGroupBox";
             programsGroupBox.Size = new System.Drawing.Size(656, 252);
@@ -160,19 +160,13 @@ namespace CreamInstaller.Forms
             allCheckBox.Text = "Select All";
             allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
             // 
-            // selectionTreeView
+            // gamesHostPanel
             // 
-            selectionTreeView.BackColor = System.Drawing.SystemColors.Control;
-            selectionTreeView.BorderStyle = BorderStyle.None;
-            selectionTreeView.CheckBoxes = true;
-            selectionTreeView.Dock = DockStyle.Fill;
-            selectionTreeView.DrawMode = TreeViewDrawMode.OwnerDrawAll;
-            selectionTreeView.Enabled = false;
-            selectionTreeView.FullRowSelect = true;
-            selectionTreeView.Location = new System.Drawing.Point(3, 19);
-            selectionTreeView.Name = "selectionTreeView";
-            selectionTreeView.Size = new System.Drawing.Size(604, 230);
-            selectionTreeView.TabIndex = 1001;
+            gamesHostPanel.Dock = DockStyle.Fill;
+            gamesHostPanel.Location = new System.Drawing.Point(3, 19);
+            gamesHostPanel.Name = "gamesHostPanel";
+            gamesHostPanel.Size = new System.Drawing.Size(604, 230);
+            gamesHostPanel.TabIndex = 1001;
             // 
             // progressBar
             // 
@@ -335,7 +329,7 @@ namespace CreamInstaller.Forms
         internal CheckBox allCheckBox;
         private Button scanButton;
         private Label noneFoundLabel;
-        private CustomTreeView selectionTreeView;
+        private Panel gamesHostPanel;
         private ToggleSwitch useSmokeApiToggle;
         private Label useSmokeApiLabel;
         private Button useSmokeAPIHelpButton;

@@ -105,6 +105,12 @@ internal static class Program
         set => AppSettings.SortByName = value;
     }
 
+    internal static GamesLayout GamesLayout
+    {
+        get => AppSettings.GamesLayout;
+        set => AppSettings.GamesLayout = value;
+    }
+
     internal static bool CheckPreReleases
     {
         get => AppSettings.CheckPreReleases;

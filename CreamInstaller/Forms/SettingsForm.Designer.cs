@@ -36,6 +36,9 @@ partial class SettingsForm
         maintenanceGroup = new GroupBox();
         clearCacheButton = new Button();
         reconfigureSteamCMDButton = new Button();
+        gamesLayoutGroup = new GroupBox();
+        gamesLayoutLabel = new Label();
+        gamesLayoutComboBox = new ComboBox();
         saveButton = new Button();
         cancelButton = new Button();
         openLogDirButton = new Button();
@@ -44,6 +47,7 @@ partial class SettingsForm
         smokeApiGroup.SuspendLayout();
         updatesGroup.SuspendLayout();
         maintenanceGroup.SuspendLayout();
+        gamesLayoutGroup.SuspendLayout();
         SuspendLayout();
         // 
         // settingsToolTip
@@ -230,14 +234,47 @@ partial class SettingsForm
         openLogDirButton.Click += OnOpenLogDirClick;
         SettingsToolTip.SetToolTip(openLogDirButton, "Opens the logs directory in File Explorer.");
         // 
+        // gamesLayoutGroup
+        // 
+        gamesLayoutGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        gamesLayoutGroup.Controls.Add(gamesLayoutLabel);
+        gamesLayoutGroup.Controls.Add(gamesLayoutComboBox);
+        gamesLayoutGroup.Location = new Point(12, 413);
+        gamesLayoutGroup.Name = "gamesLayoutGroup";
+        gamesLayoutGroup.Size = new Size(376, 55);
+        gamesLayoutGroup.TabIndex = 5;
+        gamesLayoutGroup.TabStop = false;
+        gamesLayoutGroup.Text = "Games List";
+        // 
+        // gamesLayoutLabel
+        // 
+        gamesLayoutLabel.AutoSize = true;
+        gamesLayoutLabel.Location = new Point(12, 24);
+        gamesLayoutLabel.Name = "gamesLayoutLabel";
+        gamesLayoutLabel.Size = new Size(160, 15);
+        gamesLayoutLabel.TabIndex = 0;
+        gamesLayoutLabel.Text = "New && installed games shown as";
+        // 
+        // gamesLayoutComboBox
+        // 
+        gamesLayoutComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        gamesLayoutComboBox.Items.AddRange(new object[] {
+            "Stacked panes",
+            "Tabs"});
+        gamesLayoutComboBox.Location = new Point(238, 21);
+        gamesLayoutComboBox.Name = "gamesLayoutComboBox";
+        gamesLayoutComboBox.Size = new Size(130, 23);
+        gamesLayoutComboBox.TabIndex = 1;
+        SettingsToolTip.SetToolTip(gamesLayoutComboBox, "Choose whether new and installed games are shown as two stacked panes (with a splitter) or as two tabs.");
+        // 
         // saveButton
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 413);
+        saveButton.Location = new Point(232, 478);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
-        saveButton.TabIndex = 5;
+        saveButton.TabIndex = 6;
         saveButton.Text = "Save";
         saveButton.UseVisualStyleBackColor = true;
         saveButton.Click += OnSaveClick;
@@ -246,10 +283,10 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 413);
+        cancelButton.Location = new Point(313, 478);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
-        cancelButton.TabIndex = 6;
+        cancelButton.TabIndex = 7;
         cancelButton.Text = "Cancel";
         cancelButton.UseVisualStyleBackColor = true;
         cancelButton.Click += OnCancelClick;
@@ -258,10 +295,11 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 448);
+        ClientSize = new Size(400, 513);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
         Controls.Add(maintenanceGroup);
+        Controls.Add(gamesLayoutGroup);
         Controls.Add(updatesGroup);
         Controls.Add(smokeApiGroup);
         Controls.Add(gameManagementGroup);
@@ -277,6 +315,8 @@ partial class SettingsForm
         smokeApiGroup.PerformLayout();
         maintenanceGroup.ResumeLayout(false);
         maintenanceGroup.PerformLayout();
+        gamesLayoutGroup.ResumeLayout(false);
+        gamesLayoutGroup.PerformLayout();
         updatesGroup.ResumeLayout(false);
         updatesGroup.PerformLayout();
         ResumeLayout(false);
@@ -288,6 +328,9 @@ partial class SettingsForm
     private GroupBox smokeApiGroup;
     private GroupBox updatesGroup;
     private GroupBox maintenanceGroup;
+    private GroupBox gamesLayoutGroup;
+    private Label gamesLayoutLabel;
+    private ComboBox gamesLayoutComboBox;
     private CheckBox preReleaseCheckBox;
     private CheckBox darkModeCheckBox;
     private CheckBox blockedGamesCheckBox;
