@@ -2,11 +2,21 @@ using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CreamInstaller.Components;
 
 namespace CreamInstaller.Utility;
 
 internal static class ThemeManager
 {
+    // -----------------------------------------------------------------
+    // Games tab strip colors (used by TabHeader; the native TabControl cannot be fully themed)
+    // -----------------------------------------------------------------
+    internal static Color TabBackgroundColor => IsDark ? DarkBack : LightBack;
+    internal static Color TabSelectedBackgroundColor => IsDark ? DarkBackAlt : LightBackAlt;
+    internal static Color TabHoverBackgroundColor => IsDark ? DarkBorder : LightBorder;
+    internal static Color TabTextColor => IsDark ? DarkForeDim : LightFore;
+    internal static Color TabSelectedTextColor => IsDark ? DarkFore : LightFore;
+    internal static Color TabAccentColor => IsDark ? Accent : SystemColors.Highlight;
 
     // -----------------------------------------------------------------
     // Color definitions (do not change values)
@@ -291,10 +301,21 @@ internal static class ThemeManager
                 cb.ForeColor = DarkFore;
                 ComboBoxChrome chrome = ComboBoxChromes.GetValue(cb, static c => new ComboBoxChrome());
                 chrome.Attach(cb);
+
+                break;
+
+            // Split/group panels, splitter panels and game tab headers adopt a solid dark background
+            case Panel p:
+                p.BackColor = DarkBack;
+                break;
+            case SplitContainer sc:
+                sc.BackColor = DarkBack;
+                break;
+            case TabHeader th:
+                th.Invalidate();
                 break;
         }
     }
-
     private static void ApplyLightControl(Control control)
     {
         switch (control)
@@ -362,6 +383,16 @@ internal static class ThemeManager
                 cb.FlatStyle = FlatStyle.Standard;
                 cb.BackColor = SystemColors.Control;
                 cb.ForeColor = SystemColors.ControlText;
+                break;
+
+            case Panel p:
+                p.BackColor = LightBack;
+                break;
+            case SplitContainer sc:
+                sc.BackColor = LightBack;
+                break;
+            case TabHeader th:
+                th.Invalidate();
                 break;
         }
     }

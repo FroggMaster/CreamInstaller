@@ -13,6 +13,7 @@ internal sealed partial class SettingsForm : CustomForm
 {
     private bool wasDarkModeEnabled;
     private bool wasSortByName;
+    private GamesLayout wasGamesLayout;
 
     private SettingsForm()
     {
@@ -36,8 +37,10 @@ internal sealed partial class SettingsForm : CustomForm
         sortByNameCheckBox.Checked = Program.SortByName;
         preReleaseCheckBox.Checked = Program.CheckPreReleases;
         defaultAppStatusComboBox.SelectedIndex = (int)Program.DefaultAppStatus;
+        gamesLayoutComboBox.SelectedIndex = (int)Program.GamesLayout;
         wasDarkModeEnabled = Program.DarkModeEnabled;
         wasSortByName = Program.SortByName;
+        wasGamesLayout = Program.GamesLayout;
     }
 
     private void OnSaveClick(object sender, EventArgs e)
@@ -47,6 +50,7 @@ internal sealed partial class SettingsForm : CustomForm
         Program.SortByName = sortByNameCheckBox.Checked;
         Program.CheckPreReleases = preReleaseCheckBox.Checked;
         Program.DefaultAppStatus = (DefaultAppStatus)defaultAppStatusComboBox.SelectedIndex;
+        Program.GamesLayout = (GamesLayout)gamesLayoutComboBox.SelectedIndex;
 
         ProgramData.SaveSettings(Program.AppSettings);
 
@@ -59,6 +63,9 @@ internal sealed partial class SettingsForm : CustomForm
 
         if (wasSortByName != sortByNameCheckBox.Checked)
             MainForm.Current?.UpdateSortOrder(sortByNameCheckBox.Checked);
+
+        if (wasGamesLayout != Program.GamesLayout)
+            MainForm.Current?.ApplyGamesLayout(Program.GamesLayout);
 
         DialogResult = DialogResult.OK;
         Close();

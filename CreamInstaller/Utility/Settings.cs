@@ -7,6 +7,12 @@ public enum DefaultAppStatus
     Original
 }
 
+public enum GamesLayout
+{
+    Stacked = 0,
+    Tabs
+}
+
 internal sealed class SettingsModel
 {
     public bool UseSmokeAPI { get; set; } = true;
@@ -15,4 +21,5 @@ internal sealed class SettingsModel
     public bool SortByName { get; set; } = true;
     public bool CheckPreReleases { get; set; }
     public DefaultAppStatus DefaultAppStatus { get; set; } = DefaultAppStatus.Unlocked;
+    public GamesLayout GamesLayout { get; set; } = GamesLayout.Tabs;
 }

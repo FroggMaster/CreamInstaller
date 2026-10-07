@@ -39,17 +39,232 @@ internal sealed partial class MainForm : CustomForm
     private const int SteamCmdTimeoutMs = 16000;
     private const string DlcRefreshLogPrefix = "[DLCRefresh] ";
 
+    private static readonly Font GamesHeaderFont = new(Control.DefaultFont, FontStyle.Bold);
+
+    private CustomTreeView newGamesTreeView;
+    private CustomTreeView installedGamesTreeView;
+    private Label newGamesHeader;
+    private Label installedGamesHeader;
+    private TableLayoutPanel newGamesPanel;
+    private TableLayoutPanel installedGamesPanel;
+    private SplitContainer stackedGamesLayout;
+    private Panel tabsHostPanel;
+    private FlowLayoutPanel tabsStrip;
+    private TabHeader newGamesTabHeader;
+    private TabHeader installedGamesTabHeader;
+    private Panel tabsContentPanel;
+    private int selectedGamesTab;
+
     private MainForm()
     {
         InitializeComponent();
-        selectionTreeView.TreeViewNodeSorter = Program.SortByName ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
+        BuildGamesLayout();
+        ApplyGamesLayout(Program.GamesLayout);
         Text = Program.ApplicationName;
     }
 
     internal void UpdateSortOrder(bool sortByName)
-        => selectionTreeView.TreeViewNodeSorter = sortByName
-            ? PlatformIdComparer.NodeText
-            : PlatformIdComparer.NodeName;
+    {
+        newGamesTreeView.TreeViewNodeSorter = sortByName ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
+        installedGamesTreeView.TreeViewNodeSorter = sortByName ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName;
+    }
+
+    private static CustomTreeView CreateGamesTreeView() => new()
+    {
+        BackColor = SystemColors.Control,
+        BorderStyle = BorderStyle.None,
+        CheckBoxes = true,
+        Dock = DockStyle.Fill,
+        DrawMode = TreeViewDrawMode.OwnerDrawAll,
+        Enabled = false,
+        FullRowSelect = true,
+        TabIndex = 0,
+        TreeViewNodeSorter = Program.SortByName ? PlatformIdComparer.NodeText : PlatformIdComparer.NodeName
+    };
+
+    private static TableLayoutPanel CreateGamesPanel(string headerText, CustomTreeView tree, out Label header)
+    {
+        header = new Label
+        {
+            AutoSize = false,
+            Dock = DockStyle.Fill,
+            Font = GamesHeaderFont,
+            Padding = new Padding(4, 0, 0, 0),
+            TabIndex = 0,
+            TabStop = false,
+            Text = headerText,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        TableLayoutPanel panel = new()
+        {
+            ColumnCount = 1,
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            RowCount = 2,
+            TabIndex = 0
+        };
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
+        panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        panel.Controls.Add(header, 0, 0);
+        panel.Controls.Add(tree, 0, 1);
+        return panel;
+    }
+
+    private void BuildGamesLayout()
+    {
+        newGamesTreeView = CreateGamesTreeView();
+        installedGamesTreeView = CreateGamesTreeView();
+        newGamesPanel = CreateGamesPanel("New Games", newGamesTreeView, out newGamesHeader);
+        installedGamesPanel = CreateGamesPanel("Installed Games", installedGamesTreeView, out installedGamesHeader);
+
+        stackedGamesLayout = new SplitContainer
+        {
+            Dock = DockStyle.Fill,
+            Orientation = Orientation.Horizontal,
+            Panel1MinSize = 0,
+            Panel2MinSize = 0,
+            SplitterWidth = 6,
+            TabStop = false
+        };
+        tabsHostPanel = new Panel { Dock = DockStyle.Fill };
+        tabsContentPanel = new Panel { Dock = DockStyle.Fill };
+        tabsStrip = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 32,
+            WrapContents = false,
+            Padding = Padding.Empty,
+            Margin = Padding.Empty
+        };
+        newGamesTabHeader = new TabHeader { Text = "New Games" };
+        installedGamesTabHeader = new TabHeader { Text = "Installed Games" };
+        newGamesTabHeader.Click += (_, _) => SelectGamesTab(0);
+        installedGamesTabHeader.Click += (_, _) => SelectGamesTab(1);
+        tabsStrip.Controls.Add(newGamesTabHeader);
+        tabsStrip.Controls.Add(installedGamesTabHeader);
+        tabsHostPanel.Controls.Add(tabsContentPanel);
+        tabsHostPanel.Controls.Add(tabsStrip);
+
+        gamesHostPanel.Controls.Add(stackedGamesLayout);
+        gamesHostPanel.Controls.Add(tabsHostPanel);
+
+        newGamesTreeView.AfterCheck += OnTreeViewNodeCheckedChanged;
+        installedGamesTreeView.AfterCheck += OnTreeViewNodeCheckedChanged;
+    }
+
+    private void SelectGamesTab(int index)
+    {
+        selectedGamesTab = index;
+        newGamesTabHeader.IsSelected = index == 0;
+        installedGamesTabHeader.IsSelected = index == 1;
+        newGamesPanel.Visible = index == 0;
+        installedGamesPanel.Visible = index == 1;
+    }
+
+    /// <summary>Hosts the new-games and installed-games trees either in two stacked panes (with a splitter) or in two tabs.</summary>
+    internal void ApplyGamesLayout(GamesLayout layout)
+    {
+        stackedGamesLayout.Panel1.Controls.Clear();
+        stackedGamesLayout.Panel2.Controls.Clear();
+        tabsContentPanel.Controls.Clear();
+
+        bool stacked = layout is GamesLayout.Stacked;
+        if (stacked)
+        {
+            stackedGamesLayout.Panel1.Controls.Add(newGamesPanel);
+            stackedGamesLayout.Panel2.Controls.Add(installedGamesPanel);
+            newGamesPanel.Visible = true;
+            installedGamesPanel.Visible = true;
+        }
+        else
+        {
+            tabsContentPanel.Controls.Add(newGamesPanel);
+            tabsContentPanel.Controls.Add(installedGamesPanel);
+            SelectGamesTab(selectedGamesTab);
+        }
+
+        newGamesHeader.Visible = stacked;
+        installedGamesHeader.Visible = stacked;
+        newGamesPanel.RowStyles[0].Height = stacked ? 22F : 0F;
+        installedGamesPanel.RowStyles[0].Height = stacked ? 22F : 0F;
+        stackedGamesLayout.Visible = stacked;
+        tabsHostPanel.Visible = !stacked;
+        newGamesTreeView.Invalidate();
+        installedGamesTreeView.Invalidate();
+
+        if (stacked)
+            CenterGamesSplitter();
+
+        UpdateGamesLayoutTexts();
+    }
+
+    private void CenterGamesSplitter()
+    {
+        try
+        {
+            if (stackedGamesLayout.Height <= stackedGamesLayout.SplitterWidth)
+                return;
+            stackedGamesLayout.SplitterDistance = Math.Max(stackedGamesLayout.Panel1MinSize,
+                (stackedGamesLayout.Height - stackedGamesLayout.SplitterWidth) / 2);
+        }
+        catch (InvalidOperationException)
+        {
+            // The split container is not laid out yet; it will be centered once shown.
+        }
+    }
+
+    private void UpdateGamesLayoutTexts()
+    {
+        int newCount = Selection.All.Keys.Count(s => s.InstalledUnlocker == InstalledUnlocker.None);
+        int installedCount = Selection.All.Count - newCount;
+        string newText = $"New Games ({newCount})";
+        string installedText = $"Installed Games ({installedCount})";
+        newGamesHeader.Text = newText;
+        installedGamesHeader.Text = installedText;
+        newGamesTabHeader.Text = newText;
+        installedGamesTabHeader.Text = installedText;
+        newGamesTabHeader.Width = TextRenderer.MeasureText(newText, newGamesTabHeader.Font).Width + 32;
+        installedGamesTabHeader.Width = TextRenderer.MeasureText(installedText, installedGamesTabHeader.Font).Width + 32;
+        newGamesTabHeader.Invalidate();
+        installedGamesTabHeader.Invalidate();
+    }
+
+    private CustomTreeView GamesTreeViewFor(Selection selection)
+        => selection.InstalledUnlocker != InstalledUnlocker.None ? installedGamesTreeView : newGamesTreeView;
+
+    /// <summary>Adds (or moves) a selection's root node into the tree matching its installed/cached state.</summary>
+    private void AddSelectionNode(Selection selection)
+    {
+        CustomTreeView target = GamesTreeViewFor(selection);
+        if (!ReferenceEquals(selection.TreeNode.TreeView, target))
+        {
+            selection.TreeNode.Remove();
+            _ = target.Nodes.Add(selection.TreeNode);
+        }
+    }
+
+    private IEnumerable<TreeNode> EnumerateAllTreeNodes()
+        => EnumerateTreeNodes(newGamesTreeView.Nodes).Concat(EnumerateTreeNodes(installedGamesTreeView.Nodes));
+
+    private void InvalidateGameTrees()
+    {
+        newGamesTreeView.Invalidate();
+        installedGamesTreeView.Invalidate();
+    }
+
+    private void SetGameTreesEnabled(bool enabled)
+    {
+        newGamesTreeView.Enabled = enabled;
+        installedGamesTreeView.Enabled = enabled;
+    }
+
+    private void ClearGameTrees()
+    {
+        newGamesTreeView.Nodes.Clear();
+        installedGamesTreeView.Nodes.Clear();
+    }
 
     internal static MainForm Current
     {
@@ -190,7 +405,7 @@ internal sealed partial class MainForm : CustomForm
                 if (uninstallAll)
                     selection.Enabled = true;
                 else if (selection.TreeNode.TreeView is null)
-                    _ = selectionTreeView.Nodes.Add(selection.TreeNode);
+                    AddSelectionNode(selection);
                 RemoveFromRemainingGames("Paradox Launcher");
             }
         }
@@ -439,7 +654,7 @@ internal sealed partial class MainForm : CustomForm
                         if (Program.Canceled)
                             return;
                         if (selection.TreeNode.TreeView is null)
-                            _ = selectionTreeView.Nodes.Add(selection.TreeNode);
+                            AddSelectionNode(selection);
                         foreach ((SelectionDLC dlc, _) in dlc)
                         {
                             if (Program.Canceled)
@@ -575,7 +790,7 @@ internal sealed partial class MainForm : CustomForm
                         if (Program.Canceled)
                             return;
                         if (selection.TreeNode.TreeView is null)
-                            _ = selectionTreeView.Nodes.Add(selection.TreeNode);
+                            AddSelectionNode(selection);
                         if (catalogItems.IsEmpty)
                             return;
                         foreach ((SelectionDLC dlc, _) in catalogItems)
@@ -661,7 +876,7 @@ internal sealed partial class MainForm : CustomForm
                         if (Program.Canceled)
                             return;
                         if (selection.TreeNode.TreeView is null)
-                            _ = selectionTreeView.Nodes.Add(selection.TreeNode);
+                            AddSelectionNode(selection);
                     });
                     if (Program.Canceled)
                         return;
@@ -705,7 +920,7 @@ internal sealed partial class MainForm : CustomForm
             allCheckBox.Enabled = false;
             installButton.Enabled = false;
             uninstallButton.Enabled = installButton.Enabled;
-            selectionTreeView.Enabled = false;
+            SetGameTreesEnabled(false);
             progressLabel.Text = "Waiting for user to select which programs/games to scan . . .";
             ShowProgressBar();
             await ProgramData.Setup(this);
@@ -844,10 +1059,17 @@ internal sealed partial class MainForm : CustomForm
         }
         if (!scan && Selection.All.Keys.Any(s => s.InstalledUnlocker != InstalledUnlocker.None))
             RefreshNewDLCsForInstalledGames();
+
+        // Route games into the new-games and installed-games trees and clear the automatic selection on
+        // installed/cached root games so they are not needlessly regenerated or reinstalled (DLC selection
+        // states are intentionally left untouched).
+        DeselectInstalledSelections();
+
         HideProgressBar();
-            selectionTreeView.Enabled = !Selection.All.IsEmpty;
-            allCheckBox.Enabled = selectionTreeView.Enabled;
-            noneFoundLabel.Visible = !selectionTreeView.Enabled;
+            bool hasGames = !Selection.All.IsEmpty;
+            SetGameTreesEnabled(hasGames);
+            allCheckBox.Enabled = hasGames;
+            noneFoundLabel.Visible = !hasGames;
             installButton.Enabled = Selection.AllEnabled.Any();
             uninstallButton.Enabled = installButton.Enabled;
             scanButton.Enabled = true;
@@ -866,6 +1088,39 @@ internal sealed partial class MainForm : CustomForm
         }
     }
 
+    /// <summary>
+    /// Separates primary/root games into the new-games and installed-games trees and clears the automatic
+    /// selection on those that are already installed or cached so they are not needlessly regenerated or
+    /// reinstalled. Only the root game's check state is changed; DLC selection states are intentionally left
+    /// untouched (programmatic check changes do not cascade, and the DLC nodes are never synced). Users can still
+    /// re-check a game to process it explicitly.
+    /// </summary>
+    private void DeselectInstalledSelections()
+    {
+        bool anyChanged = false;
+        foreach (Selection selection in Selection.All.Keys)
+        {
+            AddSelectionNode(selection);
+            // Leave genuinely new selections and already-unchecked games alone.
+            if (selection.InstalledUnlocker == InstalledUnlocker.None || !selection.Enabled)
+                continue;
+            selection.Enabled = false;
+            anyChanged = true;
+        }
+
+        UpdateGamesLayoutTexts();
+
+        if (!anyChanged)
+            return;
+
+        // Keep the "Select All" checkbox in sync without invoking OnAllCheckBoxChanged (which would re-enable selections).
+        allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
+        allCheckBox.Checked = EnumerateAllTreeNodes()
+            .All(node => node.Text == "Unknown" || node.Checked);
+        allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
+        InvalidateGameTrees();
+    }
+
     private void OnTreeViewNodeCheckedChanged(object sender, TreeViewEventArgs e)
     {
         if (e.Action == TreeViewAction.Unknown)
@@ -876,7 +1131,7 @@ internal sealed partial class MainForm : CustomForm
         SyncNodeAncestors(node);
         SyncNodeDescendants(node);
         allCheckBox.CheckedChanged -= OnAllCheckBoxChanged;
-        allCheckBox.Checked = EnumerateTreeNodes(selectionTreeView.Nodes)
+        allCheckBox.Checked = EnumerateAllTreeNodes()
             .All(node => node.Text == "Unknown" || node.Checked);
         allCheckBox.CheckedChanged += OnAllCheckBoxChanged;
         installButton.Enabled = Selection.AllEnabled.Any();
@@ -1139,7 +1394,7 @@ internal sealed partial class MainForm : CustomForm
                 _ = items.Add(new ContextMenuItem("Open Official Website",
                     ("Web_" + id, IconGrabber.GetDomainFaviconUrl(selection.Website)),
                     (_, _) => Diagnostics.OpenUrlInInternetBrowser(selection.Website)));
-            contextMenuStrip.Show(selectionTreeView, location);
+            contextMenuStrip.Show(node.TreeView, location);
             contextMenuStrip.Refresh();
         });
 
@@ -1211,7 +1466,7 @@ internal sealed partial class MainForm : CustomForm
             Invoke(delegate
             {
                 if (selection.TreeNode.TreeView is null)
-                    _ = selectionTreeView.Nodes.Add(selection.TreeNode);
+                    AddSelectionNode(selection);
 
                 // Restore DLC children from saved record
                 if (record.Dlc != null && record.Dlc.Count > 0)
@@ -1472,7 +1727,6 @@ internal sealed partial class MainForm : CustomForm
             try
             {
                 HideProgressBar();
-                selectionTreeView.AfterCheck += OnTreeViewNodeCheckedChanged;
                 OnLoad(forceProvideChoices: true);
                 retry = false;
             }
@@ -1578,11 +1832,11 @@ internal sealed partial class MainForm : CustomForm
         OnProxyChanged();
     }
 
-    internal void InvalidateGameList() => selectionTreeView.Invalidate();
+    internal void InvalidateGameList() => InvalidateGameTrees();
 
     internal void OnProxyChanged()
     {
-        selectionTreeView.Invalidate();
+        InvalidateGameTrees();
     }
 
     /// <summary>
@@ -1670,7 +1924,7 @@ internal sealed partial class MainForm : CustomForm
 
     internal void OnExtraProtectionChanged()
     {
-        selectionTreeView.Invalidate();
+        InvalidateGameTrees();
     }
 
     private void OnUseSmokeApiToggleChanged(object sender, EventArgs e)
@@ -1678,7 +1932,7 @@ internal sealed partial class MainForm : CustomForm
         Program.UseSmokeAPI = useSmokeApiToggle.Checked;
         useSmokeApiLabel.Text = useSmokeApiToggle.Checked ? "Selected Unlocker: SmokeAPI" : "Selected Unlocker: CreamAPI";
         ProgramData.SaveSettings(Program.AppSettings);
-        selectionTreeView.Invalidate();
+        InvalidateGameTrees();
     }
 
     private void OnUseSmokeAPIHelpButtonClicked(object sender, EventArgs e)
@@ -1708,7 +1962,7 @@ internal sealed partial class MainForm : CustomForm
         if (ProgramData.CacheCleared)
         {
             ProgramData.CacheCleared = false;
-            selectionTreeView.Nodes.Clear();
+            ClearGameTrees();
             Selection.All.Clear();
             programsToScan = null;
             OnLoad(forceProvideChoices: true);
@@ -1719,6 +1973,8 @@ internal sealed partial class MainForm : CustomForm
     {
         base.OnShown(e);
         ThemeManager.Apply(this);
+        if (stackedGamesLayout.Visible)
+            CenterGamesSplitter();
         if (useSmokeApiToggle is not null)
         {
             useSmokeApiToggle.Checked = Program.UseSmokeAPI;
