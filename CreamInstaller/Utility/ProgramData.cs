@@ -224,11 +224,7 @@ internal static event Action<LogEventArgs> OnLog;
     internal static async Task Setup(Form form = null)
         => await Task.Run(() =>
         {
-            if (DirectoryPathOld.DirectoryExists())
-            {
-                DirectoryPath.DeleteDirectory();
-                DirectoryPathOld.MoveDirectory(DirectoryPath, true, form);
-            }
+            MigrateLegacyDirectory(form);
 
             DirectoryPath.CreateDirectory();
             if (!AppInfoVersionPath.FileExists() ||
@@ -257,6 +253,43 @@ internal static event Action<LogEventArgs> OnLog;
             string oldCooldown = DirectoryPath + @"\cooldown";
             try { if (Directory.Exists(oldCooldown)) Directory.Delete(oldCooldown, true); } catch { }
         });
+
+    private static void MigrateLegacyDirectory(Form form)
+    {
+        if (!DirectoryPathOld.DirectoryExists())
+            return;
+
+        string backupPath = DirectoryPath + ".bak";
+
+        // A leftover backup means an earlier migration was interrupted after the destination was
+        // moved aside; restore it before retrying so the destination is never lost.
+        if (backupPath.DirectoryExists())
+        {
+            DirectoryPath.DeleteDirectory();
+            backupPath.MoveDirectory(DirectoryPath);
+        }
+
+        // Preserve the existing destination instead of destroying it, then only migrate once the
+        // destination is free.
+        if (DirectoryPath.DirectoryExists())
+            DirectoryPath.MoveDirectory(backupPath);
+        if (DirectoryPath.DirectoryExists())
+            return;
+
+        DirectoryPathOld.MoveDirectory(DirectoryPath, true, form);
+
+        if (DirectoryPathOld.DirectoryExists())
+        {
+            // The migration did not complete; restore the previous destination.
+            DirectoryPath.DeleteDirectory();
+            backupPath.MoveDirectory(DirectoryPath);
+        }
+        else
+        {
+            // The migration completed; the superseded destination is no longer needed.
+            backupPath.DeleteDirectory();
+        }
+    }
 
     private static void MigrateOldPath(string oldPath, string newPath)
     {
