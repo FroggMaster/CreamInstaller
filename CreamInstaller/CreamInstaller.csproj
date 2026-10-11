@@ -12,7 +12,8 @@
         <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <PlatformTarget>x64</PlatformTarget>
-        <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+        <IncludeAllContentForSelfExtract>false</IncludeAllContentForSelfExtract>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
         <Deterministic>true</Deterministic>
         <Optimize>True</Optimize>
