@@ -37,10 +37,19 @@ internal static class SafeIO
     {
         if (!directoryPath.DirectoryExists())
             return;
+        // Directory.Move cannot move a directory across volumes (different path roots); fall back to a
+        // recursive copy followed by deletion of the source so the migration still succeeds.
+        bool acrossVolumes = !AreSameVolume(directoryPath, newDirectoryPath);
         while (!Program.Canceled)
             try
             {
-                Directory.Move(directoryPath, newDirectoryPath);
+                if (acrossVolumes)
+                {
+                    CopyDirectory(directoryPath, newDirectoryPath);
+                    Directory.Delete(directoryPath, true);
+                }
+                else
+                    Directory.Move(directoryPath, newDirectoryPath);
                 return;
             }
             catch (Exception e)
@@ -49,6 +58,22 @@ internal static class SafeIO
                     directoryPath.IOWarn("Failed to move a crucial directory", e, form) is not DialogResult.OK)
                     break;
             }
+    }
+
+    private static bool AreSameVolume(string firstPath, string secondPath)
+    {
+        string firstRoot = Path.GetPathRoot(Path.GetFullPath(firstPath));
+        string secondRoot = Path.GetPathRoot(Path.GetFullPath(secondPath));
+        return string.Equals(firstRoot, secondRoot, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        _ = Directory.CreateDirectory(destinationDirectory);
+        foreach (string file in Directory.EnumerateFiles(sourceDirectory))
+            File.Copy(file, Path.Combine(destinationDirectory, Path.GetFileName(file)), true);
+        foreach (string subDirectory in Directory.EnumerateDirectories(sourceDirectory))
+            CopyDirectory(subDirectory, Path.Combine(destinationDirectory, Path.GetFileName(subDirectory)));
     }
 
     internal static void DeleteDirectory(this string directoryPath, bool crucial = false, Form form = null)
