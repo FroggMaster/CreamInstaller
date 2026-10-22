@@ -13,6 +13,7 @@ internal sealed partial class SettingsForm : CustomForm
 {
     private bool wasDarkModeEnabled;
     private bool wasSortByName;
+    private bool wasEnableProxyByDefault;
     private GamesLayout wasGamesLayout;
 
     private SettingsForm()
@@ -35,11 +36,13 @@ internal sealed partial class SettingsForm : CustomForm
         darkModeCheckBox.Checked = Program.DarkModeEnabled;
         blockedGamesCheckBox.Checked = Program.BlockProtectedGames;
         sortByNameCheckBox.Checked = Program.SortByName;
+        enableProxyByDefaultCheckBox.Checked = Program.EnableProxyByDefault;
         preReleaseCheckBox.Checked = Program.CheckPreReleases;
         defaultAppStatusComboBox.SelectedIndex = (int)Program.DefaultAppStatus;
         gamesLayoutComboBox.SelectedIndex = (int)Program.GamesLayout;
         wasDarkModeEnabled = Program.DarkModeEnabled;
         wasSortByName = Program.SortByName;
+        wasEnableProxyByDefault = Program.EnableProxyByDefault;
         wasGamesLayout = Program.GamesLayout;
     }
 
@@ -48,6 +51,7 @@ internal sealed partial class SettingsForm : CustomForm
         Program.DarkModeEnabled = darkModeCheckBox.Checked;
         Program.BlockProtectedGames = blockedGamesCheckBox.Checked;
         Program.SortByName = sortByNameCheckBox.Checked;
+        Program.EnableProxyByDefault = enableProxyByDefaultCheckBox.Checked;
         Program.CheckPreReleases = preReleaseCheckBox.Checked;
         Program.DefaultAppStatus = (DefaultAppStatus)defaultAppStatusComboBox.SelectedIndex;
         Program.GamesLayout = (GamesLayout)gamesLayoutComboBox.SelectedIndex;
@@ -63,6 +67,9 @@ internal sealed partial class SettingsForm : CustomForm
 
         if (wasSortByName != sortByNameCheckBox.Checked)
             MainForm.Current?.UpdateSortOrder(sortByNameCheckBox.Checked);
+
+        if (wasEnableProxyByDefault != Program.EnableProxyByDefault)
+            MainForm.Current?.ApplyProxyDefaults();
 
         if (wasGamesLayout != Program.GamesLayout)
             MainForm.Current?.ApplyGamesLayout(Program.GamesLayout);

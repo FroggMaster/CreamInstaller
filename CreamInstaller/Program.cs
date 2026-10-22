@@ -93,6 +93,12 @@ internal static class Program
         set => AppSettings.BlockProtectedGames = value;
     }
 
+    internal static bool EnableProxyByDefault
+    {
+        get => AppSettings.EnableProxyByDefault;
+        set => AppSettings.EnableProxyByDefault = value;
+    }
+
     internal static bool DarkModeEnabled
     {
         get => AppSettings.DarkModeEnabled;

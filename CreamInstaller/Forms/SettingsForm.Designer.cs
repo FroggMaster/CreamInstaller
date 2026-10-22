@@ -27,6 +27,7 @@ partial class SettingsForm
         gameManagementGroup = new GroupBox();
         blockedGamesCheckBox = new CheckBox();
         sortByNameCheckBox = new CheckBox();
+        enableProxyByDefaultCheckBox = new CheckBox();
         smokeApiGroup = new GroupBox();
         defaultAppStatusLabel = new Label();
         defaultAppStatusComboBox = new ComboBox();
@@ -84,9 +85,10 @@ partial class SettingsForm
         gameManagementGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         gameManagementGroup.Controls.Add(blockedGamesCheckBox);
         gameManagementGroup.Controls.Add(sortByNameCheckBox);
+        gameManagementGroup.Controls.Add(enableProxyByDefaultCheckBox);
         gameManagementGroup.Location = new Point(12, 72);
         gameManagementGroup.Name = "gameManagementGroup";
-        gameManagementGroup.Size = new Size(376, 76);
+        gameManagementGroup.Size = new Size(376, 102);
         gameManagementGroup.TabIndex = 1;
         gameManagementGroup.TabStop = false;
         gameManagementGroup.Text = "Game Management";
@@ -114,13 +116,25 @@ partial class SettingsForm
         sortByNameCheckBox.Text = "Sort game list by name";
         sortByNameCheckBox.UseVisualStyleBackColor = true;
         SettingsToolTip.SetToolTip(sortByNameCheckBox, "When enabled, games in the main list are sorted alphabetically by name. When disabled, games appear in their default platform order.");
+        //
+        // enableProxyByDefaultCheckBox
+        //
+        enableProxyByDefaultCheckBox.AutoSize = false;
+        enableProxyByDefaultCheckBox.FlatStyle = FlatStyle.System;
+        enableProxyByDefaultCheckBox.Location = new Point(12, 74);
+        enableProxyByDefaultCheckBox.Name = "enableProxyByDefaultCheckBox";
+        enableProxyByDefaultCheckBox.Size = new Size(300, 22);
+        enableProxyByDefaultCheckBox.TabIndex = 2;
+        enableProxyByDefaultCheckBox.Text = "Enable proxying by default";
+        enableProxyByDefaultCheckBox.UseVisualStyleBackColor = true;
+        SettingsToolTip.SetToolTip(enableProxyByDefaultCheckBox, "When enabled, proxying is turned on by default for applicable games and compatible unlockers. Existing per-game proxy settings are preserved.");
         // 
         // smokeApiGroup
         // 
         smokeApiGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         smokeApiGroup.Controls.Add(defaultAppStatusLabel);
         smokeApiGroup.Controls.Add(defaultAppStatusComboBox);
-        smokeApiGroup.Location = new Point(12, 158);
+        smokeApiGroup.Location = new Point(12, 184);
         smokeApiGroup.Name = "smokeApiGroup";
         smokeApiGroup.Size = new Size(376, 55);
         smokeApiGroup.TabIndex = 2;
@@ -154,7 +168,7 @@ partial class SettingsForm
         updatesGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         updatesGroup.Controls.Add(preReleaseCheckBox);
         updatesGroup.Controls.Add(checkForUpdatesButton);
-        updatesGroup.Location = new Point(12, 223);
+        updatesGroup.Location = new Point(12, 249);
         updatesGroup.Name = "updatesGroup";
         updatesGroup.Size = new Size(376, 85);
         updatesGroup.TabIndex = 3;
@@ -191,7 +205,7 @@ partial class SettingsForm
         maintenanceGroup.Controls.Add(clearCacheButton);
         maintenanceGroup.Controls.Add(reconfigureSteamCMDButton);
         maintenanceGroup.Controls.Add(openLogDirButton);
-        maintenanceGroup.Location = new Point(12, 318);
+        maintenanceGroup.Location = new Point(12, 344);
         maintenanceGroup.Name = "maintenanceGroup";
         maintenanceGroup.Size = new Size(376, 85);
         maintenanceGroup.TabIndex = 4;
@@ -239,7 +253,7 @@ partial class SettingsForm
         gamesLayoutGroup.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         gamesLayoutGroup.Controls.Add(gamesLayoutLabel);
         gamesLayoutGroup.Controls.Add(gamesLayoutComboBox);
-        gamesLayoutGroup.Location = new Point(12, 413);
+        gamesLayoutGroup.Location = new Point(12, 439);
         gamesLayoutGroup.Name = "gamesLayoutGroup";
         gamesLayoutGroup.Size = new Size(376, 55);
         gamesLayoutGroup.TabIndex = 5;
@@ -271,7 +285,7 @@ partial class SettingsForm
         // 
         saveButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         saveButton.AutoSize = true;
-        saveButton.Location = new Point(232, 478);
+        saveButton.Location = new Point(232, 504);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 25);
         saveButton.TabIndex = 6;
@@ -283,7 +297,7 @@ partial class SettingsForm
         // 
         cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancelButton.AutoSize = true;
-        cancelButton.Location = new Point(313, 478);
+        cancelButton.Location = new Point(313, 504);
         cancelButton.Name = "cancelButton";
         cancelButton.Size = new Size(75, 25);
         cancelButton.TabIndex = 7;
@@ -295,7 +309,7 @@ partial class SettingsForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(400, 513);
+        ClientSize = new Size(400, 539);
         Controls.Add(cancelButton);
         Controls.Add(saveButton);
         Controls.Add(maintenanceGroup);
@@ -335,6 +349,7 @@ partial class SettingsForm
     private CheckBox darkModeCheckBox;
     private CheckBox blockedGamesCheckBox;
     private CheckBox sortByNameCheckBox;
+    private CheckBox enableProxyByDefaultCheckBox;
     private Label defaultAppStatusLabel;
     private ComboBox defaultAppStatusComboBox;
     private Button clearCacheButton;

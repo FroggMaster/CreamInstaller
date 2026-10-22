@@ -510,6 +510,7 @@ internal sealed class CustomTreeView : TreeView
                             ToolStripMenuItem menuItem = new(proxy + ".dll", null, (_, _) =>
                             {
                                 pair.Key.Proxy = proxy == Selection.DefaultProxy ? null : proxy;
+                                pair.Key.ProxyExplicitlySet = true;
                                 selectForm.OnProxyChanged();
                             })
                             {
@@ -534,6 +535,7 @@ internal sealed class CustomTreeView : TreeView
                 if (pair.Key.SteamApiDllMissing)
                     return;
                 pair.Key.UseProxy = !pair.Key.UseProxy;
+                pair.Key.ProxyExplicitlySet = true;
                 selectForm?.OnProxyChanged();
                 break;
             }

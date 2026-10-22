@@ -17,6 +17,7 @@ internal sealed class SettingsModel
 {
     public bool UseSmokeAPI { get; set; } = true;
     public bool BlockProtectedGames { get; set; } = true;
+    public bool EnableProxyByDefault { get; set; }
     public bool DarkModeEnabled { get; set; } = true;
     public bool SortByName { get; set; } = true;
     public bool CheckPreReleases { get; set; }
