@@ -1413,11 +1413,16 @@ internal sealed partial class MainForm : CustomForm
             {
                 if (existing.InstalledUnlocker == InstalledUnlocker.None)
                     existing.InstalledUnlocker = record.Unlocker;
-                if (record.UseProxy)
-                {
+                // The saved record is the per-game proxy preference; games that need proxying because their
+                // Steam API DLL is missing always keep it enabled.
+                if (existing.SteamApiDllMissing)
                     existing.UseProxy = true;
-                    existing.Proxy = record.ProxyDllName;
+                else
+                {
+                    existing.UseProxy = record.UseProxy;
+                    existing.Proxy = record.UseProxy ? record.ProxyDllName : null;
                 }
+                existing.ProxyExplicitlySet = true;
                 if (record.UseExtraProtection)
                     existing.UseExtraProtection = true;
                 continue;
@@ -1458,8 +1463,9 @@ internal sealed partial class MainForm : CustomForm
                 else
                 {
                     selection.UseProxy = record.UseProxy;
-                    selection.Proxy = record.ProxyDllName;
+                    selection.Proxy = record.UseProxy ? record.ProxyDllName : null;
                 }
+                selection.ProxyExplicitlySet = true;
             }
             selection.UseExtraProtection = record.UseExtraProtection;
 
@@ -1802,17 +1808,19 @@ internal sealed partial class MainForm : CustomForm
                     proxy.GetProxyInfoFromIdentifier(out currentProxy, out _);
                 if (proxy != currentProxy && proxyChoices.Remove(choice)) // convert pre-v4.1.0.0 choices
                     proxyChoices.Add((platform, id, currentProxy, enabled));
-                if (currentProxy is null or Selection.DefaultProxy && !enabled)
+                if (currentProxy is null ||
+                    (currentProxy == Selection.DefaultProxy && !enabled && !Program.EnableProxyByDefault))
                     _ = proxyChoices.RemoveAll(c => c.platform == platform && c.id == id);
                 else
                 {
                     selection.UseProxy = enabled;
                     selection.Proxy = currentProxy == Selection.DefaultProxy ? currentProxy : proxy;
+                    selection.ProxyExplicitlySet = true;
                 }
             }
-            else if (!selection.SteamApiDllMissing)
+            else if (!selection.SteamApiDllMissing && !selection.ProxyExplicitlySet)
             {
-                selection.UseProxy = false;
+                selection.UseProxy = Program.EnableProxyByDefault;
                 selection.Proxy = null;
             }
 
@@ -1839,6 +1847,14 @@ internal sealed partial class MainForm : CustomForm
         InvalidateGameTrees();
     }
 
+    /// <summary>Re-applies the global proxying default to games that have no explicit per-game proxy preference.</summary>
+    internal void ApplyProxyDefaults()
+    {
+        foreach (Selection selection in Selection.All.Keys)
+            selection.ApplyProxyDefault();
+        InvalidateGameTrees();
+    }
+
     /// <summary>
     /// Detect installed unlockers and proxy DLLs, read SmokeAPI/CreamAPI configs, fire API queries for config DLCs,
     /// and merge with persisted installed game records. Must run after selections are populated and unlocker detection
@@ -1857,6 +1873,14 @@ internal sealed partial class MainForm : CustomForm
                 {
                     selection.UseProxy = true;
                     selection.Proxy = detectedProxy;
+                    selection.ProxyExplicitlySet = true;
+                }
+                else if (!selection.ProxyExplicitlySet && !selection.SteamApiDllMissing)
+                {
+                    // An existing unlocker without a proxy DLL was not installed in proxy mode; don't
+                    // retroactively turn proxying on from the global default.
+                    selection.UseProxy = false;
+                    selection.Proxy = null;
                 }
                 if (selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI)
                 {

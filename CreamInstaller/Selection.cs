@@ -41,6 +41,7 @@ internal sealed class Selection : IEquatable<Selection>
     internal bool UseExtraProtection;
     internal bool UseProxy;
     internal string Proxy;
+    internal bool ProxyExplicitlySet;
     internal string Product;
     internal string Publisher;
     internal string SubIcon;
@@ -73,6 +74,9 @@ internal sealed class Selection : IEquatable<Selection>
         ExecutableDirectories = executableDirectories;
         _ = All.TryAdd(this, default);
         TreeNode = new() { Tag = Platform, Name = Id, Text = Name };
+        // New selections follow the configured default; saved per-game choices are applied later by
+        // MainForm.LoadSelections and MainForm.LoadSavedInstalledGames.
+        UseProxy = Program.EnableProxyByDefault;
         MainForm selectForm = MainForm.Current;
         if (selectForm is null)
             return;
@@ -81,7 +85,19 @@ internal sealed class Selection : IEquatable<Selection>
         // This deliberately does not read selectForm.allCheckBox: that reflects whether every node is currently
         // checked, which becomes false once installed games are deselected and must not make future additions unchecked.
         Enabled = true;
-        UseProxy = false;
+    }
+
+    /// <summary>
+    /// Applies the global proxying default unless this game already has an installed/unlocker configuration,
+    /// an explicit proxy choice, or requires proxying because its Steam API DLL is missing.
+    /// </summary>
+    internal void ApplyProxyDefault()
+    {
+        if (ProxyExplicitlySet || SteamApiDllMissing || InstalledUnlocker != InstalledUnlocker.None)
+            return;
+        UseProxy = Program.EnableProxyByDefault;
+        if (!UseProxy)
+            Proxy = null;
     }
 
     internal static IEnumerable<Selection> AllEnabled => All.Keys.Where(s => s.Enabled);
