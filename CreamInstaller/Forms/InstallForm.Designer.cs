@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Windows.Forms;
 
+using CreamInstaller.Components;
+
 namespace CreamInstaller.Forms
 {
     sealed partial class InstallForm
@@ -23,11 +25,11 @@ namespace CreamInstaller.Forms
         {
             userProgressBar = new ProgressBar();
             userInfoLabel = new Label();
-            acceptButton = new Button();
-            retryButton = new Button();
-            cancelButton = new Button();
+            acceptButton = new RoundedButton();
+            retryButton = new RoundedButton();
+            cancelButton = new RoundedButton();
             logTextBox = new RichTextBox();
-            reselectButton = new Button();
+            reselectButton = new RoundedButton();
             SuspendLayout();
             // 
             // userProgressBar
@@ -136,11 +138,11 @@ namespace CreamInstaller.Forms
 
         private ProgressBar userProgressBar;
         private Label userInfoLabel;
-        private Button acceptButton;
-        private Button retryButton;
-        private Button cancelButton;
+        private RoundedButton acceptButton;
+        private RoundedButton retryButton;
+        private RoundedButton cancelButton;
         private RichTextBox logTextBox;
-        private Button reselectButton;
+        private RoundedButton reselectButton;
     }
 }
 

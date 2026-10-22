@@ -23,14 +23,18 @@ namespace CreamInstaller.Forms
         /// </summary>
         private void InitializeComponent()
         {
-            acceptButton = new Button();
+            acceptButton = new PrimaryButton();
             groupBox = new GroupBox();
             allCheckBoxFlowPanel = new FlowLayoutPanel();
             allCheckBox = new CheckBox();
             sortCheckBox = new CheckBox();
-            cancelButton = new Button();
-            loadButton = new Button();
-            saveButton = new Button();
+            cancelButton = new RoundedButton();
+            loadButton = new RoundedButton();
+            saveButton = new RoundedButton();
+            scanToolTip = new ToolTip();
+            scanToolTip.AutoPopDelay = 8000;
+            scanToolTip.InitialDelay = 500;
+            scanToolTip.ReshowDelay = 100;
             selectionTreeView = new CustomTreeView();
             filterTextBox = new System.Windows.Forms.TextBox();
             groupBox.SuspendLayout();
@@ -43,13 +47,14 @@ namespace CreamInstaller.Forms
             acceptButton.AutoSize = true;
             acceptButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             acceptButton.DialogResult = DialogResult.OK;
-            acceptButton.Location = new System.Drawing.Point(479, 243);
+            acceptButton.Location = new System.Drawing.Point(481, 243);
             acceptButton.Name = "acceptButton";
             acceptButton.Padding = new Padding(12, 0, 12, 0);
             acceptButton.Size = new System.Drawing.Size(57, 25);
             acceptButton.TabIndex = 6;
             acceptButton.Text = "OK";
             acceptButton.UseVisualStyleBackColor = true;
+            scanToolTip.SetToolTip(acceptButton, "Confirm the currently selected games and continue.");
             // 
             // filterTextBox
             // 
@@ -114,10 +119,10 @@ namespace CreamInstaller.Forms
             // 
             // sortCheckBox
             // 
-            sortCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            sortCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             sortCheckBox.AutoSize = true;
             sortCheckBox.Checked = true; // Enable Sort By Name by default
-            sortCheckBox.Location = new System.Drawing.Point(220, 247);
+            sortCheckBox.Location = new System.Drawing.Point(100, 247);
             sortCheckBox.Margin = new Padding(3, 0, 0, 0);
             sortCheckBox.Name = "sortCheckBox";
             sortCheckBox.Size = new System.Drawing.Size(98, 19);
@@ -145,14 +150,15 @@ namespace CreamInstaller.Forms
             loadButton.AutoSize = true;
             loadButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             loadButton.Enabled = false;
-            loadButton.Location = new System.Drawing.Point(406, 243);
+            loadButton.Location = new System.Drawing.Point(355, 243);
             loadButton.Name = "loadButton";
             loadButton.Padding = new Padding(12, 0, 12, 0);
-            loadButton.Size = new System.Drawing.Size(67, 25);
+            loadButton.Size = new System.Drawing.Size(118, 25);
             loadButton.TabIndex = 5;
-            loadButton.Text = "Load";
+            loadButton.Text = "Load Selection";
             loadButton.UseVisualStyleBackColor = true;
             loadButton.Click += OnLoad;
+            scanToolTip.SetToolTip(loadButton, "Restore the checkboxes to your previously saved game selections.");
             // 
             // saveButton
             // 
@@ -160,14 +166,15 @@ namespace CreamInstaller.Forms
             saveButton.AutoSize = true;
             saveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             saveButton.Enabled = false;
-            saveButton.Location = new System.Drawing.Point(335, 243);
+            saveButton.Location = new System.Drawing.Point(230, 243);
             saveButton.Name = "saveButton";
             saveButton.Padding = new Padding(12, 0, 12, 0);
-            saveButton.Size = new System.Drawing.Size(65, 25);
+            saveButton.Size = new System.Drawing.Size(117, 25);
             saveButton.TabIndex = 4;
-            saveButton.Text = "Save";
+            saveButton.Text = "Save Selection";
             saveButton.UseVisualStyleBackColor = true;
             saveButton.Click += OnSave;
+            scanToolTip.SetToolTip(saveButton, "Save the currently selected games so you can load them later.");
             // 
             // ScanDialog
             // 
@@ -201,15 +208,16 @@ namespace CreamInstaller.Forms
 
         #endregion
 
-        private Button acceptButton;
+        private PrimaryButton acceptButton;
         private GroupBox groupBox;
         private CustomTreeView selectionTreeView;
         private FlowLayoutPanel allCheckBoxFlowPanel;
         private CheckBox allCheckBox;
-        private Button cancelButton;
-        private Button loadButton;
-        private Button saveButton;
+        private RoundedButton cancelButton;
+        private RoundedButton loadButton;
+        private RoundedButton saveButton;
         private CheckBox sortCheckBox;
         private System.Windows.Forms.TextBox filterTextBox;
+        private ToolTip scanToolTip;
     }
 }

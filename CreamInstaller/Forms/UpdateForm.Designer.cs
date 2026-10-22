@@ -18,8 +18,8 @@ namespace CreamInstaller.Forms
         private void InitializeComponent()
         {
             progressLabel = new Label();
-            updateButton = new Button();
-            ignoreButton = new Button();
+            updateButton = new RoundedButton();
+            ignoreButton = new RoundedButton();
             progressBar = new ProgressBar();
             changelogTreeView = new CustomTreeView();
             SuspendLayout();
@@ -100,8 +100,8 @@ namespace CreamInstaller.Forms
         #endregion
 
         private Label progressLabel;
-        private Button updateButton;
-        private Button ignoreButton;
+        private RoundedButton updateButton;
+        private RoundedButton ignoreButton;
         private ProgressBar progressBar;
         private CustomTreeView changelogTreeView;
     }

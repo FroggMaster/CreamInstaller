@@ -19,23 +19,23 @@ namespace CreamInstaller.Forms
 
         private void InitializeComponent()
         {
-            installButton = new Button();
+            installButton = new RoundedButton();
             programsGroupBox = new GroupBox();
             noneFoundLabel = new Label();
             useSmokeAPILayoutPanel = new FlowLayoutPanel();
             useSmokeApiToggle = new ToggleSwitch();
             useSmokeApiLabel = new Label();
-            useSmokeAPIHelpButton = new Button();
+            useSmokeAPIHelpButton = new RoundedButton();
             allCheckBoxLayoutPanel = new FlowLayoutPanel();
             allCheckBox = new CheckBox();
             progressBar = new ProgressBar();
             progressLabel = new Label();
-            scanButton = new Button();
-            uninstallButton = new Button();
+            scanButton = new RoundedButton();
+            uninstallButton = new RoundedButton();
             progressLabelGames = new Label();
             progressLabelDLCs = new Label();
             saveFlowPanel = new FlowLayoutPanel();
-            settingsButton = new Button();
+            settingsButton = new RoundedButton();
             gamesHostPanel = new Panel();
             topOptionsTable = new TableLayoutPanel();
             mainToolTip = new ToolTip();
@@ -322,24 +322,24 @@ namespace CreamInstaller.Forms
 
         #endregion
 
-        private Button installButton;
+        private RoundedButton installButton;
         private GroupBox programsGroupBox;
         private ProgressBar progressBar;
         private Label progressLabel;
         internal CheckBox allCheckBox;
-        private Button scanButton;
+        private RoundedButton scanButton;
         private Label noneFoundLabel;
         private Panel gamesHostPanel;
         private ToggleSwitch useSmokeApiToggle;
         private Label useSmokeApiLabel;
-        private Button useSmokeAPIHelpButton;
+        private RoundedButton useSmokeAPIHelpButton;
         private FlowLayoutPanel useSmokeAPILayoutPanel;
         private FlowLayoutPanel allCheckBoxLayoutPanel;
-        private Button uninstallButton;
+        private RoundedButton uninstallButton;
         private Label progressLabelGames;
         private Label progressLabelDLCs;
         private FlowLayoutPanel saveFlowPanel;
-        private Button settingsButton;
+        private RoundedButton settingsButton;
         private TableLayoutPanel topOptionsTable;
         private ToolTip mainToolTip;
     }

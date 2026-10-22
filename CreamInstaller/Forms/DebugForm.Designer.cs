@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Windows.Forms;
 
+using CreamInstaller.Components;
+
 namespace CreamInstaller.Forms;
 
 partial class DebugForm
@@ -32,7 +34,7 @@ partial class DebugForm
     private void InitializeComponent()
     {
         debugTextBox = new RichTextBox();
-        testGameButton = new Button();
+        testGameButton = new RoundedButton();
         SuspendLayout();
         // 
         // testGameButton
@@ -84,5 +86,5 @@ partial class DebugForm
     #endregion
 
     private RichTextBox debugTextBox;
-    private Button testGameButton;
+    private RoundedButton testGameButton;
 }

@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Windows.Forms;
 
+using CreamInstaller.Components;
+
 namespace CreamInstaller.Forms
 {
     partial class DialogForm
@@ -21,8 +23,8 @@ namespace CreamInstaller.Forms
         /// </summary>
         private void InitializeComponent()
         {
-            cancelButton = new Button();
-            acceptButton = new Button();
+            cancelButton = new RoundedButton();
+            acceptButton = new RoundedButton();
             descriptionLabel = new LinkLabel();
             icon = new PictureBox();
             descriptionPanel = new FlowLayoutPanel();
@@ -156,8 +158,8 @@ namespace CreamInstaller.Forms
 
         #endregion
 
-        private Button cancelButton;
-        private Button acceptButton;
+        private RoundedButton cancelButton;
+        private RoundedButton acceptButton;
         private PictureBox icon;
         private FlowLayoutPanel descriptionPanel;
         private FlowLayoutPanel buttonPanel;

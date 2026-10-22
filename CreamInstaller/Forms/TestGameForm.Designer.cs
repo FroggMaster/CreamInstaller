@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Windows.Forms;
 
+using CreamInstaller.Components;
+
 namespace CreamInstaller.Forms;
 
 partial class TestGameForm
@@ -28,13 +30,13 @@ partial class TestGameForm
         appIdTextBox = new TextBox();
         gameNameLabel = new Label();
         gameNameTextBox = new TextBox();
-        epicSearchButton = new Button();
-        ubisoftSearchButton = new Button();
+        epicSearchButton = new RoundedButton();
+        ubisoftSearchButton = new RoundedButton();
         epicResultsListBox = new ListBox();
         ubisoftResultsListBox = new ListBox();
-        generateButton = new Button();
-        clearButton = new Button();
-        closeButton = new Button();
+        generateButton = new RoundedButton();
+        clearButton = new RoundedButton();
+        closeButton = new RoundedButton();
         statusLabel = new Label();
         platformGroupBox.SuspendLayout();
         SuspendLayout();
@@ -162,16 +164,16 @@ partial class TestGameForm
     private RadioButton steamRadioButton;
     private RadioButton epicRadioButton;
     private RadioButton ubisoftRadioButton;
-    private Button ubisoftSearchButton;
+    private RoundedButton ubisoftSearchButton;
     private ListBox ubisoftResultsListBox;
     private Label appIdLabel;
     private TextBox appIdTextBox;
     private Label gameNameLabel;
     private TextBox gameNameTextBox;
-    private Button epicSearchButton;
+    private RoundedButton epicSearchButton;
     private ListBox epicResultsListBox;
-    private Button generateButton;
-    private Button clearButton;
-    private Button closeButton;
+    private RoundedButton generateButton;
+    private RoundedButton clearButton;
+    private RoundedButton closeButton;
     private Label statusLabel;
 }

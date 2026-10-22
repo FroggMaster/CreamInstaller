@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using CreamInstaller.Components;
 using CreamInstaller.Platforms.Steam;
 using CreamInstaller.Utility;
 
@@ -33,16 +34,16 @@ partial class SettingsForm
         defaultAppStatusComboBox = new ComboBox();
         updatesGroup = new GroupBox();
         preReleaseCheckBox = new CheckBox();
-        checkForUpdatesButton = new Button();
+        checkForUpdatesButton = new RoundedButton();
         maintenanceGroup = new GroupBox();
-        clearCacheButton = new Button();
-        reconfigureSteamCMDButton = new Button();
+        clearCacheButton = new RoundedButton();
+        reconfigureSteamCMDButton = new RoundedButton();
         gamesLayoutGroup = new GroupBox();
         gamesLayoutLabel = new Label();
         gamesLayoutComboBox = new ComboBox();
-        saveButton = new Button();
-        cancelButton = new Button();
-        openLogDirButton = new Button();
+        saveButton = new RoundedButton();
+        cancelButton = new RoundedButton();
+        openLogDirButton = new RoundedButton();
         appearanceGroup.SuspendLayout();
         gameManagementGroup.SuspendLayout();
         smokeApiGroup.SuspendLayout();
@@ -352,11 +353,11 @@ partial class SettingsForm
     private CheckBox enableProxyByDefaultCheckBox;
     private Label defaultAppStatusLabel;
     private ComboBox defaultAppStatusComboBox;
-    private Button clearCacheButton;
-    private Button reconfigureSteamCMDButton;
-    private Button saveButton;
-    private Button cancelButton;
-    private Button openLogDirButton;
-    private Button checkForUpdatesButton;
+    private RoundedButton clearCacheButton;
+    private RoundedButton reconfigureSteamCMDButton;
+    private RoundedButton saveButton;
+    private RoundedButton cancelButton;
+    private RoundedButton openLogDirButton;
+    private RoundedButton checkForUpdatesButton;
     private ToolTip SettingsToolTip;
 }
