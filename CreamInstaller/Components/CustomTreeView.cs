@@ -428,7 +428,7 @@ internal sealed class CustomTreeView : TreeView
                     Color comboBorderColor = ThemeManager.CustomTreeViewComboBorderColor;
                     Color comboTextColor = ThemeManager.CustomTreeViewComboTextColor;
 
-                    text = (selection.Proxy ?? Selection.DefaultProxy) + ".dll";
+                    text = selection.GetSelectedProxyOption().DisplayName;
                     size = TextRenderer.MeasureText(graphics, text, comboBoxFont) + new Size(6, 0);
                     const int padding = 2;
                     bounds = new(bounds.X + bounds.Width, bounds.Y + padding / 2, size.Width, bounds.Height - padding);
@@ -486,17 +486,28 @@ internal sealed class CustomTreeView : TreeView
                     _ = comboBoxBounds.Remove(pair.Key);
                 else if (pair.Value.Contains(clickPoint))
                 {
-                    IEnumerable<string> proxies = pair.Key.GetAvailableProxies();
+                    ProxyOption[] proxies = pair.Key.GetAvailableProxies().ToArray();
                     comboBoxDropDown ??= new();
                     comboBoxDropDown.ShowItemToolTips = false;
                     comboBoxDropDown.Items.Clear();
 
-                    foreach (string proxy in proxies)
+                    HashSet<string> imported = null;
+                    string primaryExecutable = pair.Key.PrimaryExecutablePath;
+                    if (primaryExecutable is not null &&
+                        PeImports.TryGetImportedModules(primaryExecutable, out HashSet<string> importedModules))
+                        imported = importedModules;
+
+                    IEnumerable<ProxyOption> ordered = imported is null
+                        ? proxies
+                        : proxies.Where(option => imported.Contains(option.FileName))
+                            .Concat(proxies.Where(option => !imported.Contains(option.FileName)));
+
+                    foreach (ProxyOption proxy in ordered)
                     {
                         bool canUse = true;
                         foreach ((string directory, BinaryType _) in pair.Key.ExecutableDirectories)
                         {
-                            string path = directory + @"\" + proxy + ".dll";
+                            string path = directory + @"\" + proxy.FileName;
                             if (!path.FileExists() || path.IsResourceFile(ResourceIdentifier.Koaloader) ||
                                 path.IsResourceFile(ResourceIdentifier.Steamworks32) ||
                                 path.IsResourceFile(ResourceIdentifier.Steamworks64))
@@ -507,9 +518,10 @@ internal sealed class CustomTreeView : TreeView
 
                         if (canUse)
                         {
-                            ToolStripMenuItem menuItem = new(proxy + ".dll", null, (_, _) =>
+                            ToolStripMenuItem menuItem = new(proxy.DisplayName, null, (_, _) =>
                             {
-                                pair.Key.Proxy = proxy == Selection.DefaultProxy ? null : proxy;
+                                pair.Key.Proxy = proxy.Name;
+                                pair.Key.ProxyKind = proxy.Kind;
                                 pair.Key.ProxyExplicitlySet = true;
                                 selectForm.OnProxyChanged();
                             })

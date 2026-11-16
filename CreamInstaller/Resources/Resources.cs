@@ -124,7 +124,7 @@ internal static class Resources
             return executables.Count > 0 ? executables : null;
         });
 
-    private static bool IsCommonIncorrectExecutable(this string rootDirectory, string path)
+    internal static bool IsCommonIncorrectExecutable(this string rootDirectory, string path)
     {
         string subPath = path[rootDirectory.Length..].ToUpperInvariant();
         return subPath.Contains("SETUP") || subPath.Contains("REDIST") || subPath.Contains("SUPPORT")
@@ -151,8 +151,9 @@ internal static class Resources
                 if (subDirectory is null || dllDirectories.Contains(subDirectory))
                     continue;
                 bool koaloaderInstalled = Koaloader.AutoLoadDLLs
-                    .Select(pair => (pair.unlocker, path: directory + @"\" + pair.dll))
-                    .Any(pair => pair.path.FileExists() && pair.path.IsResourceFile());
+                    .Select(pair => directory + @"\" + pair.dll)
+                    .Concat(Koaloader.PayloadDLLs.Select(dll => directory + @"\" + dll))
+                    .Any(path => path.FileExists() && path.IsResourceFile());
                 if (platform is Platform.Steam or Platform.Paradox)
                 {
                     subDirectory.GetSmokeApiComponents(out string api, out string api_o, out string api64,

@@ -63,13 +63,55 @@ internal sealed partial class InstallForm : CustomForm
             _ = await Repair(this, selection);
         }
 
-        bool useKoaloader = selection.UseProxy && (Program.UseSmokeAPI || selection.Platform is not Platform.Steam);
-        bool useCreamApiProxy = selection.UseProxy && !Program.UseSmokeAPI &&
+        ProxyOption proxyOption;
+        if (selection.UseProxy && !uninstalling)
+        {
+            proxyOption = selection.ResolveInstallProxyOption(out string proxyError);
+            if (proxyError is not null)
+                throw new CustomMessageException(proxyError);
+        }
+        else
+            proxyOption = selection.UseProxy
+                ? selection.GetSelectedProxyOption(false)
+                : new ProxyOption(Selection.DefaultProxy, ProxyKind.Native);
+        bool useKoaloader = selection.UseProxy && proxyOption.Kind == ProxyKind.Koaloader &&
+                            selection.KoaloaderProxiesAvailable;
+        bool useCreamApiProxy = selection.UseProxy && proxyOption.Kind == ProxyKind.Native && !Program.UseSmokeAPI &&
                                 (selection.Platform is Platform.Steam || selection.Platform is Platform.Paradox &&
                                     selection.ExtraSelections.Any(s => s.Platform is Platform.Steam));
-        bool useSmokeApiProxy = selection.UseProxy && Program.UseSmokeAPI &&
+        bool useSmokeApiProxy = selection.UseProxy && proxyOption.Kind == ProxyKind.Native && Program.UseSmokeAPI &&
                                 (selection.Platform is Platform.Steam || selection.Platform is Platform.Paradox &&
                                     selection.ExtraSelections.Any(s => s.Platform is Platform.Steam));
+
+        // Validate every proxy target before any uninstall or write so an incompatible choice cannot
+        // remove or overwrite existing files and then fail.
+        List<(string directory, BinaryType binaryType)> proxyDirectories = [];
+        if (!uninstalling && (useKoaloader || useCreamApiProxy || useSmokeApiProxy))
+        {
+            proxyDirectories = selection.GetProxyDirectories().ToList();
+            if (proxyDirectories.Count == 0)
+                throw new CustomMessageException(
+                    $"No executable directory is available to host the proxy DLL for {selection.Name}.");
+            foreach ((string directory, BinaryType binaryType) in proxyDirectories)
+            {
+                if (binaryType is not (BinaryType.BIT32 or BinaryType.BIT64))
+                {
+                    (bool has32, bool has64) =
+                        Selection.GetDirectoryGameBinaryTypes(directory, selection.RootDirectory);
+                    if (has32 && has64)
+                        throw new CustomMessageException(
+                            $"Cannot install {proxyOption.FileName} for {selection.Name}: \"{directory}\" contains " +
+                            "both 32-bit and 64-bit game executables, and one proxy DLL cannot serve both.");
+                    throw new CustomMessageException(
+                        $"Cannot install {proxyOption.FileName} for {selection.Name}: unable to determine a single " +
+                        $"game executable architecture in \"{directory}\".");
+                }
+
+                if (useKoaloader &&
+                    !Koaloader.ValidateProxyResource(proxyOption.Name, binaryType, out string resourceError))
+                    throw new CustomMessageException(resourceError);
+            }
+        }
 
         UpdateUser(
             $"{(uninstalling ? "Uninstalling" : "Installing")}" + $" {(uninstalling ? "from" : "for")} " +
@@ -96,7 +138,7 @@ internal sealed partial class InstallForm : CustomForm
                     UpdateUser(
                         "Uninstalling Koaloader from " + selection.Name +
                         $" in incorrect directory \"{directory}\" . . . ", LogTextBox.Operation);
-                    await Koaloader.Uninstall(directory, selection.RootDirectory, this);
+                    await Koaloader.Uninstall(directory, this);
                 }
 
                 if (!Program.UseSmokeAPI)
@@ -145,7 +187,7 @@ internal sealed partial class InstallForm : CustomForm
                         UpdateUser(
                             "Uninstalling Koaloader from " + selection.Name + $" in directory \"{directory}\" . . . ",
                             LogTextBox.Operation);
-                        await Koaloader.Uninstall(directory, selection.RootDirectory, this);
+                        await Koaloader.Uninstall(directory, this);
                     }
                 }
 
@@ -294,7 +336,7 @@ internal sealed partial class InstallForm : CustomForm
         }
 
         if ((useCreamApiProxy || useSmokeApiProxy || useKoaloader) && !uninstalling)
-            foreach ((string directory, BinaryType binaryType) in selection.ExecutableDirectories)
+            foreach ((string directory, BinaryType binaryType) in proxyDirectories)
             {
                 if (Program.Canceled)
                     return;
@@ -317,9 +359,10 @@ internal sealed partial class InstallForm : CustomForm
                 }
                 else if (useKoaloader)
                 {
-                    UpdateUser("Installing Koaloader for " + selection.Name + $" in directory \"{directory}\" . . . ",
+                    UpdateUser(
+                        "Installing Koaloader for " + selection.Name + $" in directory \"{directory}\" . . . ",
                         LogTextBox.Operation);
-                    await Koaloader.Install(directory, binaryType, selection, selection.RootDirectory, this);
+                    await Koaloader.Install(directory, binaryType, selection, this);
                 }
             }
 
@@ -373,6 +416,13 @@ internal sealed partial class InstallForm : CustomForm
                     int dlcCount = selection.DLC.Count();
                     ProgramData.UpsertInstalledGame(selection.ToInstalledGameRecord());
                     ProgramData.Log.Info($"[InstallForm] Saved to installed.json: {unlocker} with {dlcCount} DLCs | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
+                    if (selection.UseProxy && selection.DetectInstalledProxy() is null)
+                    {
+                        ProgramData.Log.Warn($"[InstallForm] Proxy DLL is missing after install | Game: {selection.Name} ({selection.Id}) | Directory: {selection.PrimaryExecutablePath}");
+                        UpdateUser(
+                            $"Warning: the proxy DLL for {selection.Name} is missing after install. An antivirus may have quarantined it.",
+                            LogTextBox.Error, false);
+                    }
                 }
                 else
                     ProgramData.Log.Info($"[InstallForm] No unlocker detected after install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);

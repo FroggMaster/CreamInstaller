@@ -422,8 +422,11 @@ internal static class SmokeAPI
         InstallForm installForm = null, bool generateConfig = true)
         => await Task.Run(async () =>
         {
+            if (binaryType is not (BinaryType.BIT32 or BinaryType.BIT64))
+                throw new CustomMessageException("Unable to determine the executable bitness in \"" + directory +
+                                                 "\".");
             ProgramData.Log.Info($"[SmokeAPI] Proxy install to directory: {directory} | Proxy: {selection.Proxy ?? Selection.DefaultProxy} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
-            await Koaloader.Uninstall(directory, selection.RootDirectory, installForm);
+            await Koaloader.Uninstall(directory, installForm);
 
             string proxy = selection.Proxy ?? Selection.DefaultProxy;
             string path = directory + @"\" + proxy + ".dll";

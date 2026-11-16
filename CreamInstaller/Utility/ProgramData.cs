@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using CreamInstaller;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace CreamInstaller.Utility;
 
@@ -26,6 +27,16 @@ internal enum InstalledUnlocker
     UplayR1,
     UplayR2,
     Koaloader
+}
+
+/// <summary>Describes how a system DLL proxy loads the DLC unlocker.</summary>
+internal enum ProxyKind
+{
+    /// <summary>The unlocker ships its own forwarded exports for winmm/winhttp/version.</summary>
+    Native = 0,
+
+    /// <summary>A Koaloader proxy DLL (one of the 22 embedded proxies) loads the unlocker as a module.</summary>
+    Koaloader = 1
 }
 
 internal sealed class InstalledDlcRecord
@@ -49,6 +60,10 @@ internal sealed class InstalledGameRecord
 
     [JsonProperty("Proxy DLL Name")]
     public string ProxyDllName { get; set; }
+
+    [JsonProperty("Proxy Kind")]
+    [JsonConverter(typeof(StringEnumConverter))]
+    public ProxyKind ProxyKind { get; set; }
 
     public bool UseExtraProtection { get; set; }
     public List<InstalledDlcRecord> Dlc { get; set; } = [];
@@ -402,33 +417,105 @@ internal static event Action<LogEventArgs> OnLog;
         }
     }
 
-    internal static IEnumerable<(Platform platform, string id, string proxy, bool enabled)> ReadProxyChoices()
+    internal static IEnumerable<(Platform platform, string id, string proxy, ProxyKind kind, bool enabled)>
+        ReadProxyChoices()
     {
-        if (KoaloaderProxyChoicesPath.FileExists())
-            try
+        if (!KoaloaderProxyChoicesPath.FileExists())
+            return [];
+
+        try
+        {
+            if (JsonConvert.DeserializeObject(KoaloaderProxyChoicesPath.ReadFile()) is not JArray array)
+                return [];
+
+            List<(Platform platform, string id, string proxy, ProxyKind kind, bool enabled)> choices = [];
+            foreach (JToken token in array)
             {
-                if (JsonConvert.DeserializeObject(KoaloaderProxyChoicesPath.ReadFile(),
-                        typeof(IEnumerable<(Platform platform, string id, string proxy, bool enabled)>)) is
-                    IEnumerable<(Platform platform, string id, string proxy, bool enabled)> choices)
-                    return choices;
+                if (token is not JObject entry)
+                    continue;
+
+                if (!TryGetPlatform(entry["Item1"], out Platform platform))
+                    continue;
+
+                string id = entry["Item2"]?.ToString();
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+
+                string proxy = entry["Item3"]?.ToString();
+                bool enabled = entry["Item4"]?.ToObject<bool>() ?? false;
+
+                ProxyKind kind = ProxyKind.Native;
+                if (entry["Item5"] is { } kindToken && TryGetProxyKind(kindToken, out ProxyKind parsedKind))
+                    kind = parsedKind;
+
+                choices.Add((platform, id, proxy, kind, enabled));
             }
-            catch
-            {
-                // ignored
-            }
+
+            return choices;
+        }
+        catch
+        {
+            // ignored
+        }
 
         return [];
     }
 
+    private static bool TryGetPlatform(JToken token, out Platform platform)
+    {
+        platform = default;
+        if (token is null || token.Type == JTokenType.Null)
+            return false;
+        string text = token.ToString();
+        if (Enum.TryParse(text, true, out platform) && Enum.IsDefined(typeof(Platform), platform))
+            return true;
+        if (int.TryParse(text, out int value) && Enum.IsDefined(typeof(Platform), value))
+        {
+            platform = (Platform)value;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetProxyKind(JToken token, out ProxyKind kind)
+    {
+        kind = ProxyKind.Native;
+        if (token is null || token.Type == JTokenType.Null)
+            return false;
+        string text = token.ToString();
+        if (Enum.TryParse(text, true, out kind) && Enum.IsDefined(typeof(ProxyKind), kind))
+            return true;
+        if (int.TryParse(text, out int value) && Enum.IsDefined(typeof(ProxyKind), value))
+        {
+            kind = (ProxyKind)value;
+            return true;
+        }
+
+        return false;
+    }
+
     internal static void WriteProxyChoices(
-        IEnumerable<(Platform platform, string id, string proxy, bool enabled)> choices)
+        IEnumerable<(Platform platform, string id, string proxy, ProxyKind kind, bool enabled)> choices)
     {
         try
         {
             if (choices is null || !choices.Any())
                 KoaloaderProxyChoicesPath.DeleteFile();
             else
-                KoaloaderProxyChoicesPath.WriteFile(JsonConvert.SerializeObject(choices));
+            {
+                JArray array = [];
+                foreach ((Platform platform, string id, string proxy, ProxyKind kind, bool enabled) in choices)
+                    array.Add(new JObject
+                    {
+                        ["Item1"] = (int)platform,
+                        ["Item2"] = id,
+                        ["Item3"] = proxy,
+                        ["Item4"] = enabled,
+                        ["Item5"] = (int)kind
+                    });
+                KoaloaderProxyChoicesPath.WriteFile(array.ToString(Formatting.Indented));
+            }
         }
         catch
         {

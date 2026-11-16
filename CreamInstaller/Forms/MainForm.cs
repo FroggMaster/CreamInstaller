@@ -1421,6 +1421,7 @@ internal sealed partial class MainForm : CustomForm
                 {
                     existing.UseProxy = record.UseProxy;
                     existing.Proxy = record.UseProxy ? record.ProxyDllName : null;
+                    existing.ProxyKind = record.UseProxy ? record.ProxyKind : ProxyKind.Native;
                 }
                 existing.ProxyExplicitlySet = true;
                 if (record.UseExtraProtection)
@@ -1454,16 +1455,18 @@ internal sealed partial class MainForm : CustomForm
                 selection.InstalledUnlocker = record.Unlocker;
             if (selection.InstalledUnlocker != InstalledUnlocker.None)
             {
-                string detectedProxy = selection.DetectInstalledProxy();
-                if (detectedProxy is not null)
+                (string name, ProxyKind kind)? detectedProxy = selection.DetectInstalledProxy();
+                if (detectedProxy is { } proxy)
                 {
                     selection.UseProxy = true;
-                    selection.Proxy = detectedProxy;
+                    selection.Proxy = proxy.name;
+                    selection.ProxyKind = proxy.kind;
                 }
                 else
                 {
                     selection.UseProxy = record.UseProxy;
                     selection.Proxy = record.UseProxy ? record.ProxyDllName : null;
+                    selection.ProxyKind = record.UseProxy ? record.ProxyKind : ProxyKind.Native;
                 }
                 selection.ProxyExplicitlySet = true;
             }
@@ -1795,26 +1798,27 @@ internal sealed partial class MainForm : CustomForm
 
     private void LoadSelections()
     {
-        List<(Platform platform, string id, string proxy, bool enabled)> proxyChoices =
+        List<(Platform platform, string id, string proxy, ProxyKind kind, bool enabled)> proxyChoices =
             ProgramData.ReadProxyChoices().ToList();
         foreach (Selection selection in Selection.All.Keys)
             if (proxyChoices.Any(c => c.platform == selection.Platform && c.id == selection.Id))
             {
-                (Platform platform, string id, string proxy, bool enabled)
+                (Platform platform, string id, string proxy, ProxyKind kind, bool enabled)
                     choice = proxyChoices.First(c => c.platform == selection.Platform && c.id == selection.Id);
-                (Platform platform, string id, string proxy, bool enabled) = choice;
+                (Platform platform, string id, string proxy, ProxyKind kind, bool enabled) = choice;
                 string currentProxy = proxy;
                 if (proxy is not null && proxy.Contains('.')) // convert pre-v4.1.0.0 choices
                     proxy.GetProxyInfoFromIdentifier(out currentProxy, out _);
                 if (proxy != currentProxy && proxyChoices.Remove(choice)) // convert pre-v4.1.0.0 choices
-                    proxyChoices.Add((platform, id, currentProxy, enabled));
+                    proxyChoices.Add((platform, id, currentProxy, kind, enabled));
                 if (currentProxy is null ||
                     (currentProxy == Selection.DefaultProxy && !enabled && !Program.EnableProxyByDefault))
                     _ = proxyChoices.RemoveAll(c => c.platform == platform && c.id == id);
                 else
                 {
                     selection.UseProxy = enabled;
-                    selection.Proxy = currentProxy == Selection.DefaultProxy ? currentProxy : proxy;
+                    selection.Proxy = currentProxy;
+                    selection.ProxyKind = kind;
                     selection.ProxyExplicitlySet = true;
                 }
             }
@@ -1822,6 +1826,7 @@ internal sealed partial class MainForm : CustomForm
             {
                 selection.UseProxy = Program.EnableProxyByDefault;
                 selection.Proxy = null;
+                selection.ProxyKind = ProxyKind.Native;
             }
 
         ProgramData.WriteProxyChoices(proxyChoices);
@@ -1868,11 +1873,12 @@ internal sealed partial class MainForm : CustomForm
             selection.InstalledUnlocker = selection.DetectInstalledUnlocker();
             if (selection.InstalledUnlocker != InstalledUnlocker.None)
             {
-                string detectedProxy = selection.DetectInstalledProxy();
-                if (detectedProxy is not null)
+                (string name, ProxyKind kind)? detectedProxy = selection.DetectInstalledProxy();
+                if (detectedProxy is { } proxy)
                 {
                     selection.UseProxy = true;
-                    selection.Proxy = detectedProxy;
+                    selection.Proxy = proxy.name;
+                    selection.ProxyKind = proxy.kind;
                     selection.ProxyExplicitlySet = true;
                 }
                 else if (!selection.ProxyExplicitlySet && !selection.SteamApiDllMissing)
@@ -1881,6 +1887,7 @@ internal sealed partial class MainForm : CustomForm
                     // retroactively turn proxying on from the global default.
                     selection.UseProxy = false;
                     selection.Proxy = null;
+                    selection.ProxyKind = ProxyKind.Native;
                 }
                 if (selection.InstalledUnlocker == InstalledUnlocker.SmokeAPI)
                 {
@@ -1955,6 +1962,8 @@ internal sealed partial class MainForm : CustomForm
     {
         Program.UseSmokeAPI = useSmokeApiToggle.Checked;
         useSmokeApiLabel.Text = useSmokeApiToggle.Checked ? "Selected Unlocker: SmokeAPI" : "Selected Unlocker: CreamAPI";
+        foreach (Selection selection in Selection.All.Keys)
+            selection.ResetProxyDefaultCache();
         ProgramData.SaveSettings(Program.AppSettings);
         InvalidateGameTrees();
     }

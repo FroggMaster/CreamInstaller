@@ -71,7 +71,8 @@ internal static class CreamAPI
         }
     }
 
-    private static void CheckConfig(string directory, Selection selection, InstallForm installForm = null)
+    internal static void CheckConfig(string directory, Selection selection, InstallForm installForm = null,
+        bool originalApiIntact = false)
     {
         directory.GetCreamApiComponents(out _, out _, out _, out _, out string config);
         HashSet<SelectionDLC> dlc = selection.DLC.Where(dlc => dlc.Enabled).ToHashSet();
@@ -87,7 +88,7 @@ internal static class CreamAPI
         StreamWriter writer = new(config, true, Encoding.Default);
         WriteConfig(writer, selection.Name, !int.TryParse(selection.Id, out _) ? "0" : selection.Id,
             new(dlc.ToDictionary(_dlc => _dlc.Id, _dlc => _dlc.Name), PlatformIdComparer.String),
-            selection.UseExtraProtection, installForm);
+            selection.UseExtraProtection, originalApiIntact, installForm);
         writer.Flush();
         writer.Close();
         ProgramData.Log.Info($"[CreamAPI] Configuration generated successfully: {config} | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
@@ -95,7 +96,8 @@ internal static class CreamAPI
     }
 
     private static void WriteConfig(StreamWriter writer, string name, string appId,
-        SortedList<string, string> dlc, bool extraProtection = false, InstallForm installForm = null)
+        SortedList<string, string> dlc, bool extraProtection = false, bool originalApiIntact = false,
+        InstallForm installForm = null)
     {
         writer.WriteLine($"; {name}");
         writer.WriteLine("[steam]");
@@ -103,8 +105,10 @@ internal static class CreamAPI
         installForm?.UpdateUser($"Added game to cream_api.ini with appid {appId} ({name})",
             LogTextBox.Action, false);
         writer.WriteLine("unlockall = false");
-        writer.WriteLine("orgapi = steam_api_o.dll");
-        writer.WriteLine("orgapi64 = steam_api64_o.dll");
+        // Proxy installs leave the original Steamworks DLL untouched, so point CreamAPI at it directly.
+        string originalApiSuffix = originalApiIntact ? string.Empty : "_o";
+        writer.WriteLine($"orgapi = steam_api{originalApiSuffix}.dll");
+        writer.WriteLine($"orgapi64 = steam_api64{originalApiSuffix}.dll");
         writer.WriteLine($"extraprotection = {(extraProtection ? "true" : "false")}");
         writer.WriteLine("forceoffline = false");
         writer.WriteLine();
@@ -295,8 +299,11 @@ internal static class CreamAPI
         InstallForm installForm = null, bool generateConfig = true)
         => await Task.Run(async () =>
         {
+            if (binaryType is not (BinaryType.BIT32 or BinaryType.BIT64))
+                throw new CustomMessageException("Unable to determine the executable bitness in \"" + directory +
+                                                 "\".");
             ProgramData.Log.Info($"[CreamAPI] Proxy install to directory: {directory} | Proxy: {selection.Proxy ?? Selection.DefaultProxy} | Game: {selection.Name} ({selection.Id}) | GenerateConfig: {generateConfig}", LogDestination.Unlocker);
-            await Koaloader.Uninstall(directory, selection.RootDirectory, installForm);
+            await Koaloader.Uninstall(directory, installForm);
 
             string proxy = selection.Proxy ?? Selection.DefaultProxy;
             string path = directory + @"\" + proxy + ".dll";
@@ -323,7 +330,7 @@ internal static class CreamAPI
 
             if (generateConfig)
             {
-                CheckConfig(directory, selection, installForm);
+                CheckConfig(directory, selection, installForm, true);
                 ProgramData.Log.Info($"[CreamAPI] Configuration generated for proxy install | Game: {selection.Name} ({selection.Id})", LogDestination.Unlocker);
             }
 
